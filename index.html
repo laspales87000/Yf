@@ -160,7 +160,7 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 #peek{position:fixed;left:0;right:0;top:56px;bottom:0;overflow:hidden;background:var(--bg);z-index:4;pointer-events:none}#peek .pk{padding:0}
 #app{touch-action:pan-y}
 .scn{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}.scn>*{flex:1 1 140px;text-align:center}
-.scb{display:block;font:inherit;color:var(--tx);background:var(--s2);border-radius:4px;padding:8px 12px;cursor:pointer}.sch{font-size:12px;margin:2px 0 8px}
+.scb{display:block;font:inherit;color:var(--tx);background:var(--s2);border-radius:4px;padding:8px 12px;cursor:pointer}.sch{font-size:12px;margin:2px 0 8px}.sgal{display:inline-block;color:var(--bl);font-size:14px;padding:6px 2px;cursor:pointer;text-decoration:underline}
 #scan{position:fixed;inset:0;background:#000;z-index:40;display:flex;align-items:center;justify-content:center}#scan[hidden]{display:none}
 #scan video{width:100%;height:100%;object-fit:cover}.sfr{position:absolute;left:8%;right:8%;top:38%;height:22%;border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 100vmax #0006}
 #scan p{position:absolute;bottom:15%;left:0;right:0;text-align:center;color:#fff;font-size:17px;margin:0;text-shadow:0 1px 4px #000}
@@ -931,7 +931,7 @@ function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return de
 ${tagBlock(sh)}${tabsHtml(tab,[['ep','Épisodes'],['cast','Distribution'],['rate','Avis']])}${tab=='rate'?ratingHtml(sh):tab=='cast'?castHtml(sh):`<div class="tabs" id="st">${ss.map(n=>`<button class="${n==view.s?'on':''}" data-act="season" data-n="${n}">${n?'Saison '+n:'Spéciaux'}</button>`).join('')}</div>
 <div class="act"><button data-act="sw" data-id="${sh.id}" ${sh.eps.filter(e=>e.s==view.s).every(e=>e.w||!past(sh,e))?'disabled':''}>Marquer la saison vue</button></div>
 ${sh.eps.filter(e=>e.s==view.s).map(e=>ep(sh,e)).join('')}`}</div>`}
-const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div class="scn"><button type="button" data-act="scan">📷 Code-barres</button><label class="scb">🖼️ Photo couverture<input type="file" accept="image/*" id="phi" hidden></label></div><p class="mu sch">${MODE()=='b'||MODE()=='c'?'Tu peux aussi taper un ISBN.':'Tu peux aussi taper le code-barres du DVD ou Blu-ray.'}</p><div id="res"></div></div>`;
+const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div class="scn"><button type="button" data-act="scan">📷 Code-barres</button><label class="scb">📸 Photo couverture<input type="file" accept="image/*" capture="environment" id="phi" hidden></label></div><label class="sgal">🖼️ ou choisir une photo existante<input type="file" accept="image/*" id="phg" hidden></label><p class="mu sch">${MODE()=='b'||MODE()=='c'?'Tu peux aussi taper un ISBN.':'Tu peux aussi taper le code-barres du DVD ou Blu-ray.'}</p><div id="res"></div></div>`;
 /* Ajout par code-barres, ISBN ou photo de couverture */
 const ZXU='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',TSU='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',ldS={};
 function loadJs(u){return ldS[u]||(ldS[u]=new Promise((ok,ko)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>{delete ldS[u];ko(Error('Chargement impossible'))};document.head.appendChild(e)}))}
@@ -979,7 +979,7 @@ async function fromPhoto(f){if(!f)return;const url=URL.createObjectURL(f);
   toast('Lecture du titre…',15000);const t=await ocrTitle(url);if(!t)return toast('Aucun titre lisible sur la photo. Essaie plus près, bien éclairé.',4500);
   $('#aq').value=t;toast('Titre lu sur la photo : corrige-le si besoin',4000);find()}
  catch(e){toast('Lecture de la photo impossible',4000)}finally{setTimeout(()=>URL.revokeObjectURL(url),1000)}}
-document.addEventListener('change',ev=>{if(ev.target.id=='phi'){const f=ev.target.files&&ev.target.files[0];ev.target.value='';fromPhoto(f)}});
+document.addEventListener('change',ev=>{if(ev.target.id=='phi'||ev.target.id=='phg'){const f=ev.target.files&&ev.target.files[0];ev.target.value='';fromPhoto(f)}});
 async function find(){const q=$('#aq').value.trim();if(!q)return;const c=codeOf(q);if(c)return findCode(c);if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,mod:Date.now(),eps:[]};toast('Ajout…');
