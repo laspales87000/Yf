@@ -157,6 +157,8 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 .bn .hrb{top:2px;right:4px}.bn .hrb:not(.on){display:none}
 .bn .pinb{top:auto;bottom:2px;right:4px}
 .bn h3,.bn p{padding-right:44px}
+#peek{position:fixed;left:0;right:0;top:56px;bottom:0;overflow:hidden;background:var(--bg);z-index:4;pointer-events:none}#peek .pk{padding:0}
+#app{touch-action:pan-y}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -168,7 +170,7 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 <button data-act="menu" data-m="filt" aria-label="Filtrer" id="flb"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg><small id="fl"></small></button>
 </header>
 <div id="menu" hidden></div>
-<main id="app"></main>
+<div id="peek" hidden></div><main id="app"></main>
 <button class="fab" data-act="add" aria-label="Ajouter une série">+</button>
 <div id="dlg" hidden></div>
 <div id="ptr" hidden></div>
@@ -822,15 +824,22 @@ const bcard=b=>{const sub=[(b.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).join
 /* Pages de personnes */
 const fd=d=>d?fmtDate(d,(S.dfmt||'dmy2')=='dmy2'?'dmy4':S.dfmt=='mdy2'?'ymd':S.dfmt):'';
 function libOf(p){const key=norm(p.n),out=[];for(const it of[...Object.values(S.shows),...Object.values(MV()),...Object.values(BK())]){const x=(it.ppl||[]).find(q=>norm(q.n)===key);if(x)out.push({it,role:x.c||CREW[x.j]||(x.r=='author'?'Auteur':'')})}return out}
-async function openPerson(pid,name,src){try{toast('Chargement…');let id=pid;
- if(src=='n'||!id){const r=await tmdb('/search/person','&include_adult=true&query='+encodeURIComponent(name));const f=r&&r.results&&r.results[0];if(!f)return toast('Aucune information');id=f.id}
- if(!PP[id]||PP[id].lang!==LANG()){const x=await tmdb('/person/'+id,'&append_to_response=combined_credits');if(!x)return toast('Aucune information');
+async function loadPerson(pid,name,src,q){let id=pid;
+ if(src=='n'||!id){const r=await tmdb('/search/person','&include_adult=true&query='+encodeURIComponent(name));const f=r&&r.results&&r.results[0];if(!f){if(!q)toast('Aucune information');return 0}id=f.id}
+ if(!PP[id]||PP[id].lang!==LANG()){const x=await tmdb('/person/'+id,'&append_to_response=combined_credits');if(!x){if(!q)toast('Aucune information');return 0}
   let bio=x.biography||'';if(!bio&&LANG()!='en'){try{const e=await fetch('https://api.themoviedb.org/3/person/'+id+'?api_key='+TK+'&language=en-US');if(e.ok)bio=(await e.json()).biography||''}catch(e){}}
   const cc=x.combined_credits||{},seen=new Set(),cr=[];
   for(const c of[...(cc.cast||[]).map(c=>({...c,role:c.character||''})),...(cc.crew||[]).filter(c=>CREW[c.job]).map(c=>({...c,role:CREW[c.job]}))]){const key=c.media_type+c.id;if(seen.has(key))continue;seen.add(key);cr.push({mt:c.media_type,id:c.id,t:c.title||c.name||'',po:c.poster_path,d:c.release_date||c.first_air_date||'',role:c.role,pop:c.popularity||0})}
   cr.sort((a,b)=>b.pop-a.pop);PP[id]={id,lang:LANG(),n:x.name,bio,bd:x.birthday,dd:x.deathday,pl:x.place_of_birth,dept:x.known_for_department,im:x.profile_path,cr:cr.slice(0,60)}}
- view.fy=scrollY;view.pp=id;view.ppt={};render(1)}catch(e){toast('Connexion impossible')}}
-async function openAuthor(name){try{toast('Chargement…');const L=await bkSearch(name,false,true),id='a:'+norm(name);PP[id]={id,au:1,lang:LANG(),n:name,cr:L.map(d=>({gid:d.gid,t:d.t,po:d.po,d:String(d.y||''),role:''})),bio:''};view.fy=scrollY;view.pp=id;view.ppt={};render(1)}catch(e){toast('Connexion impossible')}}
+ return id}
+async function loadAuthor(name){const id='a:'+norm(name);if(PP[id]&&PP[id].lang===LANG())return id;const L=await bkSearch(name,false,true);PP[id]={id,au:1,lang:LANG(),n:name,cr:L.map(d=>({gid:d.gid,t:d.t,po:d.po,d:String(d.y||''),role:''})),bio:''};return id}
+function showPerson(id,nav){if(!nav)view.fy=scrollY;view.pp=id;view.ppt={};render(1);ppPre()}
+async function openPerson(pid,name,src,nav){try{const c=nav&&view.ppl&&view.ppl[view.ppi];if(!(c&&c.k&&PP[c.k]))toast('Chargement…');const id=await loadPerson(c&&c.k||pid,name,c&&c.k?'t':src);if(!id)return;if(c)c.k=id;showPerson(id,nav)}catch(e){toast('Connexion impossible')}}
+async function openAuthor(name,nav){try{const c=nav&&view.ppl&&view.ppl[view.ppi];if(!(c&&c.k&&PP[c.k]))toast('Chargement…');const id=await loadAuthor(name);if(c)c.k=id;showPerson(id,nav)}catch(e){toast('Connexion impossible')}}
+/* Personnes voisines (pour glisser d'une fiche personne à l'autre) */
+function ppAt(i){const L=view.ppl||[],n=L[i];if(!n)return;view.ppi=i;return n.au?openAuthor(n.pn,1):openPerson(n.pid,n.pn,n.src,1)}
+function ppPre(){const L=view.ppl;if(!L||view.ppi==null)return;for(const d of[1,-1]){const n=L[view.ppi+d];if(!n||n.k&&PP[n.k]||n.ld)continue;n.ld=1;
+ (n.au?loadAuthor(n.pn):loadPerson(n.pid,n.pn,n.src,1)).then(id=>{if(id)n.k=id}).catch(()=>{}).finally(()=>{n.ld=0})}}
 function personHtml(id){const p=PP[id];if(!p)return'';const lib=libOf(p),imp=p.cr||[],t=view.ppt||{};
  const have=c=>c.gid?!!BK()['b'+c.gid]:c.mt=='movie'?!!MV()['m'+c.id]:Object.values(S.shows).some(s=>s.tmdbtv==c.id||norm(s.name)==norm(c.t));
  const pst=u=>u?`<img loading="lazy" src="${esc(TI(u,'w154'))}" alt="">`:'<span class="ph"></span>';
@@ -941,8 +950,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='upd8')return toast("Aucune vérification en ligne pour l'instant");
  else if(a=='rate'){sh.rate=sh.rate==+d.n?0:+d.n}
  else if(a=='grp'){if(d.v=='bk'){S.ma=MODE();setMode(S.mb||'b')}else{S.mb=MODE();setMode(S.ma||'s')}top=1}
- else if(a=='person')return openPerson(d.pid?+d.pid:0,d.pn,d.src);
- else if(a=='author')return openAuthor(d.pn);
+ else if(a=='person'||a=='author'){if(!view.pp){const L=[],seen=new Set();let i=0;document.querySelectorAll('#app [data-act=person],#app [data-act=author]').forEach(x=>{const q=x.dataset,k=(q.act=='author'?'a':q.pid||'')+'|'+q.pn;if(seen.has(k))return;seen.add(k);if(x==el)i=L.length;L.push({au:q.act=='author',pid:q.pid?+q.pid:0,pn:q.pn,src:q.src})});if(!seen.has((a=='author'?'a':d.pid||'')+'|'+d.pn))L.splice(i=0,L.length,{au:a=='author',pid:d.pid?+d.pid:0,pn:d.pn,src:d.src});view.ppl=L;view.ppi=i}
+  return a=='author'?openAuthor(d.pn):openPerson(d.pid?+d.pid:0,d.pn,d.src)}
  else if(a=='pp'){view.ppt=view.ppt||{};view.ppt[d.t]=!view.ppt[d.t]}
  else if(a=='addmq')return addMq(d.tm);
  else if(a=='addtv')return addTv(d.tm,d.tn);
@@ -1008,7 +1017,22 @@ document.addEventListener('submit',ev=>{if(ev.target.id=='sf'){ev.preventDefault
 let tx=0,ty=0,tOK=0;
 document.addEventListener('touchstart',ev=>{const t=ev.touches[0];tx=t.clientX;ty=t.clientY;tOK=ev.touches.length==1&&!ev.target.closest('.tabs,.chips,.sw,input,textarea,#menu')},{passive:true});
 document.addEventListener('touchend',ev=>{const t=ev.changedTouches[0],dx=t.clientX-tx,dy=t.clientY-ty;
- if(!tOK||Math.abs(dx)<80||Math.abs(dy)*2>Math.abs(dx))return;if(view.menu)return;if(view.open&&!view.pp&&!view.add&&!view.sel){navFiche(dx<0?1:-1);tOK=0;return}if(!goBack())return;tOK=0},{passive:true});
+ if(!tOK||Math.abs(dx)<80||Math.abs(dy)*2>Math.abs(dx))return;if(view.menu)return;if(fsOK()){tOK=0;return}if(!goBack())return;tOK=0},{passive:true});
+/* Glisser d'une fiche à l'autre, la fiche suit le doigt */
+function fsOK(){return!view.add&&!view.sel&&!view.menu&&$('#dlg').hidden&&(view.pp?!!(view.ppl&&view.ppl.length>1):!!(view.open&&IT(view.open)))}
+function fsNb(d){if(view.pp){const L=view.ppl||[],i=view.ppi??-1,n=L[i+d];if(!n)return null;const h=n.k&&PP[n.k]?personHtml(n.k):`<div class="det"><button>← Retour</button><h2 style="margin:40px 0 8px">${esc(n.pn)}</h2><p class="mu">Chargement…</p></div>`;return{go:()=>ppAt(i+d),h}}
+ const ids=view.ids||[],i=ids.indexOf(view.open),n=ids[i+d];if(i<0||!n||!IT(n))return null;const vs=view.s,vt=view.tab;view.s=null;view.tab=null;let h='';try{h=detail(IT(n))}finally{view.s=vs;view.tab=vt}return{go:()=>navFiche(d),h}}
+let fs=null;
+function fsSet(x,anim){const A=$('#app'),P=$('#peek'),W=innerWidth,t=anim?'transform .26s cubic-bezier(.2,.7,.3,1)':'none';A.style.transition=P.style.transition=t;A.style.transform=x?`translateX(${x}px)`:'';if(fs&&fs.nb)P.style.transform=`translateX(${x+(fs.side>0?W:-W)}px)`}
+function fsEnd(){const A=$('#app'),P=$('#peek');A.style.transition=A.style.transform='';P.style.transition='';P.hidden=true;P.innerHTML=''}
+document.addEventListener('touchstart',ev=>{fs=null;if(ev.touches.length!=1||!fsOK()||ev.target.closest('.tabs,.chips,.sw,input,textarea,#menu,header'))return;const t=ev.touches[0];fs={x:t.clientX,y:t.clientY,t:Date.now(),dx:0,on:0,side:0}},{passive:true});
+document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],dx=t.clientX-fs.x,dy=t.clientY-fs.y;
+ if(!fs.on){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){fs=null;return}if(Math.abs(dx)<12)return;fs.on=1}
+ const side=dx<0?1:-1;if(side!=fs.side){fs.side=side;fs.nb=fsNb(side);const P=$('#peek');if(fs.nb){P.innerHTML=`<div class="pk">${fs.nb.h}</div>`;P.hidden=false;i18n()}else{P.hidden=true;P.innerHTML=''}}
+ fs.dx=fs.nb?dx:dx*.25;fs.v=dx/Math.max(1,Date.now()-fs.t);fsSet(fs.dx)},{passive:true});
+['touchend','touchcancel'].forEach(n=>document.addEventListener(n,ev=>{const f=fs;fs=null;if(!f||!f.on)return;const W=innerWidth;fs=f;
+ const go=n=='touchend'&&f.nb&&(Math.abs(f.dx)>W*.25||Math.abs(f.dx)>40&&Math.abs(f.v)>.5);
+ fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
 let lp=0,lpT,px=0,py=0;
 document.addEventListener('pointerdown',ev=>{const mi=ev.target.closest('#menu [data-act="tab"]');
  if(mi){lp=0;clearTimeout(lpT);lpT=setTimeout(()=>{lp=1;S.deff=S.deff||{};S.deff[MODE()]=mi.dataset.f;save();if(navigator.vibrate)navigator.vibrate(40);view.menu=0;renderMenu();toast('Cette liste sera désormais la liste qui s’affichera en premier',2000)},2000);return}
