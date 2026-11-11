@@ -841,7 +841,8 @@ function ppAt(i){const L=view.ppl||[],n=L[i];if(!n)return;view.ppi=i;return n.au
 function ppPre(){const L=view.ppl;if(!L||view.ppi==null)return;for(const d of[1,-1]){const n=L[view.ppi+d];if(!n||n.k&&PP[n.k]||n.ld)continue;n.ld=1;
  (n.au?loadAuthor(n.pn):loadPerson(n.pid,n.pn,n.src,1)).then(id=>{if(id)n.k=id}).catch(()=>{}).finally(()=>{n.ld=0})}}
 function personHtml(id){const p=PP[id];if(!p)return'';const lib=libOf(p),imp=p.cr||[],t=view.ppt||{};
- const have=c=>c.gid?!!BK()['b'+c.gid]:c.mt=='movie'?!!MV()['m'+c.id]:Object.values(S.shows).some(s=>s.tmdbtv==c.id||norm(s.name)==norm(c.t));
+ const same=(o,c)=>[o.name,o.orig,nm(o)].some(n=>n&&norm(n)==norm(c.t)),
+  have=c=>c.gid?!!BK()['b'+c.gid]||Object.values(BK()).some(b=>same(b,c)):c.mt=='movie'?!!MV()['m'+c.id]||Object.values(MV()).some(m=>m.tmdb==c.id):Object.values(S.shows).some(s=>s.tmdbtv==c.id||same(s,c));
  const pst=u=>u?`<img loading="lazy" src="${esc(TI(u,'w154'))}" alt="">`:'<span class="ph"></span>';
  return`<div class="det"><button data-act="back">← Retour</button>
 <div class="hd"><div class="poster">${p.im?`<img src="${esc(TI(p.im,'w342'))}" alt="">`:''}</div><div><h2>${esc(p.n)}</h2><p class="mu">${esc([p.dept,[fd(p.bd),p.dd?'† '+fd(p.dd):''].filter(Boolean).join(' '),p.pl].filter(Boolean).join(' – '))}</p></div></div>
@@ -877,7 +878,7 @@ async function addTv(tid,name){const fromAdd=!!view.add;
   if(ex&&ex.tvdb_id)x=await api('/lookup/shows?thetvdb='+ex.tvdb_id);
   if(!x){const c=await api('/singlesearch/shows?q='+encodeURIComponent((d&&d.original_name)||name));if(c&&d&&(norm(c.name)==norm(d.original_name)||norm(c.name)==norm(d.name)))x=c}
   let sh,id;
-  if(x){id=String((x.externals&&x.externals.thetvdb)||'tm'+x.id);if(S.shows[id])return toast('Déjà dans ta liste');sh=S.shows[id]={id,tm:+x.id,name:'',sum:'',fav:0,mod:Date.now(),eps:[],tmdbtv:+tid};await syncShow(sh)}
+  if(x){id=String((x.externals&&x.externals.thetvdb)||'tm'+x.id);const old=S.shows[id]||Object.values(S.shows).find(s=>s.tm==x.id);if(old){if(!old.tmdbtv){old.tmdbtv=+tid;old.mod=Date.now();save();render()}return toast('Déjà dans ta liste')}sh=S.shows[id]={id,tm:+x.id,name:'',sum:'',fav:0,mod:Date.now(),eps:[],tmdbtv:+tid};await syncShow(sh)}
   else{id='t'+tid;sh=S.shows[id]={id,src:'tmdb',tmdbtv:+tid,name:(d&&d.name)||name,sum:'',fav:0,mod:Date.now(),eps:[]};await syncTmdbTv(sh)}
   logEv(sh,'Série ajoutée');if(fromAdd){S.mode='s';view.add=0;view.open=id;view.s=null;view.tab=null;view.f='all'}toast('Série ajoutée')}catch(e){toast('Connexion impossible')}save();render()}
 const VER='1.4';
