@@ -159,6 +159,12 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 .bn h3,.bn p{padding-right:44px}
 #peek{position:fixed;left:0;right:0;top:56px;bottom:0;overflow:hidden;background:var(--bg);z-index:4;pointer-events:none}#peek .pk{padding:0}
 #app{touch-action:pan-y}
+.scn{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}.scn>*{flex:1 1 140px;text-align:center}
+.scb{display:block;font:inherit;color:var(--tx);background:var(--s2);border-radius:4px;padding:8px 12px;cursor:pointer}.sch{font-size:12px;margin:2px 0 8px}
+#scan{position:fixed;inset:0;background:#000;z-index:40;display:flex;align-items:center;justify-content:center}#scan[hidden]{display:none}
+#scan video{width:100%;height:100%;object-fit:cover}.sfr{position:absolute;left:8%;right:8%;top:38%;height:22%;border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 100vmax #0006}
+#scan p{position:absolute;bottom:15%;left:0;right:0;text-align:center;color:#fff;font-size:17px;margin:0;text-shadow:0 1px 4px #000}
+.scx{position:absolute;top:14px;right:14px;width:48px;height:48px;border-radius:50%;background:#0008;color:#fff;font-size:22px;padding:0}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -170,7 +176,7 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 <button data-act="menu" data-m="filt" aria-label="Filtrer" id="flb"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg><small id="fl"></small></button>
 </header>
 <div id="menu" hidden></div>
-<div id="peek" hidden></div><main id="app"></main>
+<div id="peek" hidden></div><div id="scan" hidden></div><main id="app"></main>
 <button class="fab" data-act="add" aria-label="Ajouter une série">+</button>
 <div id="dlg" hidden></div>
 <div id="ptr" hidden></div>
@@ -811,7 +817,8 @@ async function openBook(gid){const id='b'+gid;if(BK()[id]){view.pp=null;view.ope
  const b=bookFromDoc(d,MODE()=='c');b.id='pb'+gid;b.pv=1;PV[b.id]=b;view.pp=null;view.open=b.id;view.tab=null;render(1);fetchBook(b,0).then(()=>{if(view.open==b.id)render()})}
 async function loadRel(b){const au=(b.ppl||[]).find(p=>p.r=='author');if(!au||b.rl)return;b.rl=1;try{b.rel=(await bkSearch(au.n,false,true)).filter(d=>d.gid!==b.gid)}catch(e){b.rel=[]}b.rl=0;if(view.open==b.id)render()}
 async function findB(q){$('#res').textContent='Recherche…';
- try{const L=await bkSearch(q,MODE()=='c');$('#res').innerHTML=L.map(d=>`<div class="ep ${BK()['b'+d.gid]?'ex':''}" ${BK()['b'+d.gid]?`data-act="openex" data-id="b${esc(d.gid)}"`:''}><div class="poster sm">${d.po?`<img src="${esc(d.po)}" alt="">`:''}</div><div class="t"><span>${esc(d.t)}</span><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addbook" data-gid="${esc(d.gid)}" data-bd="${MODE()=='c'?1:0}" ${BK()['b'+d.gid]?'disabled':''}>Ajouter</button></div>`).join('')||'<p class="mu">Aucun résultat.</p>'}catch(e){$('#res').innerHTML='Connexion impossible.<small>'+esc(e.message)+'</small>'}}
+ try{showB(await bkSearch(q,MODE()=='c'))}catch(e){$('#res').innerHTML='Connexion impossible.<small>'+esc(e.message)+'</small>'}}
+function showB(L){$('#res').innerHTML=L.map(d=>`<div class="ep ${BK()['b'+d.gid]?'ex':''}" ${BK()['b'+d.gid]?`data-act="openex" data-id="b${esc(d.gid)}"`:''}><div class="poster sm">${d.po?`<img src="${esc(d.po)}" alt="">`:''}</div><div class="t"><span>${esc(d.t)}</span><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addbook" data-gid="${esc(d.gid)}" data-bd="${MODE()=='c'?1:0}" ${BK()['b'+d.gid]?'disabled':''}>Ajouter</button></div>`).join('')||'<p class="mu">Aucun résultat.</p>';i18n()}
 const relB=b=>b.rel===undefined?'<p class="mu">Chargement…</p>':b.rel.length?`<div class="rl">${b.rel.map(r=>`<button class="rlc" data-act="relb" data-gid="${esc(r.gid)}">${r.po?`<img loading="lazy" src="${esc(r.po)}" alt="">`:'<span class="ph"></span>'}<small>${esc(r.t)}${r.y?' ('+esc(String(r.y))+')':''}</small></button>`).join('')}</div>`:'<p class="mu">Aucune information</p>';
 function detailB(b){const tab=view.tab||'cast',au=(b.ppl||[]).filter(p=>p.r=='author');if(tab=='rel'&&b.rel===undefined)loadRel(b);
  return`<div class="det"><button data-act="back">← Retour</button>${b.pv?'':icons(b)}
@@ -924,8 +931,56 @@ function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return de
 ${tagBlock(sh)}${tabsHtml(tab,[['ep','Épisodes'],['cast','Distribution'],['rate','Avis']])}${tab=='rate'?ratingHtml(sh):tab=='cast'?castHtml(sh):`<div class="tabs" id="st">${ss.map(n=>`<button class="${n==view.s?'on':''}" data-act="season" data-n="${n}">${n?'Saison '+n:'Spéciaux'}</button>`).join('')}</div>
 <div class="act"><button data-act="sw" data-id="${sh.id}" ${sh.eps.filter(e=>e.s==view.s).every(e=>e.w||!past(sh,e))?'disabled':''}>Marquer la saison vue</button></div>
 ${sh.eps.filter(e=>e.s==view.s).map(e=>ep(sh,e)).join('')}`}</div>`}
-const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div id="res"></div></div>`;
-async function find(){const q=$('#aq').value.trim();if(!q)return;if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
+const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div class="scn"><button type="button" data-act="scan">📷 Code-barres</button><label class="scb">🖼️ Photo couverture<input type="file" accept="image/*" id="phi" hidden></label></div><p class="mu sch">${MODE()=='b'||MODE()=='c'?'Tu peux aussi taper un ISBN.':'Tu peux aussi taper le code-barres du DVD ou Blu-ray.'}</p><div id="res"></div></div>`;
+/* Ajout par code-barres, ISBN ou photo de couverture */
+const ZXU='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',TSU='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',ldS={};
+function loadJs(u){return ldS[u]||(ldS[u]=new Promise((ok,ko)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>{delete ldS[u];ko(Error('Chargement impossible'))};document.head.appendChild(e)}))}
+const BCF=['ean_13','ean_8','upc_a','upc_e'];
+async function bcDet(){if('BarcodeDetector'in window){try{const f=await BarcodeDetector.getSupportedFormats();const ok=BCF.filter(x=>f.includes(x));if(ok.length)return new BarcodeDetector({formats:ok})}catch(e){}}return null}
+async function zxR(){await loadJs(ZXU);const Z=window.ZXing,B=Z.BarcodeFormat,h=new Map([[Z.DecodeHintType.POSSIBLE_FORMATS,[B.EAN_13,B.EAN_8,B.UPC_A,B.UPC_E]],[Z.DecodeHintType.TRY_HARDER,true]]);return new Z.BrowserMultiFormatReader(h)}
+function isbn13(d){const b='978'+d.slice(0,9);let t=0;for(let i=0;i<12;i++)t+=+b[i]*(i%2?3:1);return b+(10-t%10)%10}
+function codeOf(q){const d=String(q||'').replace(/[\s.-]/g,'').toUpperCase();if(/^\d{9}[\dX]$/.test(d))return isbn13(d);if(/^(\d{8}|\d{12,13})$/.test(d))return d.length==12?'0'+d:d;return''}
+const isISBN=c=>/^97[89]\d{10}$/.test(c);
+const cleanT=t=>String(t||'').replace(/\[[^\]]*\]|\([^)]*\)/g,' ').replace(/\b(dvd|blu-?ray|4k|ultra hd|uhd|édition|edition|collector|coffret|steelbook|saison|season|intégrale|integrale|vf|vost|import|zone \d)\b.*$/i,' ').replace(/[\s\-–:|,]+$/,'').replace(/\s+/g,' ').trim();
+async function upcTitle(c){const T=[async()=>{const r=await fetch('https://api.upcitemdb.com/prod/trial/lookup?upc='+c);return r.ok?(((await r.json()).items||[])[0]||{}).title:''},
+ async()=>{const r=await fetch('https://world.openproductsfacts.org/api/v2/product/'+c+'.json?fields=product_name');return r.ok?((await r.json()).product||{}).product_name:''}];
+ for(const f of T){try{const t=cleanT(await f());if(t)return t}catch(e){}}return''}
+async function bkIsbn(c){const F='&fields=key,title,author_name,first_publish_year,cover_i,subject,publisher,number_of_pages_median,isbn';
+ const R=await Promise.allSettled([fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:'+c).then(r=>r.ok?r.json():Promise.reject(Error('GB '+r.status))).then(j=>(j.items||[]).map(gbDoc)),
+  fetch(OLU+'/search.json?isbn='+c+F).then(r=>r.ok?r.json():Promise.reject(Error('OL '+r.status))).then(j=>(j.docs||[]).map(olDoc))]);
+ const L=[],seen=new Set();let err;for(const x of R){if(x.status=='rejected'){err=err||x.reason;continue}for(const d of x.value){const k=norm(d.t)+'|'+norm((d.au||[])[0]||'');if(!d.t||seen.has(k))continue;seen.add(k);d.isbn=c;if(!d.po)d.po='https://covers.openlibrary.org/b/isbn/'+c+'-M.jpg';L.push(d)}}
+ if(!L.length&&err)throw err;L.forEach(d=>BKRES[d.gid]=d);return L}
+async function findCode(c){const bk=MODE()=='b'||MODE()=='c',R=$('#res'),msg=t=>{R.innerHTML='<p class="mu">'+t+'</p>';i18n()};
+ if(isISBN(c)){if(!bk)return msg('C’est le code d’un livre. Passe dans « Mes livres » ou « Mes BDs » pour l’ajouter.');
+  R.textContent='Recherche…';try{const L=await bkIsbn(c);if(L.length)return showB(L);msg('Aucun livre trouvé pour l’ISBN '+esc(c)+'. Essaie avec le titre.')}catch(e){R.innerHTML='Connexion impossible.<small>'+esc(e.message)+'</small>'}return}
+ if(bk)return msg('Ce code-barres n’est pas un ISBN. Essaie la photo de la couverture ou le titre.');
+ R.textContent='Recherche…';const t=await upcTitle(c);if(!t)return msg('Code-barres '+esc(c)+' inconnu. Essaie la photo de la couverture ou tape le titre.');
+ $('#aq').value=t;find()}
+let scn=null;
+function stopScan(){const me=scn;scn=null;if(me){me.on=0;clearTimeout(me.t);if(me.zx)try{me.zx.reset()}catch(e){}const v=$('#scan video'),st=me.st||(v&&v.srcObject);if(st)st.getTracks().forEach(t=>t.stop())}const o=$('#scan');o.hidden=true;o.innerHTML=''}
+async function startScan(){if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia))return toast('Caméra non disponible sur cet appareil');
+ const o=$('#scan');o.innerHTML='<video playsinline muted autoplay></video><div class="sfr"></div><p>Vise le code-barres</p><button class="scx" data-act="scanx" aria-label="Fermer">✕</button>';o.hidden=false;i18n();
+ const v=o.querySelector('video'),me={on:1};scn=me;
+ const done=c=>{if(!me.on)return;stopScan();if(navigator.vibrate)navigator.vibrate(60);const q=$('#aq');if(q)q.value=c;findCode(codeOf(c)||c)};
+ try{const det=await bcDet();
+  if(det){me.st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});if(!me.on){me.st.getTracks().forEach(t=>t.stop());return}v.srcObject=me.st;await v.play();
+   const loop=async()=>{if(!me.on)return;try{if(v.readyState>=2){const r=await det.detect(v);if(r.length)return done(r[0].rawValue)}}catch(e){}me.t=setTimeout(loop,150)};loop()}
+  else{const r=await zxR();if(!me.on)return;me.zx=r;await r.decodeFromConstraints({video:{facingMode:'environment'},audio:false},v,res=>{if(res)done(res.getText())})}}
+ catch(e){if(!me.on)return;stopScan();toast(e&&e.name=='NotAllowedError'?'Accès à la caméra refusé':'Caméra non disponible',4000)}}
+async function ocrTitle(url){await loadJs(TSU);const w=await Tesseract.createWorker(['fra','eng']);
+ try{const{data}=await w.recognize(url,{},{text:true,blocks:true}),L=[];
+  for(const b of data.blocks||[])for(const pg of b.paragraphs||[])for(const l of pg.lines||[]){const t=l.text.replace(/[^\p{L}\p{N}'’&:!?,. -]/gu,' ').replace(/\s+/g,' ').trim();if(t.replace(/[^\p{L}]/gu,'').length>=3&&l.confidence>=50)L.push({t,h:l.bbox.y1-l.bbox.y0,y:l.bbox.y0})}
+  if(!L.length)return'';const m=Math.max(...L.map(x=>x.h));return L.filter(x=>x.h>=m*.7).sort((a,b)=>a.y-b.y).slice(0,3).map(x=>x.t).join(' ').slice(0,80)}finally{w.terminate()}}
+async function fromPhoto(f){if(!f)return;const url=URL.createObjectURL(f);
+ try{toast('Lecture de la photo…',8000);let c='';
+  try{const det=await bcDet();if(det){const r=await det.detect(await createImageBitmap(f));if(r.length)c=r[0].rawValue}}catch(e){}
+  if(!c)try{c=(await(await zxR()).decodeFromImageUrl(url)).getText()}catch(e){}
+  if(c){$('#aq').value=c;toast('Code-barres trouvé');return findCode(codeOf(c)||c)}
+  toast('Lecture du titre…',15000);const t=await ocrTitle(url);if(!t)return toast('Aucun titre lisible sur la photo. Essaie plus près, bien éclairé.',4500);
+  $('#aq').value=t;toast('Titre lu sur la photo : corrige-le si besoin',4000);find()}
+ catch(e){toast('Lecture de la photo impossible',4000)}finally{setTimeout(()=>URL.revokeObjectURL(url),1000)}}
+document.addEventListener('change',ev=>{if(ev.target.id=='phi'){const f=ev.target.files&&ev.target.files[0];ev.target.value='';fromPhoto(f)}});
+async function find(){const q=$('#aq').value.trim();if(!q)return;const c=codeOf(q);if(c)return findCode(c);if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,mod:Date.now(),eps:[]};toast('Ajout…');
  try{await syncShow(sh);logEv(sh,'Série ajoutée');view.add=0;view.open=id;view.s=null;view.f='all';toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
@@ -951,6 +1006,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='upd8')return toast("Aucune vérification en ligne pour l'instant");
  else if(a=='rate'){sh.rate=sh.rate==+d.n?0:+d.n}
  else if(a=='grp'){if(d.v=='bk'){S.ma=MODE();setMode(S.mb||'b')}else{S.mb=MODE();setMode(S.ma||'s')}top=1}
+ else if(a=='scan')return startScan();
+ else if(a=='scanx')return stopScan();
  else if(a=='person'||a=='author'){if(!view.pp){const L=[],seen=new Set();let i=0;document.querySelectorAll('#app [data-act=person],#app [data-act=author]').forEach(x=>{const q=x.dataset,k=(q.act=='author'?'a':q.pid||'')+'|'+q.pn;if(seen.has(k))return;seen.add(k);if(x==el)i=L.length;L.push({au:q.act=='author',pid:q.pid?+q.pid:0,pn:q.pn,src:q.src})});if(!seen.has((a=='author'?'a':d.pid||'')+'|'+d.pn))L.splice(i=0,L.length,{au:a=='author',pid:d.pid?+d.pid:0,pn:d.pn,src:d.src});view.ppl=L;view.ppi=i}
   return a=='author'?openAuthor(d.pn):openPerson(d.pid?+d.pid:0,d.pn,d.src)}
  else if(a=='pp'){view.ppt=view.ppt||{};view.ppt[d.t]=!view.ppt[d.t]}
