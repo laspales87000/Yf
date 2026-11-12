@@ -4,6 +4,9 @@
 - L'application est un seul fichier : `index.html` (suivi de séries, films, livres et BDs).
 - Elle est publiée avec GitHub Pages : https://laspales87000.github.io/Yf/
 - `yf.html` sert seulement à rediriger l'ancien lien vers `index.html`. Ne pas y mettre l'application.
+- `vendor/` contient des outils tiers rangés dans le dépôt pour la sécurité (lecture de texte Tesseract).
+  Les outils chargés depuis Internet ont une empreinte de contrôle (SRI) dans `index.html` : si on change
+  leur version, il faut recalculer l'empreinte.
 
 ## Façon de travailler
 - Répondre en français, simplement, sans jargon technique.

@@ -947,8 +947,10 @@ ${tagBlock(sh)}${tabsHtml(tab,[['ep','Épisodes'],['cast','Distribution'],['rate
 ${sh.eps.filter(e=>e.s==view.s).map(e=>ep(sh,e)).join('')}`}</div>`}
 const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div class="scn"><label class="scb sbig"><span class="sic">📷</span><span>ISBN, code-barres, couverture</span><input type="file" accept="image/*" capture="environment" id="phi" hidden></label><label class="scb sbig"><span class="sic">🖼️</span><span>Choisir une photo existante</span><input type="file" accept="image/*" id="phg" hidden></label></div><p class="mu sch">${MODE()=='b'||MODE()=='c'?'Tu peux aussi taper un ISBN.':'Tu peux aussi taper le code-barres du DVD ou Blu-ray.'}</p><div id="res"></div></div>`;
 /* Ajout par code-barres, ISBN ou photo de couverture */
-const ZXU='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',TSU='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',ldS={};
-function loadJs(u){return ldS[u]||(ldS[u]=new Promise((ok,ko)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>{delete ldS[u];ko(Error('Chargement impossible'))};document.head.appendChild(e)}))}
+/* Outils extérieurs vérifiés par empreinte (SRI) : le navigateur refuse tout fichier modifié */
+const ZXU='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',TSU='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',ldS={},
+ SRI={[ZXU]:'sha384-BzBxP10ZE72aitqj5UMmUsbKFliP/DZqA8Wq+BNNhlIJDGoEd1tpkMYXOg9+n6sB',[TSU]:'sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F'};
+function loadJs(u){return ldS[u]||(ldS[u]=new Promise((ok,ko)=>{const e=document.createElement('script');if(SRI[u]){e.integrity=SRI[u];e.crossOrigin='anonymous'}e.src=u;e.onload=ok;e.onerror=()=>{delete ldS[u];ko(Error('Chargement impossible'))};document.head.appendChild(e)}))}
 const BCF=['ean_13','ean_8','upc_a','upc_e'];
 async function bcDet(){if('BarcodeDetector'in window){try{const f=await BarcodeDetector.getSupportedFormats();const ok=BCF.filter(x=>f.includes(x));if(ok.length)return new BarcodeDetector({formats:ok})}catch(e){}}return null}
 async function zxR(){await loadJs(ZXU);const Z=window.ZXing,B=Z.BarcodeFormat,h=new Map([[Z.DecodeHintType.POSSIBLE_FORMATS,[B.EAN_13,B.EAN_8,B.UPC_A,B.UPC_E]],[Z.DecodeHintType.TRY_HARDER,true]]);return new Z.BrowserMultiFormatReader(h)}
@@ -986,7 +988,7 @@ const ok13=c=>/^\d{13}$/.test(c)&&[...c].reduce((t,d,i)=>t+ +d*(i%2?3:1),0)%10==
 function isbnIn(txt){const T=String(txt||'').replace(/[Oo](?=[\d\s-]*\d)/g,'0').replace(/[Il|](?=[\d\s-]*\d)/g,'1');
  const R=/(ISBN[^\dX]{0,8})?((?:\d[\s‐-]?){9,12}[\dXx])/gi;let m;
  while(m=R.exec(T)){const d=m[2].replace(/[^\dXx]/g,'').toUpperCase();if(d.length==13&&/^97[89]/.test(d)&&ok13(d))return d;if(d.length==10&&ok10(d)&&(m[1]||/ISBN/i.test(T)))return isbn13(d)}return''}
-async function ocrTitle(url){await loadJs(TSU);const w=await Tesseract.createWorker(['fra','eng']);
+async function ocrTitle(url){await loadJs(TSU);const w=await Tesseract.createWorker(['fra','eng'],1,{workerPath:new URL('vendor/tesseract/worker.min.js',location.href).href,corePath:new URL('vendor/tesseract-core/',location.href).href,workerBlobURL:false});
  try{const{data}=await w.recognize(url,{},{text:true,blocks:true}),L=[],ib=isbnIn(data.text);if(ib)return{isbn:ib};
   for(const b of data.blocks||[])for(const pg of b.paragraphs||[])for(const l of pg.lines||[]){const t=l.text.replace(/[^\p{L}\p{N}'’&:!?,. -]/gu,' ').replace(/\s+/g,' ').trim();if(t.replace(/[^\p{L}]/gu,'').length>=3&&l.confidence>=50)L.push({t,h:l.bbox.y1-l.bbox.y0,y:l.bbox.y0})}
   if(!L.length)return{};const m=Math.max(...L.map(x=>x.h));return{t:L.filter(x=>x.h>=m*.7).sort((a,b)=>a.y-b.y).slice(0,3).map(x=>x.t).join(' ').slice(0,80)}}finally{w.terminate()}}
