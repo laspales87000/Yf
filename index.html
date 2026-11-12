@@ -59,7 +59,7 @@ button.ai{background:none;padding:0;width:34px;height:34px;left:6px;top:6px;disp
 .fvb{min-width:40px;height:36px}
 .lg{font-size:9px;line-height:1.05;margin-top:-1px;color:var(--mu);text-align:center;max-width:46px;word-break:break-word}
 body[data-leg=none] .lg,body[data-leg=none] #flb small,body[data-leg=list] .lg{display:none}
-.tabs.stk{position:sticky;top:56px;z-index:4;background:var(--bg);padding-bottom:6px!important}
+.tabs.stk,.tgw.stk{position:sticky;top:56px;z-index:4;background:var(--bg);padding-bottom:6px!important}.tgw{display:flex;align-items:center;gap:6px;padding:8px 8px 0}.tgw .tabs{flex:1;min-width:0;padding:0}.serb{flex:none;width:44px;height:38px;border-radius:99px;background:var(--s2);font-size:20px;padding:0;display:grid;place-items:center}
 .ep.ex{cursor:pointer}.ep.ex .t>span:after{content:""}
 #menu,#menu *,.tc,.card,.sw,.tabs button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #flb{width:auto;min-width:30px;max-width:46px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -246,7 +246,7 @@ async function update(){
  const age=Date.now()-(S.sync||0);let ch=null;
  try{if(S.sync&&age<2.6e9)ch=await api('/updates/shows?since='+(age<864e5?'day':age<6048e5?'week':'month'))}catch(e){}
  const need=s=>s.src=='tmdb'?(!s.upd||Date.now()-s.upd>864e5):!s.nf&&(!s.tm||!s.upd||s.v!=6||(Date.now()-s.upd>36e5&&(ch?s.status!='Ended'||ch[s.tm]*1000>s.upd:1)));
- const needM=m=>!m.upd||m.v!=1||m.lang!==LANG()||(m.date>today()&&Date.now()-m.upd>2592e5)||Date.now()-m.upd>5184e6,L=[...Object.values(MV()).filter(needM),...Object.values(BK()).filter(b=>!b.upd),...Object.values(S.shows).filter(need)];let i=0,n=0,fail=0;
+ const needM=m=>!m.upd||m.v!=2||m.lang!==LANG()||(m.date>today()&&Date.now()-m.upd>2592e5)||Date.now()-m.upd>5184e6,L=[...Object.values(MV()).filter(needM),...Object.values(BK()).filter(b=>!b.upd),...Object.values(S.shows).filter(need)];let i=0,n=0,fail=0;
  for(const sh of L){if(stop)break;$('#prog').textContent=++i+'/'+L.length;
   try{if(sh.kind=='m')await fetchMovie(sh,0);else if(sh.kind=='b')await fetchBook(sh,0);else n+=await(sh.src=='tmdb'?syncTmdbTv(sh):syncShow(sh))}catch(e){if(++fail>2)break}
   save();if(i%10==0&&!view.open&&!view.add&&document.activeElement.id!='q')render();await sleep(sh.kind=='m'||sh.kind=='b'?250:520)}
@@ -263,8 +263,8 @@ const FILT=[['cours','En cours'],['fav','Séries favorites ♥'],['eps','Épisod
 const FILTM=[['tosee','À voir'],['fav','Films favoris ♥'],['all','Tous les films'],['noanim','Tous sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
-function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','serpick'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','serpick'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
+function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','serpick','serlist'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','serpick','serlist'].includes(view.menu)?' w':'');
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -842,7 +842,7 @@ function matchIt(it,nq,qt){if(norm(nm(it)+' '+(it.orig||'')+' '+(it.alt||[]).joi
 function matchP(it,qt){return(it.ppl||[]).some(p=>{const t=p.k||(p.k=norm(p.n).split(' '));return qt.every(w=>t.some(x=>x.startsWith(w)))})}
 async function tmdb(path,extra=''){for(let i=0;i<3;i++){const r=await fetch('https://api.themoviedb.org/3'+path+(path.includes('?')?'&':'?')+'api_key='+TK+'&language='+TLG[LANG()]+extra);
  if(r.status==429){await sleep(1500);continue}if(r.status==404)return null;if(!r.ok)throw Error(r.status);return r.json()}throw Error('429')}
-function applyMovie(m,x,first){m.name=x.title||x.original_title||m.name;m.orig=x.original_title;m.po=x.poster_path;m.bk=x.backdrop_path;m.date=x.release_date||'';m.run=x.runtime||0;m.ov=x.overview||m.ov||'';
+function applyMovie(m,x,first){const bc=x.belongs_to_collection;m.col=bc&&bc.id?{id:bc.id,n:String(bc.name||'').replace(/\s*[-–]\s*(Saga|Collection)$/i,'').replace(/^(Saga|Collection)\s+/i,'').trim()||String(bc.name||'')}:null;m.name=x.title||x.original_title||m.name;m.orig=x.original_title;m.po=x.poster_path;m.bk=x.backdrop_path;m.date=x.release_date||'';m.run=x.runtime||0;m.ov=x.overview||m.ov||'';
  m.gen=(x.genres||[]).map(g=>g.id);m.gn=(x.genres||[]).map(g=>g.name);
  const kw=(((x.keywords||{}).keywords)||[]).map(k=>k.name.toLowerCase());m.erot=!!(x.adult||kw.some(k=>/erotic|softcore|sexploitation/.test(k)));
  const cr=x.credits||{};
@@ -850,7 +850,7 @@ function applyMovie(m,x,first){m.name=x.title||x.original_title||m.name;m.orig=x
  const seen=new Set(),rel=[];for(const r of[...(m.cp||[]),...((x.recommendations||{}).results||[]),...((x.similar||{}).results||[])]){if(r.id==x.id||seen.has(r.id))continue;seen.add(r.id);rel.push({id:r.id,t:r.title,po:r.poster_path,d:r.release_date||''})}
  m.rel=rel.slice(0,36);
  if(first){const t=new Set(m.tags||[]);(m.gen||[]).forEach(g=>TG[g]&&t.add('g:'+TG[g]));if(m.erot)t.add('g:erotic');m.tags=[...t]}
- m.lang=LANG();m.upd=Date.now();m.v=1}
+ m.lang=LANG();m.upd=Date.now();m.v=2}
 async function fetchMovie(m,first){const x=await tmdb('/movie/'+m.tmdb,'&append_to_response=credits,recommendations,similar,keywords');if(!x)return 0;
  m.cp=[];if(x.belongs_to_collection){try{const c=await tmdb('/collection/'+x.belongs_to_collection.id);m.cp=((c&&c.parts)||[]).sort((a,b)=>(a.release_date||'').localeCompare(b.release_date||'')).map(p=>({id:p.id,title:p.title,poster_path:p.poster_path,release_date:p.release_date}))}catch(e){}}
  applyMovie(m,x,first);return 1}
@@ -941,13 +941,27 @@ function nearSer(n){const k=norm(n);let best=null,bd=9;for(const x of allSeries(
 function allSeries(){const M={};for(const b of Object.values(BK())){const o=serOf0(b);if(!o)continue;const k=norm(o.s);(M[k]=M[k]||{k,s:o.s,c:0,au:new Set()}).c++;for(const p of b.ppl||[])M[k].au.add(norm(p.n))}return Object.values(M).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
 const serOf0=b=>b.ser&&b.ser.s?{s:b.ser.s,n:+b.ser.n||0}:b.ser&&b.ser.s===''?null:(()=>{const t=String(b.name||'');const m=t.match(/^(.{2,}?)[\s,.:;(–-]+(?:tome|t|vol(?:ume)?|n°|no|#)\.?\s*0*(\d{1,3})\b/i)||t.match(/^(.{2,}?)\s[-–]\s0*(\d{1,3})\s[-–]\s/);if(!m)return null;const n=m[1].replace(/[\s,.:;(–-]+$/,'').trim();return n.length>=2&&!/^\d+$/.test(n)?{s:n,n:+m[2]}:null})();
 const guessN=b=>{const m=String(b.name||'').match(/\b0*(\d{1,3})\b/);return m?+m[1]:''};
+function serListHtml(){const md=MODE();
+ if(md=='m'){const M={};for(const m of Object.values(MV()))if(m.col&&m.col.id)M[m.col.id]=m.col.n;const L=Object.entries(M).sort((a,b)=>a[1].localeCompare(b[1],'fr'));
+  return`<div class="cp"><b>🎞 Sagas</b></div>`+(L.length?L.map(([id,n])=>`<button data-act="ser" data-s="${esc(n)}" data-cid="${esc(id)}">${esc(n)}</button>`).join(''):'<div class="cp"><p>Aucune saga dans tes films pour l’instant. Elles apparaissent quand tu as un film qui fait partie d’une saga (Star Wars, James Bond…).</p></div>')}
+ const bd=md=='c',M={};for(const b of Object.values(BK())){if(!!b.bd!=bd)continue;const o=serOf(b);if(o){const k=norm(o.s);M[k]=M[k]||o.s}}const L=Object.values(M).sort((a,b)=>a.localeCompare(b,'fr'));
+ return`<div class="cp"><b>📚 ${bd?'Séries de BD':'Séries de livres'}</b></div>`+(L.length?L.map(n=>`<button data-act="ser" data-s="${esc(n)}" data-bd="${bd?1:0}">${esc(n)}</button>`).join(''):'<div class="cp"><p>Aucune série pour l’instant. Ouvre un livre et touche « ✏️ Indiquer une série ».</p></div>')}
 function serPickHtml(){const b=IT(view.spid);if(!b)return'';const cur=serOf(b),t=norm(nm(b)),A=new Set((b.ppl||[]).map(p=>norm(p.n))),L=allSeries();
  const sug=L.filter(x=>t.startsWith(x.k)||[...x.au].some(a=>A.has(a))),rest=L.filter(x=>!sug.includes(x)),btn=x=>`<button data-act="serchoose" data-s="${esc(x.s)}">📚 ${esc(x.s)} <span class="mu">(${x.c})</span>${cur&&norm(cur.s)==x.k?' ✓':''}</button>`;
  return`<div class="cp"><b>Série de « ${esc(nm(b))} »</b></div>${sug.length?`<div class="cp"><p style="font-size:12px">Suggestions</p></div>${sug.map(btn).join('')}`:''}${rest.length?`<div class="cp"><p style="font-size:12px">Tes séries</p></div>${rest.map(btn).join('')}`:''}<button data-act="serchoose" data-new="1">➕ Nouvelle série…</button><button data-act="serchoose" data-none="1">🚫 Aucune série</button>`}
 const SERC={};
 async function serLoad(name,bd){const k=norm(name);if(SERC[k])return SERC[k];let L=[];try{L=await bkSearch(name,!!bd)}catch(e){}
  const out=[];for(const d of L){const o=serOf(d);if(o&&norm(o.s)==k)out.push({d,n:o.n})}return SERC[k]=out}
-function serHtml(){const V=view.ser,k=norm(V.s),own=Object.values(BK()).map(b=>({b,n:(serOf(b)||{}).n||0,o:serOf(b)})).filter(x=>x.o&&norm(x.o.s)==k);
+const SAGC={};
+async function sagaLoad(id){if(SAGC[id])return SAGC[id];const x=await tmdb('/collection/'+id).catch(()=>null);return SAGC[id]=((x&&x.parts)||[]).map(p=>({id:p.id,t:p.title||p.original_title||'',po:p.poster_path,d:p.release_date||''})).sort((a,b)=>(a.d||'9999').localeCompare(b.d||'9999'))}
+function sagaHtml(){const V=view.ser,P=SAGC[V.cid];if(!P)sagaLoad(V.cid).then(()=>{if(view.ser&&view.ser.cid==V.cid)render()});
+ const own=Object.values(MV()).filter(m=>m.col&&m.col.id==V.cid),L=(P||[]).map(x=>({x,m:MV()['m'+x.id]}));for(const m of own)if(!L.some(y=>y.m===m))L.push({x:{id:m.tmdb,t:nm(m),po:m.po,d:m.date},m});
+ const seen=own.filter(m=>m.seen).length;
+ return`<div class="det"><button data-act="back">← Retour</button><h2 style="margin:12px 0 4px">🎞 ${esc(V.s)}</h2>
+<p class="mu">${own.length} film${own.length>1?'s':''} dans ta liste · ${seen} vu${seen>1?'s':''}${P?` · ${P.length} films dans la saga`:''}</p>
+<p class="mu" style="font-size:12px">Couleurs vives : vu. Couleurs pâles : à voir ou pas encore dans ta liste. Touche une affiche pour changer : un film absent est ajouté comme vu.${P?'':' Chargement de la saga…'}</p>
+<div class="sgrid">${L.map(({x,m})=>{const st=m?(m.seen?'on':'own'):'none';return`<button class="stile ${st}" data-act="sagtap" ${m?`data-id="${esc(m.id)}"`:`data-tm="${esc(String(x.id))}"`} aria-label="${esc(x.t)}">${x.po?`<img loading="lazy" src="${esc(TI(x.po,'w185'))}" alt="">`:`<span class="sph">${esc(x.t)}</span>`}${st=='on'?'<i class="sok">✓</i>':''}<small>${esc(yr(x.d)||x.t)}</small></button>`}).join('')}</div></div>`}
+function serHtml(){if(view.ser.kind=='m')return sagaHtml();const V=view.ser,k=norm(V.s),own=Object.values(BK()).map(b=>({b,n:(serOf(b)||{}).n||0,o:serOf(b)})).filter(x=>x.o&&norm(x.o.s)==k);
  const F=SERC[k];if(!F)serLoad(V.s,V.bd).then(()=>{if(view.ser&&norm(view.ser.s)==k)render()});
  const have=new Set(own.map(x=>x.n).filter(Boolean)),gids=new Set(own.map(x=>x.b.gid)),T=own.map(x=>({b:x.b,n:x.n})),seenN=new Set(have);
  for(const f0 of F||[]){const fx=(S.serFix||{})[f0.d.gid],f=fx!=null?{d:f0.d,n:fx}:f0;if(f.n<0||gids.has(f.d.gid)||(f.n&&seenN.has(f.n)))continue;if(f.n)seenN.add(f.n);T.push({d:f.d,n:f.n})}
@@ -1074,7 +1088,9 @@ function list(){
   return(body||'<p class="mu pad">Rien ici.</p>')+FOOT}
  if(md=='s'&&f=='eps'){const r=[];for(const sh of ALL.s)for(const e of sh.eps)if(e.f)r.push(ep(sh,e,1));return`<div class="det">${r.join('')||'<p class="mu">Aucun épisode favori. Touche ♥ sur un épisode.</p>'}</div>`}
  const T=allTags();if(view.tag&&!T.includes(view.tag))view.tag='';
- const tb=T.length?`<div class="tabs ${view.tag?'stk':''}" id="tgr" style="padding:8px 8px 0">${T.map(t=>`<button class="${view.tag==t?'on':(view.tag?'mini':'')}" data-act="tagf" data-tag="${esc(t)}">${esc(tn(t))}</button>`).join('')}${view.tag?`<button class="chip" data-act="tagdel" style="background:#e53935;color:#fff;white-space:nowrap">🗑 Supprimer « ${esc(tn(view.tag))} »</button>`:''}</div>`:'';
+ const sb=md=='s'?'':`<button class="serb" data-act="menu" data-m="serlist" aria-label="${md=='m'?'Sagas':'Séries'}" title="${md=='m'?'Sagas':'Séries'}">${md=='m'?'🎞':'📚'}</button>`;
+ const tb0=T.length?`<div class="tabs" id="tgr">${T.map(t=>`<button class="${view.tag==t?'on':(view.tag?'mini':'')}" data-act="tagf" data-tag="${esc(t)}">${esc(tn(t))}</button>`).join('')}${view.tag?`<button class="chip" data-act="tagdel" style="background:#e53935;color:#fff;white-space:nowrap">🗑 Supprimer « ${esc(tn(view.tag))} »</button>`:''}</div>`:'';
+ const tb=sb||tb0?`<div class="tgw ${view.tag?'stk':''}">${sb}${tb0}</div>`:'';
  const L=all.filter(it=>{if(view.tag)return(it.tags||[]).includes(view.tag);const s=md=='s'?st(it):null;return({cours:!it.arch,loan:!!it.loan,fav:!!it.fav,anim:isAnim(it),noanim:!isAnim(it),all:true,arch:!!it.arch,tosee:!it.seen&&!it.arch,toread:!it.seen&&!it.arch})[f]}).sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||(f=='cours'?noInfo(a)-noInfo(b):0)||sk(a).localeCompare(sk(b),'fr'));
  view.ids=L.map(x=>x.id);
  return tb+(view.grid?`<div class="grid">${L.map(it=>it.kind=='s'||!it.kind?card(it,st(it)):mposter(it)).join('')}</div>`:`<div class="list">${L.map(cardOf).join('')}</div>`)+(L.length?'':`<p class="mu pad">${md!='s'&&!all.length?({m:"Aucun film pour l'instant.",b:"Aucun livre pour l'instant.",c:"Aucune BD pour l'instant."})[md]:'Rien ici.'}</p>`)+FOOT}
@@ -1170,7 +1186,7 @@ async function findTitle(q){if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE(
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,mod:Date.now(),eps:[]};toast('Ajout…');
  try{await syncShow(sh);logEv(sh,'Série ajoutée');view.add=0;view.open=id;view.s=null;view.f='all';toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
-function render(top){applyUI();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
+function render(top){applyUI();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp||view.ser);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
  const hs=['st','tgr','tb','tgb'].map(id=>{const e=$('#'+id);return[id,e,e?e.scrollLeft:0]});
  if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq').value}const kR=view.add&&!view.pp?view.resK:null,kQ=view.aqK||'';
  $('#app').innerHTML=view.pp?personHtml(view.pp):view.ser?serHtml():view.add?addView():view.open&&IT(view.open)?detail(IT(view.open)):list();
@@ -1227,7 +1243,9 @@ document.addEventListener('click',async ev=>{
  else if(a=='cpick')return cConnect(d.p);
  else if(a=='bk2c'){if(d.p!='gh')return cConnect(d.p,'bk2');const t=prompt('Colle un jeton GitHub (jeton classique avec le droit « gist ») pour la copie de secours de la sauvegarde.');if(!t||!t.trim())return;S.bk2={p:'gh',t:t.trim(),g:''};save();return bk2Now()}
  else if(a=='bk2now')return bk2Now();
- else if(a=='ser'){view.fy=scrollY;view.ser={s:d.s,bd:+d.bd||0};top=1}
+ else if(a=='sagtap'){if(d.id){const m=MV()[d.id];if(!m)return;m.seen=m.seen?0:1;m.mod=Date.now();logEv(m,m.seen?'Vu':'Pas encore vu');save();schedSync();render();return}
+  if(d.tm){const tm=d.tm;await addMq(tm);const m=MV()['m'+tm];if(m){m.seen=1;m.mod=Date.now();save();schedSync();render()}return}}
+ else if(a=='ser'){view.fy=scrollY;view.ser=d.cid?{s:d.s,cid:+d.cid,kind:'m'}:{s:d.s,bd:+d.bd||0};top=1}
  else if(a=='sertap'){if(d.id){const b=BK()[d.id];if(!b)return;b.seen=b.seen?0:1;b.mod=Date.now();logEv(b,b.seen?'Lu':'Pas encore lu');save();schedSync();render();return}
   if(d.gid){const gid=d.gid;await addBook(gid,view.ser&&view.ser.bd?1:0,1);const b=BK()['b'+gid];if(b){b.seen=1;b.mod=Date.now();save();schedSync();render()}return}}
  else if(a=='serset'){view.spid=d.id;view.menu='serpick';renderMenu();return}
@@ -1301,7 +1319,7 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
  fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
 let lp=0,lpT,px=0,py=0;
 /* Page de série : appui long sur une couverture pour changer son numéro */
-let stT=0;document.addEventListener('pointerdown',ev=>{const t=ev.target.closest('.stile');if(!t||!view.ser)return;clearTimeout(stT);const x0=ev.clientX,y0=ev.clientY;
+let stT=0;document.addEventListener('pointerdown',ev=>{const t=ev.target.closest('.stile');if(!t||!view.ser||view.ser.kind=='m')return;clearTimeout(stT);const x0=ev.clientX,y0=ev.clientY;
  const mv=e=>{if(Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)end()},end=()=>{clearTimeout(stT);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',end);document.removeEventListener('pointercancel',end)};
  document.addEventListener('pointermove',mv);document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
  stT=setTimeout(()=>{end();lp=1;if(navigator.vibrate)navigator.vibrate(40);setTimeout(()=>{serRenum(t.dataset);setTimeout(()=>lp=0,600)},0)},600)});
