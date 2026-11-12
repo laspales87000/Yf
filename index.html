@@ -193,11 +193,12 @@ body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{w
 .sinf{position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fffe;color:#333;font:italic 700 14px/24px Georgia,serif;text-align:center;box-shadow:0 1px 3px #0007;pointer-events:auto}
 #menu .sdim{color:var(--mu);opacity:.55}.sfav{color:#e91e63}#menu [data-act=ser]{touch-action:pan-y}.srs{display:flex;flex-direction:column;gap:6px;padding:0 8px 6px;align-items:flex-start}
 header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd .cat,#hd.sq .cat{height:34px;padding:0}#hd.sq .cat .cl{display:none}#hd.sq .cat svg{width:22px;height:22px}#hd.sq #q{margin:0 2px}
+#qx{display:none;flex:none;width:34px;height:34px;margin-left:-40px;border-radius:50%;background:none;color:var(--on);font-size:18px;padding:0;place-items:center}#hd.sq #q:placeholder-shown+#qx{display:grid}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
 <h1 class="cas"><button class="cat" data-act="mode" data-v="s" aria-label="Mes séries"><svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg><small class="cl">Séries</small></button><button class="cat" data-act="mode" data-v="m" aria-label="Mes films"><svg viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg><small class="cl">Films</small></button><button class="cat" data-act="mode" data-v="b" aria-label="Mes livres"><svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg><small class="cl">Livres</small></button><button class="cat" data-act="mode" data-v="c" aria-label="Mes bds"><svg viewBox="0 0 24 24"><path d="M12 3C6.48 3 2 6.58 2 11c0 2.42 1.34 4.59 3.46 6.06L4.5 21l4.37-2.24c1 .26 2.05.4 3.13.4 5.52 0 10-3.58 10-8S17.52 3 12 3z"/></svg><small class="cl">BDs</small></button></h1><div id="clw"><button id="cl" data-act="menu" data-m="cloud"></button><small id="prog"></small></div>
-<input id="q" type="search" placeholder="Rechercher" aria-label="Rechercher">
+<input id="q" type="search" placeholder="Rechercher" aria-label="Rechercher"><button id="qx" data-act="qx" aria-label="Fermer la recherche">✕</button>
 <button id="selb" data-act="selarch" hidden></button>
 <button data-act="sq" aria-label="Rechercher"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
 <button data-act="grid" aria-label="Changer l'affichage"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></button>
@@ -1257,6 +1258,7 @@ document.addEventListener('click',async ev=>{
  if(view.sel&&(a=='open'||a=='seen'||a=='fav'||a=='pin')){skipLog=1;view.sel[d.id]?delete view.sel[d.id]:view.sel[d.id]=1;if(!Object.keys(view.sel).length)view.sel=null}
  else if(a=='open'){view.ly=scrollY;view.pp=null;view.open=d.id;view.s=null;view.tab=null;top=1}
  else if(a=='back'){goBack();return;if(view.pp){view.pp=null;top=view.open?3:2}else{view.open=null;view.add=0;top=2}}
+ else if(a=='qx'){clearQ();top=1}
  else if(a=='mode'){const sq=$('#hd').classList.contains('sq'),q=view.q;if(d.v!=MODE())setMode(d.v);if(sq){$('#hd').classList.add('sq');view.q=q;$('#q').value=q}top=1}
  else if(a=='tg'){S[d.k]=!S[d.k]}
  else if(a=='df'){S.dfmt=d.k}
