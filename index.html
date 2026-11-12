@@ -159,8 +159,8 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 .bn h3,.bn p{padding-right:44px}
 #peek{position:fixed;left:0;right:0;top:56px;bottom:0;overflow:hidden;background:var(--bg);z-index:4;pointer-events:none}#peek .pk{padding:0}
 #app{touch-action:pan-y}
-.scn{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}.scn>*{flex:1 1 140px;text-align:center}
-.scb{display:block;font:inherit;color:var(--tx);background:var(--s2);border-radius:4px;padding:8px 12px;cursor:pointer}.sch{font-size:12px;margin:2px 0 8px}.sgal{display:inline-block;color:var(--bl);font-size:14px;padding:6px 2px;cursor:pointer;text-decoration:underline}
+.scn{display:flex;flex-direction:column;gap:8px;margin:4px 0 4px}.scn>*{text-align:left;padding:12px 14px}
+.scb{display:block;font:inherit;color:var(--tx);background:var(--s2);border-radius:4px;padding:8px 12px;cursor:pointer}.sch{font-size:12px;margin:2px 0 8px}
 #scan{position:fixed;inset:0;background:#000;z-index:40;display:flex;align-items:center;justify-content:center}#scan[hidden]{display:none}
 #scan video{width:100%;height:100%;object-fit:cover}.sfr{position:absolute;left:8%;right:8%;top:38%;height:22%;border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 100vmax #0006}
 #scan p{position:absolute;bottom:15%;left:0;right:0;text-align:center;color:#fff;font-size:17px;margin:0;text-shadow:0 1px 4px #000}
@@ -931,7 +931,7 @@ function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return de
 ${tagBlock(sh)}${tabsHtml(tab,[['ep','Épisodes'],['cast','Distribution'],['rate','Avis']])}${tab=='rate'?ratingHtml(sh):tab=='cast'?castHtml(sh):`<div class="tabs" id="st">${ss.map(n=>`<button class="${n==view.s?'on':''}" data-act="season" data-n="${n}">${n?'Saison '+n:'Spéciaux'}</button>`).join('')}</div>
 <div class="act"><button data-act="sw" data-id="${sh.id}" ${sh.eps.filter(e=>e.s==view.s).every(e=>e.w||!past(sh,e))?'disabled':''}>Marquer la saison vue</button></div>
 ${sh.eps.filter(e=>e.s==view.s).map(e=>ep(sh,e)).join('')}`}</div>`}
-const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div class="scn"><button type="button" data-act="scan">📷 Code-barres</button><label class="scb">📸 Photo couverture<input type="file" accept="image/*" capture="environment" id="phi" hidden></label></div><label class="sgal">🖼️ ou choisir une photo existante<input type="file" accept="image/*" id="phg" hidden></label><p class="mu sch">${MODE()=='b'||MODE()=='c'?'Tu peux aussi taper un ISBN.':'Tu peux aussi taper le code-barres du DVD ou Blu-ray.'}</p><div id="res"></div></div>`;
+const addView=()=>`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">${({s:'Ajouter une série',m:'Ajouter un film',b:'Ajouter un livre',c:'Ajouter une BD'})[MODE()]}</h2><form id="sf" class="act"><input class="q" id="aq" type="search" placeholder="Recherche multi-critères" style="flex:1" aria-label="Titre"><button class="pri">Chercher</button></form><div class="scn"><button type="button" data-act="scan">📷 Scanner le code-barres</button><label class="scb">📸 Photographier la couverture${MODE()=='b'||MODE()=='c'?' ou l’ISBN':''}<input type="file" accept="image/*" capture="environment" id="phi" hidden></label><label class="scb">🖼️ Choisir une photo existante<input type="file" accept="image/*" id="phg" hidden></label></div><p class="mu sch">${MODE()=='b'||MODE()=='c'?'Tu peux aussi taper un ISBN.':'Tu peux aussi taper le code-barres du DVD ou Blu-ray.'}</p><div id="res"></div></div>`;
 /* Ajout par code-barres, ISBN ou photo de couverture */
 const ZXU='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',TSU='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',ldS={};
 function loadJs(u){return ldS[u]||(ldS[u]=new Promise((ok,ko)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>{delete ldS[u];ko(Error('Chargement impossible'))};document.head.appendChild(e)}))}
@@ -967,16 +967,22 @@ async function startScan(){if(!(navigator.mediaDevices&&navigator.mediaDevices.g
    const loop=async()=>{if(!me.on)return;try{if(v.readyState>=2){const r=await det.detect(v);if(r.length)return done(r[0].rawValue)}}catch(e){}me.t=setTimeout(loop,150)};loop()}
   else{const r=await zxR();if(!me.on)return;me.zx=r;await r.decodeFromConstraints({video:{facingMode:'environment'},audio:false},v,res=>{if(res)done(res.getText())})}}
  catch(e){if(!me.on)return;stopScan();toast(e&&e.name=='NotAllowedError'?'Accès à la caméra refusé':'Caméra non disponible',4000)}}
+const ok13=c=>/^\d{13}$/.test(c)&&[...c].reduce((t,d,i)=>t+ +d*(i%2?3:1),0)%10==0,
+ ok10=d=>/^\d{9}[\dX]$/.test(d)&&[...d].reduce((t,c,i)=>t+(c=='X'?10:+c)*(10-i),0)%11==0;
+function isbnIn(txt){const T=String(txt||'').replace(/[Oo](?=[\d\s-]*\d)/g,'0').replace(/[Il|](?=[\d\s-]*\d)/g,'1');
+ const R=/(ISBN[^\dX]{0,8})?((?:\d[\s‐-]?){9,12}[\dXx])/gi;let m;
+ while(m=R.exec(T)){const d=m[2].replace(/[^\dXx]/g,'').toUpperCase();if(d.length==13&&/^97[89]/.test(d)&&ok13(d))return d;if(d.length==10&&ok10(d)&&(m[1]||/ISBN/i.test(T)))return isbn13(d)}return''}
 async function ocrTitle(url){await loadJs(TSU);const w=await Tesseract.createWorker(['fra','eng']);
- try{const{data}=await w.recognize(url,{},{text:true,blocks:true}),L=[];
+ try{const{data}=await w.recognize(url,{},{text:true,blocks:true}),L=[],ib=isbnIn(data.text);if(ib)return{isbn:ib};
   for(const b of data.blocks||[])for(const pg of b.paragraphs||[])for(const l of pg.lines||[]){const t=l.text.replace(/[^\p{L}\p{N}'’&:!?,. -]/gu,' ').replace(/\s+/g,' ').trim();if(t.replace(/[^\p{L}]/gu,'').length>=3&&l.confidence>=50)L.push({t,h:l.bbox.y1-l.bbox.y0,y:l.bbox.y0})}
-  if(!L.length)return'';const m=Math.max(...L.map(x=>x.h));return L.filter(x=>x.h>=m*.7).sort((a,b)=>a.y-b.y).slice(0,3).map(x=>x.t).join(' ').slice(0,80)}finally{w.terminate()}}
+  if(!L.length)return{};const m=Math.max(...L.map(x=>x.h));return{t:L.filter(x=>x.h>=m*.7).sort((a,b)=>a.y-b.y).slice(0,3).map(x=>x.t).join(' ').slice(0,80)}}finally{w.terminate()}}
 async function fromPhoto(f){if(!f)return;const url=URL.createObjectURL(f);
  try{toast('Lecture de la photo…',8000);let c='';
   try{const det=await bcDet();if(det){const r=await det.detect(await createImageBitmap(f));if(r.length)c=r[0].rawValue}}catch(e){}
   if(!c)try{c=(await(await zxR()).decodeFromImageUrl(url)).getText()}catch(e){}
   if(c){$('#aq').value=c;toast('Code-barres trouvé');return findCode(codeOf(c)||c)}
-  toast('Lecture du titre…',15000);const t=await ocrTitle(url);if(!t)return toast('Aucun titre lisible sur la photo. Essaie plus près, bien éclairé.',4500);
+  toast('Lecture de la photo…',15000);const o=await ocrTitle(url);if(o.isbn){$('#aq').value=o.isbn;toast('ISBN trouvé');return findCode(o.isbn)}
+  const t=o.t;if(!t)return toast('Rien de lisible sur la photo. Essaie plus près, bien éclairé.',4500);
   $('#aq').value=t;toast('Titre lu sur la photo : corrige-le si besoin',4000);find()}
  catch(e){toast('Lecture de la photo impossible',4000)}finally{setTimeout(()=>URL.revokeObjectURL(url),1000)}}
 document.addEventListener('change',ev=>{if(ev.target.id=='phi'||ev.target.id=='phg'){const f=ev.target.files&&ev.target.files[0];ev.target.value='';fromPhoto(f)}});
