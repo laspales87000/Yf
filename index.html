@@ -194,6 +194,8 @@ body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{w
 #menu .sdim{color:var(--mu);opacity:.55}.sfav{color:#e91e63}#menu [data-act=ser]{touch-action:pan-y}.srs{display:flex;flex-direction:column;gap:6px;padding:0 8px 6px;align-items:flex-start}
 header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd .cat,#hd.sq .cat{height:34px;padding:0}#hd.sq .cat .cl{display:none}#hd.sq .cat svg{width:22px;height:22px}#hd.sq #q{margin:0 2px}
 #qx{display:none;flex:none;width:34px;height:34px;margin-left:-40px;border-radius:50%;background:none;color:var(--on);font-size:18px;padding:0;place-items:center}#hd.sq #q:placeholder-shown+#qx{display:grid}
+#menu .chk{display:flex!important;align-items:center;gap:12px}#menu .chk .cbx{flex:none;width:24px;height:24px;border-radius:6px;border:2px solid var(--mu);display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff}
+#menu .chk.on{background:#ff88002b;color:var(--ac);font-weight:700}#menu .chk.on .cbx{background:var(--ac);border-color:var(--ac)}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -225,7 +227,7 @@ function toast(m,ms){const t=$('#toast');t.textContent=TT(m);t.className='show';
 /* Stockage local (IndexedDB) */
 const idb=new Promise(r=>{try{const q=indexedDB.open('suivi-series',1);q.onupgradeneeded=()=>q.result.createObjectStore('k');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch(e){r(null)}});
 async function load(){const d=await idb;if(!d)return;return new Promise(r=>{const q=d.transaction('k').objectStore('k').get('s');q.onsuccess=()=>r(q.result);q.onerror=()=>r()})}
-let tm0;function save(){clearTimeout(tm0);tm0=setTimeout(async()=>{const d=await idb;if(d)d.transaction('k','readwrite').objectStore('k').put(S,'s')},400)}
+let tm0;function save(){uniDirty();clearTimeout(tm0);tm0=setTimeout(async()=>{const d=await idb;if(d)d.transaction('k','readwrite').objectStore('k').put(S,'s')},400)}
 async function saveNow(){clearTimeout(tm0);const d=await idb;if(!d)return;await new Promise(r=>{const t=d.transaction('k','readwrite');t.objectStore('k').put(S,'s');t.oncomplete=t.onerror=t.onabort=()=>r()})}
 
 /* Import */
@@ -841,7 +843,7 @@ const TG={28:'action',12:'adventure',16:'animation',35:'comedy',80:'crime',99:'d
 const CREW={Director:'Réalisation','Original Music Composer':'Musique',Composer:'Musique',Producer:'Production','Executive Producer':'Production exécutive',Screenplay:'Scénario',Writer:'Scénario',Creator:'Création'};
 const TI=(p,s)=>p?(String(p).startsWith('http')?p:'https://image.tmdb.org/t/p/'+s+p):'';
 const yr=d=>d?d.slice(0,4):'',rt=m=>m>=60?Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'):m?m+' min':'';
-const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const NC=new Map(),norm=s=>{s=String(s||'');let v=NC.get(s);if(v===undefined){v=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();if(NC.size>30000)NC.clear();NC.set(s,v)}return v};
 const cmp=(a,b)=>(b.pin?1:0)-(a.pin?1:0)||sk(a).localeCompare(sk(b),'fr');
 function matchIt(it,nq,qt){if(norm(nm(it)+' '+(it.orig||'')+' '+(it.alt||[]).join(' ')+' '+(it.tags||[]).map(tn).join(' ')).includes(nq))return true;return matchP(it,qt)}
 function matchP(it,qt){return(it.ppl||[]).some(p=>{const t=p.k||(p.k=norm(p.n).split(' '));return qt.every(w=>t.some(x=>x.startsWith(w)))})}
@@ -949,20 +951,21 @@ const guessN=b=>{const m=String(b.name||'').match(/\b0*(\d{1,3})\b/);return m?+m
 /* Séries TV : univers (Star Trek, Dexter, The Walking Dead…) */
 const uBase=n=>String(n||'').split(/\s*:\s|\s+[-–]\s+/)[0].trim();
 const USTOP=new Set(['the','les','des','une','dans','pour','doctor','docteur','black','young','little','house','night','super','first','great','after','under','where','other']);
-function uniAll(){const L=Object.values(S.shows),U={};const add=(n)=>{const k=norm(n);if(k.length>=3)U[k]=U[k]||n};
+let uniC=null;const uniDirty=()=>{uniC=null};
+function uniAll(){if(uniC)return uniC;const L=Object.values(S.shows),U={};const add=(n)=>{const k=norm(n);if(k.length>=3)U[k]=U[k]||n};
  for(const n of S.uniUser||[])add(n);for(const sh of L){for(const n of uMan(sh))add(n);if(sh.uniOff)continue;const n=nm(sh),b=uBase(n);if(b&&b!=n)add(b);const c=(S.uniChk||{})[sh.id];if(c&&c.u)add(c.u)}
- for(const a of L)for(const b of L)if(a!==b){const x=norm(nm(a)),y=norm(nm(b));if(y.length>=4&&x!=y&&x.endsWith(' '+y))add(nm(b))}
+ const NN=L.map(sh=>norm(nm(sh)));for(let i=0;i<L.length;i++){const y=NN[i];if(y.length<4)continue;const ey=' '+y;for(let j=0;j<L.length;j++)if(i!==j&&NN[j]!=y&&NN[j].endsWith(ey)){add(nm(L[i]));break}}
  /* même premier mot pour au moins 2 de tes séries (ex. Stargate SG-1 / Stargate Atlantis) */
  const W={};for(const sh of L){if(sh.uniOff)continue;const n=nm(sh),w=norm(n).split(' ');if(w.length>=2&&w[0].length>=5&&!USTOP.has(w[0]))(W[w[0]]=W[w[0]]||[]).push(n.split(/\s+/)[0].replace(/[:,.;–-]+$/,''))}
  for(const v of Object.values(W))if(v.length>=2)add(v[0])
- return U}
+ return uniC=U}
 const uMan=sh=>Array.isArray(sh.unis)?sh.unis:[];
 function uAuto(sh,U){if(sh.uniOff)return null;U=U||uniAll();const k=norm(nm(sh)),man=new Set((S.uniUser||[]).map(norm));let best=null;
  for(const[u,n]of Object.entries(U))if(!man.has(u)||uMan(sh).some(m=>norm(m)==u))if(k==u||k.startsWith(u+' ')||k.endsWith(' '+u))if(!best||u.length>norm(best).length)best=n;return best}
 function uniSet(sh,U){const o=[],a=uAuto(sh,U);if(a)o.push(a);for(const n of uMan(sh))if(!o.some(x=>norm(x)==norm(n)))o.push(n);return o.filter(n=>!uHid(norm(n),'s:'+sh.id))}
 function uniOf(sh,U){return uniSet(sh,U)[0]||null}
-function uniList(){const U=uniAll(),C={};for(const n of S.uniUser||[]){const k=norm(n);C[k]=C[k]||{s:n,c:0,m:1}}for(const sh of Object.values(S.shows))for(const u of uniSet(sh,U)){const k=norm(u);C[k]=C[k]||{s:u,c:0,m:0};C[k].c++;if(uMan(sh).some(m=>norm(m)==k))C[k].m=1}
- return Object.values(C).filter(x=>x.c>=2||x.m||Object.values(S.uniChk||{}).some(c=>c.u&&norm(c.u)==norm(x.s))).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
+function uniList(){if(uniList.c&&uniList.c[0]===uniC&&uniC)return uniList.c[1];const U=uniAll(),C={};for(const n of S.uniUser||[]){const k=norm(n);C[k]=C[k]||{s:n,c:0,m:1}}for(const sh of Object.values(S.shows))for(const u of uniSet(sh,U)){const k=norm(u);C[k]=C[k]||{s:u,c:0,m:0};C[k].c++;if(uMan(sh).some(m=>norm(m)==k))C[k].m=1}
+ const CK=new Set(Object.values(S.uniChk||{}).filter(c=>c.u).map(c=>norm(c.u))),R=Object.values(C).filter(x=>x.c>=2||x.m||CK.has(norm(x.s))).sort((a,b)=>a.s.localeCompare(b.s,'fr'));uniList.c=[U,R];return R}
 const UNIC={},uInK=(x,k)=>[x.name,x.original_name].some(v=>{const n=norm(v),b=norm(uBase(v));return n==k||b==k})||norm(x.original_name||'').endsWith(' '+k);
 /* Recherche en arrière-plan : cette série a-t-elle d'autres séries du même univers ? (une fois par série) */
 let uniScanOn=0;
@@ -988,14 +991,14 @@ function uniHtml(){const V=view.ser,k=norm(V.s),U=uniAll(),own=Object.values(S.s
 <div class="srt"><button data-act="uniadd">➕ Ajouter une de mes séries</button>${(S.uniUser||[]).some(x=>norm(x)==k)?'<button data-act="unidel">🗑 Supprimer cet univers</button>':''}</div><div class="sgrid">${T.map(t=>{if(t.sh){const x=st(t.sh),stt=x.a&&!x.left?'on':'own';return`<button class="stile ${stt}" data-act="unitap" data-id="${esc(t.sh.id)}" aria-label="${esc(nm(t.sh))}">${t.sh.img?`<img loading="lazy" src="${esc(t.sh.img)}" alt="">`:`<span class="sph">${esc(nm(t.sh))}</span>`}${stt=='on'?'<i class="sok">✓</i>':''}<small>${esc(nm(t.sh))}${yr(t.d)?' ('+yr(t.d)+')':''}</small></button>`}
   return`<button class="stile none" data-act="unitap" data-tm="${esc(String(t.f.id))}" data-tn="${esc(t.f.t)}" aria-label="${esc(t.f.t)}">${t.f.po?`<img loading="lazy" src="${esc(TI(t.f.po,'w185'))}" alt="">`:`<span class="sph">${esc(t.f.t)}</span>`}<small>${esc(t.f.t)}${yr(t.f.d)?' ('+yr(t.f.d)+')':''}</small></button>`}).join('')}</div></div>`}
 function uniCanon(n){const c=uniList().find(x=>norm(x.s)==norm(n)||lev(norm(x.s),norm(n))<=2);if(c&&norm(c.s)!=norm(n)&&confirm('Tu as déjà l’univers « '+c.s+' ». C’est le même ?'))return c.s;return c&&norm(c.s)==norm(n)?c.s:n}
-function uniToggle(sh,n,forceOn){const k=norm(n),on=uniSet(sh).some(u=>norm(u)==k);S.uniHide=S.uniHide||{};const H=S.uniHide[k]=S.uniHide[k]||[];
+function uniToggle(sh,n,forceOn){uniDirty();const k=norm(n),on=uniSet(sh).some(u=>norm(u)==k);S.uniHide=S.uniHide||{};const H=S.uniHide[k]=S.uniHide[k]||[];
  if(on&&!forceOn){sh.unis=uMan(sh).filter(m=>norm(m)!=k);if(uAuto(sh)&&norm(uAuto(sh))==k&&!H.includes('s:'+sh.id))H.push('s:'+sh.id)}
  else{S.uniHide[k]=H.filter(x=>x!=='s:'+sh.id);if(!uniSet(sh).some(u=>norm(u)==k))sh.unis=[...uMan(sh),n]}
  sh.mod=Date.now();if(S.gh)S.gh.dirty=1;save();schedSync();toast((uniSet(sh).some(u=>norm(u)==k)?'Ajouté à ':'Retiré de ')+n)}
-function uniAddHtml(){const n=view.uniK;if(!n)return'';const k=norm(n),L=Object.values(S.shows).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
- return`<div class="cp"><b>Séries dans « ${esc(n)} »</b><p style="font-size:12px">Coche les séries de ta liste qui font partie de cet univers.</p></div>${L.map(sh=>`<button data-act="unitog" data-id="${esc(sh.id)}">${uniSet(sh).some(u=>norm(u)==k)?'☑':'☐'} ${esc(nm(sh))}</button>`).join('')}<button data-act="menu" data-m="">✓ Terminé</button>`}
-function uniPickHtml(){const sh=S.shows[view.spid];if(!sh)return'';const cur=uniSet(sh).map(norm),L=uniList();
- return`<div class="cp"><b>Univers de « ${esc(nm(sh))} »</b><p style="font-size:12px">Coche un ou plusieurs univers.</p></div>${L.map(x=>`<button data-act="unitog" data-s="${esc(x.s)}">${cur.includes(norm(x.s))?'☑':'☐'} ${esc(x.s)}</button>`).join('')}<button data-act="unitog" data-new="1">➕ Nouvel univers…</button><button data-act="menu" data-m="">✓ Terminé</button>`}
+function uniAddHtml(){const n=view.uniK;if(!n)return'';const U=uniAll(),k=norm(n),L=Object.values(S.shows).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
+ return`<div class="cp"><b>Séries dans « ${esc(n)} »</b><p style="font-size:12px">Coche les séries de ta liste qui font partie de cet univers.</p></div>${L.map(sh=>{const on=uniSet(sh,U).some(u=>norm(u)==k);return`<button class="chk ${on?'on':''}" data-act="unitog" data-id="${esc(sh.id)}"><span class="cbx">${on?'✓':''}</span>${esc(nm(sh))}</button>`}).join('')}<button data-act="menu" data-m="">✓ Terminé</button>`}
+function uniPickHtml(){const sh=S.shows[view.spid];if(!sh)return'';const L=uniList(),cur=uniSet(sh,uniAll()).map(norm);
+ return`<div class="cp"><b>Univers de « ${esc(nm(sh))} »</b><p style="font-size:12px">Coche un ou plusieurs univers.</p></div>${L.map(x=>{const on=cur.includes(norm(x.s));return`<button class="chk ${on?'on':''}" data-act="unitog" data-s="${esc(x.s)}"><span class="cbx">${on?'✓':''}</span>${esc(x.s)}</button>`}).join('')}<button data-act="unitog" data-new="1">➕ Nouvel univers…</button><button data-act="menu" data-m="">✓ Terminé</button>`}
 /* Épingler une série / saga / un univers en haut de la liste (appui long 1 s) */
 const spk=n=>MODE()+':'+norm(n),spG=n=>(S.serPin||{})[spk(n)]||{},spOn=n=>!!spG(n).on,pinS=(L,f)=>[...L].sort((a,b)=>(spOn(f(b))?1:0)-(spOn(f(a))?1:0)),spL=n=>(spG(n).fav?'<span class="sfav">♥</span> ':'')+(spOn(n)?'📌 ':'')+esc(n),spC=n=>spG(n).dim?' class="sdim"':'';
 const SPH='<div class="cp"><p style="font-size:12px">Reste appuyé 1 seconde sur un nom pour l’épingler en haut. Glisse-le à droite pour le griser, à gauche pour le mettre en favori ♥. Le même geste annule.</p></div>';
@@ -1323,7 +1326,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='unitap'){if(d.id){view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;view.open=d.id;view.s=null;view.tab=null;top=1}else if(d.tm){const n0=Object.keys(S.shows).length;await addTv(d.tm,d.tn,1);const o=Object.values(S.shows).find(x=>x.tmdbtv==d.tm);if(o&&Object.keys(S.shows).length==n0){view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;view.open=o.id;view.s=null;view.tab=null;render(1);return}render();return}}
  else if(a=='uniset'){view.spid=d.id;view.menu='unipick';renderMenu();return}
  else if(a=='unitog'){const sh=S.shows[d.id||view.spid];if(!sh)return;let n=d.s||view.uniK;if(d.new){n=prompt('Nom de l’univers (ex. Star Trek) :',uniOf(sh)||uBase(nm(sh)));if(!n||!n.trim())return;n=uniCanon(n.trim().slice(0,80))}
-  uniToggle(sh,n,d.new?1:null);view.menu=d.id?'uniadd':'unipick';renderMenu();render();return}
+  uniToggle(sh,n,d.new?1:null);view.menu=d.id?'uniadd':'unipick';renderMenu();requestAnimationFrame(()=>setTimeout(()=>render(),0));return}
  else if(a=='unicreate'){let n=prompt('Nom du nouvel univers (ex. Marvel) :');if(!n||!n.trim())return;n=uniCanon(n.trim().slice(0,80));S.uniUser=S.uniUser||[];if(!S.uniUser.some(x=>norm(x)==norm(n)))S.uniUser.push(n);if(S.gh)S.gh.dirty=1;save();schedSync();view.fy=scrollY;view.ser={s:n,kind:'tv'};top=1}
  else if(a=='uniadd'){view.uniK=view.ser&&view.ser.s;view.menu='uniadd';renderMenu();return}
  else if(a=='unidel'){const n=view.ser&&view.ser.s;if(!n||!confirm('Supprimer l’univers « '+n+' » ? Les séries restent dans ta liste.'))return;const k=norm(n);S.uniUser=(S.uniUser||[]).filter(x=>norm(x)!=k);for(const sh of Object.values(S.shows))if(uMan(sh).some(m=>norm(m)==k)){sh.unis=uMan(sh).filter(m=>norm(m)!=k);sh.mod=Date.now()}if(S.gh)S.gh.dirty=1;save();schedSync();view.ser=null;top=3}
