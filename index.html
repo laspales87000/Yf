@@ -262,8 +262,8 @@ const FILT=[['cours','En cours'],['fav','Séries favorites ♥'],['eps','Épisod
 const FILTM=[['tosee','À voir'],['fav','Films favoris ♥'],['all','Tous les films'],['noanim','Tous sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
-function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join(''):''}
+function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','serpick'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','serpick'].includes(view.menu)?' w':'');
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join(''):''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -930,7 +930,19 @@ const ovB=b=>b.ov&&isEn(b.ov)&&gl(b,'ovf')||b.ov||'',gnB=b=>{const g=(b.gn||[]).
 /* Séries de livres et BDs : page « Toute la série » */
 function serOf(b){if(b.ser&&b.ser.s)return{s:b.ser.s,n:+b.ser.n||0};if(b.ser&&b.ser.s==='')return null;const t=String(b.name||b.t||'');
  let m=t.match(/^(.{2,}?)[\s,.:;(–-]+(?:tome|t|vol(?:ume)?|n°|no|#)\.?\s*0*(\d{1,3})\b/i)||t.match(/^(.{2,}?)\s[-–]\s0*(\d{1,3})\s[-–]\s/);
- if(m){const n=m[1].replace(/[\s,.:;(–-]+$/,'').trim();if(n.length>=2&&!/^\d+$/.test(n))return{s:n,n:+m[2]}}return null}
+ if(m){const n=m[1].replace(/[\s,.:;(–-]+$/,'').trim();if(n.length>=2&&!/^\d+$/.test(n))return{s:canonSer(n),n:+m[2]}}
+ const k=norm(t);for(const x of mySeries())if(x.k.length>=4&&(k==x.k||k.startsWith(x.k+' ')))return{s:x.s,n:0};return null}
+/* Séries déjà connues (indiquées à la main) : pour ne pas créer deux fois la même */
+function mySeries(){const M={};for(const b of Object.values(BK())){const s=b.ser&&b.ser.s;if(!s)continue;const k=norm(s);(M[k]=M[k]||{k,s,c:0}).c++}return Object.values(M)}
+const canonSer=n=>{const k=norm(n),x=mySeries().find(y=>y.k==k);return x?x.s:n};
+function lev(a,b){if(a==b)return 0;const d=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=d[0];d[0]=i;for(let j=1;j<=b.length;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]==b[j-1]?0:1));p=t}}return d[b.length]}
+function nearSer(n){const k=norm(n);let best=null,bd=9;for(const x of allSeries()){const v=lev(k,x.k);if(v<bd&&v<=(x.k.length>=5?2:1)+Math.floor(x.k.length/10))best=x,bd=v}return best&&best.k!=k?best.s:null}
+function allSeries(){const M={};for(const b of Object.values(BK())){const o=serOf0(b);if(!o)continue;const k=norm(o.s);(M[k]=M[k]||{k,s:o.s,c:0,au:new Set()}).c++;for(const p of b.ppl||[])M[k].au.add(norm(p.n))}return Object.values(M).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
+const serOf0=b=>b.ser&&b.ser.s?{s:b.ser.s,n:+b.ser.n||0}:b.ser&&b.ser.s===''?null:(()=>{const t=String(b.name||'');const m=t.match(/^(.{2,}?)[\s,.:;(–-]+(?:tome|t|vol(?:ume)?|n°|no|#)\.?\s*0*(\d{1,3})\b/i)||t.match(/^(.{2,}?)\s[-–]\s0*(\d{1,3})\s[-–]\s/);if(!m)return null;const n=m[1].replace(/[\s,.:;(–-]+$/,'').trim();return n.length>=2&&!/^\d+$/.test(n)?{s:n,n:+m[2]}:null})();
+const guessN=b=>{const m=String(b.name||'').match(/\b0*(\d{1,3})\b/);return m?+m[1]:''};
+function serPickHtml(){const b=IT(view.spid);if(!b)return'';const cur=serOf(b),t=norm(nm(b)),A=new Set((b.ppl||[]).map(p=>norm(p.n))),L=allSeries();
+ const sug=L.filter(x=>t.startsWith(x.k)||[...x.au].some(a=>A.has(a))),rest=L.filter(x=>!sug.includes(x)),btn=x=>`<button data-act="serchoose" data-s="${esc(x.s)}">📚 ${esc(x.s)} <span class="mu">(${x.c})</span>${cur&&norm(cur.s)==x.k?' ✓':''}</button>`;
+ return`<div class="cp"><b>Série de « ${esc(nm(b))} »</b></div>${sug.length?`<div class="cp"><p style="font-size:12px">Suggestions</p></div>${sug.map(btn).join('')}`:''}${rest.length?`<div class="cp"><p style="font-size:12px">Tes séries</p></div>${rest.map(btn).join('')}`:''}<button data-act="serchoose" data-new="1">➕ Nouvelle série…</button><button data-act="serchoose" data-none="1">🚫 Aucune série</button>`}
 const SERC={};
 async function serLoad(name,bd){const k=norm(name);if(SERC[k])return SERC[k];let L=[];try{L=await bkSearch(name,!!bd)}catch(e){}
  const out=[];for(const d of L){const o=serOf(d);if(o&&norm(o.s)==k)out.push({d,n:o.n})}return SERC[k]=out}
@@ -1217,8 +1229,11 @@ document.addEventListener('click',async ev=>{
  else if(a=='ser'){view.fy=scrollY;view.ser={s:d.s,bd:+d.bd||0};top=1}
  else if(a=='sertap'){if(d.id){const b=BK()[d.id];if(!b)return;b.seen=b.seen?0:1;b.mod=Date.now();logEv(b,b.seen?'Lu':'Pas encore lu');save();schedSync();render();return}
   if(d.gid){const gid=d.gid;await addBook(gid,view.ser&&view.ser.bd?1:0,1);const b=BK()['b'+gid];if(b){b.seen=1;b.mod=Date.now();save();schedSync();render()}return}}
- else if(a=='serset'){const b=IT(d.id);if(!b)return;const o=serOf(b),n=prompt('Nom de la série (laisse vide pour aucune) :',o?o.s:'');if(n===null)return;
-  if(!n.trim())b.ser={s:'',n:0};else{const t=prompt('Numéro du tome dans la série :',o&&o.n?o.n:'');if(t===null)return;b.ser={s:n.trim().slice(0,80),n:Math.max(0,Math.round(+t||0))}}b.mod=Date.now();save();schedSync()}
+ else if(a=='serset'){view.spid=d.id;view.menu='serpick';renderMenu();return}
+ else if(a=='serchoose'){const b=IT(view.spid);if(!b)return;
+  if(d.none)b.ser={s:'',n:0};else{let n=d.s;if(d.new){n=prompt('Nom de la nouvelle série :',(serOf0(b)||{}).s||'');if(!n||!n.trim())return;n=n.trim().slice(0,80);const c=nearSer(n);if(c&&confirm('Tu as déjà la série « '+c+' ». C’est la même ?'))n=c;else n=canonSer(n)}
+   const o=serOf(b),t=prompt('Numéro du tome dans « '+n+' » (laisse vide si tu ne sais pas) :',o&&o.n&&norm(o.s)==norm(n)?o.n:guessN(b));if(t===null)return;b.ser={s:n,n:Math.max(0,Math.round(+t||0))}}
+  b.mod=Date.now();save();schedSync();toast(b.ser.s?'Série : '+b.ser.s:'Aucune série')}
  else if(a=='loan'){const b=IT(d.id);if(!b)return;const n=prompt('Prêté à qui ?');if(!n||!n.trim())return;b.loan={to:n.trim().slice(0,60),d:today()};b.mod=Date.now();logEv(b,'Prêté à '+b.loan.to);save();schedSync();toast('Prêt noté')}
  else if(a=='loanback'){const b=IT(d.id);if(!b||!b.loan)return;logEv(b,'Rendu par '+b.loan.to);b.loan=null;b.mod=Date.now();save();schedSync();toast('Rendu ✓')}
  else if(a=='bknow'){if(gbusy)return toast('Synchronisation en cours, réessaie dans un instant');toast('Sauvegarde…');try{await gsync(1);await gbackup();toast('Sauvegarde '+CLN[CP()]+' faite ✓')}catch(e){toast(e.message=='reco'?'Reconnecte '+CLN[CP()]+' dans le menu du nuage':'Sauvegarde impossible',4000)}render();return}
