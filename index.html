@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="theme-color" content="#ff8800"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self'; connect-src 'self' blob: data: https://api.tvmaze.com https://api.themoviedb.org https://www.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://openlibrary.org https://api.github.com https://gist.githubusercontent.com https://api.dropboxapi.com https://content.dropboxapi.com https://api.upcitemdb.com https://world.openproductsfacts.org https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>Mes séries</title>
 <style>
 :root{--bg:#e9ecef;--sf:#fff;--s2:#e0e0e0;--tx:#212121;--mu:#757575;--ac:#ff8800;--bl:#2196f3;--fv:#e91e63;--t2:#424242;--tf:#546e7a}
@@ -248,8 +249,8 @@ const FILT=[['cours','En cours'],['fav','Séries favorites ♥'],['eps','Épisod
 const FILTM=[['tosee','À voir'],['fav','Films favoris ♥'],['all','Tous les films'],['noanim','Tous sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
-function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg'].includes(view.menu)?'l':'')+(['cloud','hist','about'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join(''):''}
+function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','csetdbx','csetgdr'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','csetdbx','csetgdr'].includes(view.menu)?' w':'');
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():/^cset/.test(view.menu||'')?csetHtml(view.menu.slice(4)):view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join(''):''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -281,30 +282,86 @@ async function frT(sh,s){const k=sh.id+'|'+s+LS();if(!FR()||busyS.has(k))return;
 const encE=(eps,k)=>{const m={};for(const e of eps)if(e[k])(m[e.s]=m[e.s]||[]).push(e.n);
  return Object.entries(m).map(([s,a])=>{a.sort((x,y)=>x-y);const r=[];let i=0;while(i<a.length){let j=i;while(j+1<a.length&&a[j+1]==a[j]+1)j++;r.push(j>i?a[i]+'-'+a[j]:''+a[i]);i=j+1}return s+':'+r.join(',')}).join(';')};
 const decE=t=>{const o=[];for(const p of(t||'').split(';').filter(Boolean)){const[s,r]=p.split(':');for(const q of r.split(',')){const[a,b]=q.split('-').map(Number);for(let n=a;n<=(b??a);n++)o.push([+s,n])}}return o};
-function gpay(){const o={};for(const[id,s]of Object.entries(S.shows))o[id]={n:s.name||'',tm:s.tm,f:s.fav?1:0,p:s.pin?1:0,a:s.arch?1:0,m:s.mod||0,w:encE(s.eps,'w'),h:encE(s.eps,'f'),t:s.tags||[],r:s.rate||0,nt:s.note||''};const om={};for(const[id,m]of Object.entries(MV()))om[id]={n:m.name||'',tm:m.tmdb,f:m.fav?1:0,p:m.pin?1:0,a:m.arch?1:0,s:m.seen?1:0,m:m.mod||0,t:m.tags||[],r:m.rate||0,nt:m.note||''};const ob={};for(const[id,b]of Object.entries(BK()))ob[id]={n:b.name||'',g:b.gid,bd:b.bd?1:0,f:b.fav?1:0,p:b.pin?1:0,a:b.arch?1:0,s:b.seen?1:0,m:b.mod||0,t:b.tags||[],r:b.rate||0,nt:b.note||'',au:(b.ppl||[]).map(p=>p.n),src:b.src||'gb',po:b.po||'',y:b.date||''};return{v:1,del:S.del||{},shows:o,movies:om,books:ob}}
-function gmerge(R){S.del=S.del||{};for(const[k,v]of Object.entries(R.del||{}))S.del[k]=Math.max(S.del[k]||0,v);
+function gpay(){const o={};for(const[id,s]of Object.entries(S.shows))o[id]={n:s.name||'',tm:s.tm,f:s.fav?1:0,p:s.pin?1:0,a:s.arch?1:0,m:s.mod||0,w:encE(s.eps,'w'),h:encE(s.eps,'f'),t:s.tags||[],r:s.rate||0,nt:s.note||''};const om={};for(const[id,m]of Object.entries(MV()))om[id]={n:m.name||'',tm:m.tmdb,f:m.fav?1:0,p:m.pin?1:0,a:m.arch?1:0,s:m.seen?1:0,m:m.mod||0,t:m.tags||[],r:m.rate||0,nt:m.note||''};const ob={};for(const[id,b]of Object.entries(BK()))ob[id]={n:b.name||'',g:b.gid,bd:b.bd?1:0,f:b.fav?1:0,p:b.pin?1:0,a:b.arch?1:0,s:b.seen?1:0,m:b.mod||0,t:b.tags||[],r:b.rate||0,nt:b.note||'',au:(b.ppl||[]).map(p=>p.n),src:b.src||'gb',po:b.po||'',y:b.date||''};return{v:1,del:S.del||{},shows:o,movies:om,books:ob,ui:{co:S.catOrder||null,com:S.catOrderM||0}}}
+const okId=k=>typeof k=='string'&&/^[A-Za-z0-9:_.-]{1,100}$/.test(k)&&!['__proto__','constructor','prototype'].includes(k);
+function cleanData(n){for(const K of['shows','movies','books']){const o=n[K];if(!o||typeof o!='object'){if(K!='shows')delete n[K];continue}
+ for(const k of Object.keys(o)){const v=o[k];if(!okId(k)||!v||typeof v!='object'){delete o[k];continue}v.id=k;if(Array.isArray(v.eps))v.eps=v.eps.filter(e=>e&&typeof e=='object').map(e=>({...e,s:+e.s||0,n:+e.n||0}));if(v.tags&&!Array.isArray(v.tags))v.tags=[]}}return n}
+function gmerge(R){R=R&&typeof R=='object'?R:{};for(const K of['shows','movies','books'])if(R[K])for(const k of Object.keys(R[K]))if(!okId(k)||!R[K][k]||typeof R[K][k]!='object')delete R[K][k];if(R.ui&&R.ui.co&&(R.ui.com||0)>(S.catOrderM||0)){S.catOrder=R.ui.co;S.catOrderM=R.ui.com}S.del=S.del||{};for(const[k,v]of Object.entries(R.del||{}))S.del[k]=Math.max(S.del[k]||0,v);
  for(const[id,r]of Object.entries(R.shows||{})){let l=S.shows[id];
   if(S.del[id]>(r.m||0))continue;
   if(l&&(r.m||0)<=(l.mod||0))continue;
   if(!l)l=S.shows[id]={id,name:r.n||'',tm:r.tm,sum:'',eps:[]};
-  l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.tags=r.t||[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0;
+  l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.tags=Array.isArray(r.t)?r.t.filter(x=>typeof x=='string'):[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0;
   const W=new Set(decE(r.w).map(x=>x.join('-'))),H=new Set(decE(r.h).map(x=>x.join('-'))),have=new Set();
   for(const e of l.eps){const k=e.s+'-'+e.n;have.add(k);e.w=W.has(k)?1:0;e.f=H.has(k)?1:0}
   for(const k of new Set([...W,...H]))if(!have.has(k)){const[s,n]=k.split('-').map(Number);l.eps.push({s,n,t:'',d:'',w:W.has(k)?1:0,f:H.has(k)?1:0})}
   l.eps.sort((a,b)=>a.s-b.s||a.n-b.n)}
  for(const[id,r]of Object.entries(R.movies||{})){let l=MV()[id];if(S.del[id]>(r.m||0))continue;if(l&&(r.m||0)<=(l.mod||0))continue;
-  if(!l)l=MV()[id]={id,kind:'m',tmdb:r.tm,name:r.n||''};l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.seen=!!r.s;l.tags=r.t||[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0}
+  if(!l)l=MV()[id]={id,kind:'m',tmdb:r.tm,name:r.n||''};l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.seen=!!r.s;l.tags=Array.isArray(r.t)?r.t.filter(x=>typeof x=='string'):[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0}
  for(const[id,r]of Object.entries(R.books||{})){let l=BK()[id];if(S.del[id]>(r.m||0))continue;if(l&&(r.m||0)<=(l.mod||0))continue;
-  if(!l)l=BK()[id]={id,kind:'b',gid:r.g,bd:r.bd?1:0,name:r.n||'',src:r.src||'gb',po:r.po||'',date:r.y||'',ppl:(r.au||[]).map(n=>({n,r:'author'})),upd:r.src?Date.now():0};l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.seen=!!r.s;l.tags=r.t||[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0}
+  if(!l)l=BK()[id]={id,kind:'b',gid:r.g,bd:r.bd?1:0,name:r.n||'',src:r.src||'gb',po:r.po||'',date:r.y||'',ppl:(r.au||[]).map(n=>({n,r:'author'})),upd:r.src?Date.now():0};l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.seen=!!r.s;l.tags=Array.isArray(r.t)?r.t.filter(x=>typeof x=='string'):[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0}
  for(const id of Object.keys(BK()))if(S.del[id]>(BK()[id].mod||0))delete BK()[id];
  for(const id of Object.keys(MV()))if(S.del[id]>(MV()[id].mod||0))delete MV()[id];
  for(const id of Object.keys(S.shows))if(S.del[id]>(S.shows[id].mod||0))delete S.shows[id];normTags()}
 async function gh(path,opt={}){const r=await fetch('https://api.github.com'+path,{...opt,headers:{Authorization:'Bearer '+S.gh.t,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
  if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.json()}
 let gbusy=0,gT;
+/* Synchronisation par Dropbox ou Google Drive (en plus de GitHub) */
+const DBX_KEY='',GDR_ID='',CLN={gh:'GitHub',dbx:'Dropbox',gdr:'Google Drive'},CP=()=>(S.gh&&S.gh.p)||'gh',RDR=()=>location.origin+location.pathname;
+const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
+async function cConnect(p){const key=p=='dbx'?DBX_KEY:GDR_ID;if(!key){view.menu='cset'+p;renderMenu();return}
+ if(S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
+ const st=rnd(16);try{sessionStorage.setItem('oa',JSON.stringify({p,st}))}catch(e){}
+ if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v}))}catch(e){}
+  location.href='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st})}
+ else location.href='https://accounts.google.com/o/oauth2/v2/auth?'+new URLSearchParams({client_id:key,response_type:'token',scope:'https://www.googleapis.com/auth/drive.appdata',redirect_uri:RDR(),state:st,include_granted_scopes:'true'})}
+/* Retour de la page de connexion Dropbox / Google : on vérifie le « state » (protection contre les connexions forcées) */
+async function cReturn(){const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1)),st=q.get('state')||h.get('state');if(!st)return;
+ let o=null;try{o=JSON.parse(sessionStorage.getItem('oa')||'null');sessionStorage.removeItem('oa')}catch(e){}
+ try{history.replaceState(null,'',RDR())}catch(e){}
+ if(!o||o.st!==st)return toast('Connexion refusée (lien non valable)',4000);
+ if(q.get('error')||h.get('error'))return toast('Connexion annulée',3000);
+ try{if(o.p=='dbx'){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({code:q.get('code')||'',grant_type:'authorization_code',client_id:DBX_KEY,code_verifier:o.v,redirect_uri:RDR()})});
+   if(!r.ok)throw 0;const j=await r.json();S.gh={p:'dbx',t:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||14400)*1000,g:''}}
+  else{const t=h.get('access_token');if(!t)throw 0;S.gh={p:'gdr',t,exp:Date.now()+(+h.get('expires_in')||3600)*1000,g:''}}
+  save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
+async function cTok(){const g=S.gh;if(g.exp&&g.exp>Date.now()+60e3)return g.t;
+ if(g.p=='dbx'&&g.rt){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:g.rt,client_id:DBX_KEY})});
+  if(r.ok){const j=await r.json();g.t=j.access_token;g.exp=Date.now()+(j.expires_in||14400)*1000;save();return g.t}if(r.status==400||r.status==401)throw Error('jeton');throw Error(r.status)}
+ throw Error('reco')}
+/* Lecture / écriture d'un fichier dans le dossier privé de l'application */
+async function cGet(name){const t=await cTok();
+ if(CP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+t,'Dropbox-API-Arg':JSON.stringify({path:'/'+name})}});if(r.status==409)return null;if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.text()}
+ const id=await gdrId(name,t);if(!id)return null;const r=await fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+t}});if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return r.text()}
+async function cPut(name,txt){const t=await cTok();
+ if(CP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:'/'+name,mode:'overwrite',mute:true})},body:txt});if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return}
+ const id=await gdrId(name,t);let r;
+ if(id)r=await fetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:txt});
+ else{const fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,parents:['appDataFolder']})],{type:'application/json'}));fd.append('file',new Blob([txt],{type:'application/json'}));
+  r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+t},body:fd})}
+ if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status)}
+async function cList(){const t=await cTok();
+ if(CP()=='dbx'){const r=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:''})});if(!r.ok)throw Error(r.status);return((await r.json()).entries||[]).map(e=>e.name)}
+ const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=100&fields=files(id,name)',{headers:{Authorization:'Bearer '+t}});if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return((await r.json()).files||[]).map(f=>f.name)}
+async function cDel(name){const t=await cTok();
+ if(CP()=='dbx'){await fetch('https://api.dropboxapi.com/2/files/delete_v2',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:'/'+name})});return}
+ const id=await gdrId(name,t);if(id)await fetch('https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+t}})}
+async function gdrId(name,t){const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)&q='+encodeURIComponent("name='"+name.replace(/'/g,"\\'")+"'"),{headers:{Authorization:'Bearer '+t}});
+ if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return(((await r.json()).files||[])[0]||{}).id||''}
+async function csync(quiet){gbusy=1;renderCloud();
+ try{const txt=await cGet('suivi-series.json');if(txt)gmerge(JSON.parse(txt));else for(const s of Object.values(S.shows))s.mod=s.mod||Date.now();
+  await cPut('suivi-series.json',JSON.stringify(gpay()));S.gh.last=Date.now();S.gh.err=0;S.gh.dirty=0;S.gh.reco=0;save();render();if(!quiet)toast('Synchronisé ✓')}
+ catch(e){if(e.message=='reco'){S.gh.reco=1;S.gh.err=1;if(!quiet)toast('Reconnecte '+CLN[CP()]+' dans le menu du nuage',4000)}else if(e.message=='jeton'){S.gh.t='';toast('Accès '+CLN[CP()]+' refusé : reconnecte-le',4000)}else{S.gh.err=1;if(!quiet)toast('Synchronisation impossible')}}
+ gbusy=0;renderCloud()}
+async function cbackup(){await cPut('sauvegarde-'+wk()+'.json',JSON.stringify(gpay()));const N=(await cList()).filter(isBk).sort().reverse().slice(12);for(const n of N)await cDel(n);S.bkw=wk();S.gh.lastbk=Date.now();save()}
+async function crestore(){try{const N=(await cList()).filter(isBk).sort().reverse();if(!N.length)return toast('Aucune sauvegarde trouvée');
+ const c=prompt('Restaurer quelle sauvegarde ?\n'+N.map((n,i)=>(i+1)+'. '+bkLbl(n)).join('\n')+'\nTape le numéro :'),n=N[(+c||0)-1];if(!n)return;
+ if(!confirm('Remplacer l’état de tes listes par cette sauvegarde ?'))return;const j=JSON.parse(await cGet(n)||'null');if(!j)return toast('Sauvegarde illisible');
+ for(const r of [...Object.values(j.shows||{}),...Object.values(j.movies||{}),...Object.values(j.books||{})])r.m=Date.now()+1;gmerge(j);save();render();toast('Sauvegarde restaurée')}catch(e){toast('Restauration impossible')}}
+const csetHtml=p=>`<div class="cp"><b>${CLN[p]} : réglage à faire une seule fois</b><p>Pour se connecter à ${CLN[p]}, l’application doit d’abord être enregistrée chez ${CLN[p]} par la personne qui gère l’application.</p><p>Quand ce sera fait, ce bouton te mènera directement à la page de connexion ${CLN[p]}.</p></div><button data-act="menu" data-m="cloud">← Retour</button>`;
 async function gsync(quiet){
- if(gbusy||!netOk(1))return;
- if(!S.gh||!S.gh.t){const t=prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »). Il reste sur cet appareil.');if(!t)return;S.gh={t:t.trim(),g:''}}
+ if(gbusy||!netOk(1))return;if(S.gh&&S.gh.t&&CP()!='gh')return csync(quiet);
+ if(!S.gh||!S.gh.t||CP()!='gh'){if(S.gh&&S.gh.p&&S.gh.p!='gh')return cConnect(S.gh.p);const t=prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »). Il reste sur cet appareil.');if(!t)return;S.gh={t:t.trim(),g:''}}
  gbusy=1;renderCloud();
  try{
   if(!S.gh.g){const l=await gh('/gists?per_page=100');const f=l.find(x=>x.files&&x.files['suivi-series.json']);if(f)S.gh.g=f.id}
@@ -325,10 +382,12 @@ const CLT={off:'Synchronisation désactivée',ok:'Tout est synchronisé',busy:'S
 const cst=()=>{const g=S.gh;return!(g&&g.t)?'off':gbusy?'busy':(g.err||g.dirty)?'warn':'ok'};
 function renderCloud(){const b=$('#cl'),s=cst();b.innerHTML=CLI[s];b.className=s=='busy'?'busy':'';b.setAttribute('aria-label',CLT[s])}
 const fmtT=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0'),x=z(d.getHours())+':'+z(d.getMinutes());return d.toDateString()==new Date().toDateString()?"aujourd'hui à "+x:fmtDate(d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()))+' '+x};
-function cloudHtml(){const g=S.gh,s=cst(),n=Object.keys(S.shows).length;
- if(s=='off')return`<div class="cp"><b>${CLT.off}</b><p>Tes données restent sur cet appareil uniquement.</p><p><b>Pour synchroniser entre appareils :</b></p><p>1. Crée un compte gratuit sur github.com.</p><p>2. Touche « Créer le jeton » (le droit « gist » est déjà coché).</p></div><a class="lnk" href="https://github.com/settings/tokens/new?scopes=gist&description=suivi-series" target="_blank" rel="noopener">Créer le jeton</a><div class="cp"><p>3. En bas de la page, touche « Generate token » et copie le jeton (ghp_…).</p><p>4. Reviens ici, touche « Activer la synchronisation » et colle le jeton.</p><p>Sur un autre appareil, utilise le même jeton.</p></div><button data-act="gsync">Activer la synchronisation</button>`;
- const t=s=='warn'?(g.err?'⚠ Dernière synchro échouée':'⚠ Modifications pas encore envoyées'):s=='busy'?CLT.busy:'✓ '+CLT.ok;
- return`<div class="cp"><b>${t}</b><p>Service : GitHub Gist (privé)<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde GitHub : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} séries</p></div><button data-act="gsync">Synchroniser maintenant</button><button data-act="grest">Restaurer une sauvegarde GitHub…</button><button data-act="gchg">🔁 Changer de compte GitHub</button><button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de compte ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien compte.</p></div>`}
+function cloudHtml(){const g=S.gh,s=cst(),p=CP(),n=COLL('s').length+COLL('m').length+COLL('b').length+COLL('c').length;
+ const pick=`<button data-act="cpick" data-p="dbx">📦 Connecter Dropbox</button><button data-act="cpick" data-p="gdr">🟢 Connecter Google Drive</button><button data-act="menu" data-m="ghhelp">🐙 Connecter GitHub</button>`;
+ if(s=='off')return`<div class="cp"><b>${CLT.off}</b><p>Tes données restent sur cet appareil uniquement.</p><p><b>Pour les retrouver sur tes autres appareils, choisis un service :</b></p></div>${pick}`;
+ const t=g.reco?'⚠ Reconnexion nécessaire':s=='warn'?(g.err?'⚠ Dernière synchro échouée':'⚠ Modifications pas encore envoyées'):s=='busy'?CLT.busy:'✓ '+CLT.ok;
+ return`<div class="cp"><b>${t}</b><p>Service : ${CLN[p]}${p=='gh'?' Gist (privé)':' (dossier privé de l’application)'}<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} éléments</p></div>${g.reco?`<button data-act="cpick" data-p="${p}">🔑 Reconnecter ${CLN[p]}</button>`:''}<button data-act="gsync">Synchroniser maintenant</button><button data-act="grest">Restaurer une sauvegarde…</button>${p=='gh'?'<button data-act="gchg">🔁 Changer de compte GitHub</button>':''}<div class="cp"><b>Changer de service</b></div>${p!='dbx'?'<button data-act="cpick" data-p="dbx">📦 Passer à Dropbox</button>':''}${p!='gdr'?'<button data-act="cpick" data-p="gdr">🟢 Passer à Google Drive</button>':''}${p!='gh'?'<button data-act="menu" data-m="ghhelp">🐙 Passer à GitHub</button>':''}<button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de service ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien service.</p></div>`}
+const ghHelp=()=>`<div class="cp"><b>Connecter GitHub</b><p>1. Crée un compte gratuit sur github.com.</p><p>2. Touche « Créer le jeton » (le droit « gist » est déjà coché).</p></div><a class="lnk" href="https://github.com/settings/tokens/new?scopes=gist&description=suivi-series" target="_blank" rel="noopener">Créer le jeton</a><div class="cp"><p>3. En bas de la page, touche « Generate token » et copie le jeton (ghp_…).</p><p>4. Reviens ici, touche « Coller mon jeton GitHub ».</p><p>Sur un autre appareil, utilise le même jeton.</p></div><button data-act="gchg">Coller mon jeton GitHub</button><button data-act="menu" data-m="cloud">← Retour</button>`;
 const GEN={comedy:'Humour',drama:'Drame','science-fiction':'Science-fiction','science fiction':'Science-fiction',action:'Action',adventure:'Aventure',animation:'Animation',anime:'Animation',crime:'Policier',documentary:'Documentaire',family:'Famille',fantasy:'Fantastique',horror:'Horreur',mystery:'Mystère',romance:'Romance',thriller:'Thriller',war:'Guerre',western:'Western',history:'Histoire',music:'Musique',medical:'Médical',legal:'Judiciaire',espionage:'Espionnage',supernatural:'Surnaturel',sports:'Sport',suspense:'Suspense',children:'Enfants'};
 const allTags=(k=MODE())=>[...new Set(COLL(k).flatMap(s=>s.tags||[]))].sort((a,b)=>tn(a).localeCompare(tn(b),LANG()));
 function addTag(sh,t){t=ntag(t.trim().slice(0,30));if(!t)return;sh.tags=sh.tags||[];if(!sh.tags.some(x=>x.toLowerCase()==t.toLowerCase()))sh.tags.push(t)}
@@ -357,14 +416,14 @@ async function gbfind(){if(S.gh.b)return S.gh.b;const l=await gh('/gists?per_pag
 const wk=()=>{const t=new Date(),d=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())),n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=d.getUTCFullYear();return y+'-W'+String(Math.ceil(((d-Date.UTC(y,0,1))/864e5+1)/7)).padStart(2,'0')};
 const bkLbl=n=>{const m=n.match(/(\d{4})-W(\d+)/);return m?'semaine '+(+m[2])+' de '+m[1]:n.slice(11,-5)};
 let bkBusy=0;
-async function autoBk(skip){if(bkBusy||!netOk(1)||!(S.gh&&S.gh.t)||!Object.keys(S.shows).length||S.bkw===wk())return;bkBusy=1;
- try{if(!skip)await gsync(1);await gbackup();toast('Sauvegarde GitHub de la semaine effectuée');render()}catch(e){}bkBusy=0}
-async function gbackup(){
+async function autoBk(skip){if(bkBusy||!netOk(1)||!(S.gh&&S.gh.t)||!hasAny()||S.bkw===wk())return;bkBusy=1;
+ try{if(!skip)await gsync(1);await gbackup();toast('Sauvegarde '+CLN[CP()]+' de la semaine effectuée');render()}catch(e){}bkBusy=0}
+async function gbackup(){if(CP()!='gh')return cbackup();
  const files={['sauvegarde-'+wk()+'.json']:{content:JSON.stringify(gpay())}};
  if(await gbfind()){const g=await gh('/gists/'+S.gh.b);Object.keys(g.files).filter(isBk).sort().reverse().slice(11).forEach(n=>{files[n]=null});await gh('/gists/'+S.gh.b,{method:'PATCH',body:JSON.stringify({files})})}
  else S.gh.b=(await gh('/gists',{method:'POST',body:JSON.stringify({description:'Suivi séries (sauvegardes)',public:false,files})})).id;
  S.bk=mo();S.bkw=wk();S.gh.lastbk=Date.now();save()}
-async function grestore(){try{
+async function grestore(){if(CP()!='gh')return crestore();try{
  if(!await gbfind())return toast('Aucune sauvegarde GitHub trouvée');
  const g=await gh('/gists/'+S.gh.b),N=Object.keys(g.files).filter(isBk).sort().reverse();
  const c=prompt('Restaurer quelle sauvegarde ?\n'+N.map((n,i)=>(i+1)+'. '+bkLbl(n)).join('\n')+'\nTape le numéro :'),f=g.files[N[(+c||0)-1]];if(!f)return;
@@ -1083,8 +1142,9 @@ document.addEventListener('click',async ev=>{
  else if(a=='selarch'){const k=Object.keys(view.sel).filter(i=>IT(i));k.forEach(i=>{IT(i).arch=view.f=='arch'?0:1;IT(i).mod=Date.now()});logEv(null,(view.f=='arch'?'Séries remises dans la liste : ':'Séries archivées : ')+k.length);toast((view.f=='arch'?'Séries remises dans la liste : ':'Séries archivées : ')+k.length);view.sel=null}
  else if(a=='selx')view.sel=null;
  else if(a=='gsync')return gsync().then(()=>{if(Object.values(S.shows).some(s=>!s.upd&&!s.nf))update()});
+ else if(a=='cpick')return cConnect(d.p);
  else if(a=='gout'){if(!confirm('Arrêter la synchronisation sur cet appareil ? Tes données restent sur ce téléphone.'))return;S.gh=null;toast('Synchronisation arrêtée')}
- else if(a=='gchg'){const t=prompt('Colle le jeton du nouveau compte GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;S.gh={t:t.trim(),g:''};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
+ else if(a=='gchg'){if(S.gh&&S.gh.t&&CP()!='gh'&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par GitHub ? Tes données restent sur cet appareil.'))return;const t=prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;S.gh={p:'gh',t:t.trim(),g:''};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
  else if(a=='lang')S.lang=d.v;
  else if(a=='tagdel'){const t=view.tag;if(!confirm('Supprimer le tag « '+tn(t)+' » de toutes les séries ?'))return;logEv(null,'Tag « '+tn(t)+' » supprimé partout');
   COLL(MODE()).forEach(s=>{if((s.tags||[]).includes(t)){s.tags=s.tags.filter(x=>x!==t);s.mod=Date.now()}});view.tag='';
@@ -1155,7 +1215,7 @@ document.addEventListener('pointermove',ev=>{const d=catD;if(!d||ev.pointerId!=d
  const ref=sib[i]||null;if(d.b.nextElementSibling!==ref)d.h.insertBefore(d.b,ref);
  d.b.style.transform='';const n=d.b.getBoundingClientRect();d.b.style.transform=`translate(${c-(n.left+n.width/2)}px,-3px) scale(1.12)`});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,ev=>{const d=catD;if(!d||ev.pointerId!=d.id)return;catD=null;d.b.classList.remove('drg');d.b.style.transform='';
- S.catOrder=[...d.h.children].map(x=>x.dataset.v);save();setTimeout(()=>lp=0,400)}));
+ S.catOrder=[...d.h.children].map(x=>x.dataset.v);S.catOrderM=Date.now();if(S.gh)S.gh.dirty=1;save();setTimeout(()=>lp=0,400)}));
 document.addEventListener('pointerdown',ev=>{const mi=ev.target.closest('#menu [data-act="tab"]');
  if(mi){lp=0;clearTimeout(lpT);lpT=setTimeout(()=>{lp=1;S.deff=S.deff||{};S.deff[MODE()]=mi.dataset.f;save();if(navigator.vibrate)navigator.vibrate(40);view.menu=0;renderMenu();toast('Cette liste sera désormais la liste qui s’affichera en premier',2000)},2000);return}
  const c=ev.target.closest('.tc,.card');if(!c||view.sel||view.menu)return;lp=0;px=ev.clientX;py=ev.clientY;clearTimeout(lpT);
@@ -1176,9 +1236,9 @@ document.addEventListener('selectstart',ev=>{const n=ev.target.nodeType==3?ev.ta
 let nT;document.addEventListener('input',ev=>{const t=ev.target;if(t.id!='nt')return;const it=IT(t.dataset.id);if(!it)return;it.note=t.value;it.mod=Date.now();clearTimeout(nT);nT=setTimeout(()=>{save();schedSync()},800)});
 $('#q').oninput=e=>{view.q=e.target.value;if(view.q)view.tag='';if(view.open||view.add){view.open=null;view.add=0}render(1)};
 $('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
- try{const j=JSON.parse(await f.text());if(j&&j.v===1&&!Array.isArray(j)){if(!confirm('Restaurer cette sauvegarde ?'))return;for(const r of [...Object.values(j.shows),...Object.values(j.movies||{}),...Object.values(j.books||{})])r.m=Date.now()+1;gmerge(j);save();render(1);toast('Sauvegarde restaurée');return}const n=Array.isArray(j)?fromBk(j):j;if(!n.shows)throw 0;
-  if(Object.keys(S.shows).length&&!confirm('Remplacer les données actuelles ?'))return;
+ try{const j=JSON.parse(await f.text());if(j&&j.v===1&&!Array.isArray(j)){if(!confirm('Restaurer cette sauvegarde ?'))return;for(const r of [...Object.values(j.shows),...Object.values(j.movies||{}),...Object.values(j.books||{})])r.m=Date.now()+1;gmerge(j);save();render(1);toast('Sauvegarde restaurée');return}const n=cleanData(Array.isArray(j)?fromBk(j):j);if(!n.shows||typeof n.shows!='object')throw 0;
+  if(hasAny()&&!confirm('Remplacer les données actuelles ?'))return;
   if(!Array.isArray(j))n.raw=S.raw;n.gh=S.gh;n.ui=S.ui;if(!n.movies)n.movies=S.movies;if(!n.books)n.books=S.books;n.mode=S.mode;S=n;view={f:'cours',q:'',open:null,add:0,s:null};save();render(1);toast(Object.keys(S.shows).length+' séries importées');update()}
  catch(err){toast('Fichier non reconnu')}};
-(async()=>{try{history.scrollRestoration='manual'}catch(e){}try{if(history.state&&history.state.n)history.replaceState(null,'')}catch(e){}const d=await load();if(d)S=d;normTags();migratePin();view.f=defF();render();if(S.gh&&S.gh.t){bkSkip=1;await gsync(1);await autoBk(1);bkSkip=0;render()}if(hasAny())update();setInterval(()=>autoBk(),36e5);document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoBk()})})();
+(async()=>{try{history.scrollRestoration='manual'}catch(e){}try{if(history.state&&history.state.n)history.replaceState(null,'')}catch(e){}const d=await load();if(d)S=d;normTags();migratePin();view.f=defF();render();await cReturn();if(S.gh&&S.gh.t){bkSkip=1;await gsync(1);await autoBk(1);bkSkip=0;render()}if(hasAny())update();setInterval(()=>autoBk(),36e5);document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoBk()})})();
 </script></body></html>
