@@ -176,6 +176,7 @@ h1.cas{display:flex;gap:4px;margin:0 4px;padding:3px;flex:1 1 auto;min-width:0;m
 body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{width:29px;height:29px}
 .nxs{justify-content:flex-end;gap:0}.nxs>span{color:var(--mu);font-size:13px}
 #hd .cat *{pointer-events:none}#hd .cat.drg{z-index:3;transition:none;transform:translateY(-3px) scale(1.12);box-shadow:0 8px 16px #0007}#hd .cat.drg.on{background:#00000060}
+#undo{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#323232;color:#fff;border-radius:99px;padding:6px 6px 6px 18px;display:flex;align-items:center;gap:12px;z-index:21;box-shadow:0 4px 14px #0007;font-size:15px;white-space:nowrap}#undo[hidden]{display:none}#undo button{background:none;color:#ffb74d;font-weight:700;padding:10px 14px;border-radius:99px}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -187,7 +188,7 @@ body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{w
 <button data-act="menu" data-m="filt" aria-label="Filtrer" id="flb"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg><small id="fl"></small></button>
 </header>
 <div id="menu" hidden></div>
-<div id="peek" hidden></div><div id="scan" hidden></div><main id="app"></main>
+<div id="peek" hidden></div><div id="undo" hidden role="status"><span></span><button data-act="undo">Annuler</button></div><div id="scan" hidden></div><main id="app"></main>
 <button class="fab" data-act="add" aria-label="Ajouter une série">+</button>
 <div id="dlg" hidden></div>
 <div id="ptr" hidden></div>
@@ -991,7 +992,13 @@ const aboutHtml=()=>`<div class="cp"><b>À propos</b><p>Application créée par 
 function schedSync(){if(S.gh&&S.gh.t){S.gh.dirty=1;clearTimeout(gT);gT=setTimeout(()=>gsync(1),6000)}}
 function toggleArch(it){it.arch=it.arch?0:1;it.mod=Date.now();logEv(it,it.arch?'Archivée':'Sortie de l’archive');toast(it.arch?'Série archivée':'Série remise dans la liste');schedSync();save();render()}
 async function deleteIt(it,swipe){if(!(swipe&&S.swnc)&&!confirm(it.kind=='m'?'Supprimer ce film ?':it.kind=='b'?'Supprimer cet élément ?':'Supprimer cette série ?'))return;
- logEv(it,it.kind=='m'?'Film supprimé':it.kind=='b'?'Supprimé':'Série supprimée');delete S.shows[it.id];delete MV()[it.id];delete BK()[it.id];(S.del=S.del||{})[it.id]=Date.now();schedSync();save();render()}
+ logEv(it,it.kind=='m'?'Film supprimé':it.kind=='b'?'Supprimé':'Série supprimée');undoKeep(it);delete S.shows[it.id];delete MV()[it.id];delete BK()[it.id];(S.del=S.del||{})[it.id]=Date.now();schedSync();save();render();undoShow(it)}
+/* « Supprimé — Annuler » pendant quelques secondes */
+let undoD=null,undoT=0;
+function undoKeep(it){undoD={K:S.shows[it.id]?'shows':MV()[it.id]?'movies':'books',it}}
+function undoShow(it){const u=$('#undo');u.querySelector('span').textContent=TT(it.kind=='m'?'Film supprimé':it.kind=='b'?(it.bd?'BD supprimée':'Livre supprimé'):'Série supprimée');u.hidden=false;u.querySelector('button').textContent=TT('Annuler');clearTimeout(undoT);undoT=setTimeout(()=>{u.hidden=true;undoD=null},7000)}
+function undoDo(){const u=$('#undo');u.hidden=true;clearTimeout(undoT);const D=undoD;undoD=null;if(!D)return;const it=D.it,C=D.K=='shows'?S.shows:D.K=='movies'?MV():BK();
+ C[it.id]=it;it.mod=Date.now();if(S.del)delete S.del[it.id];logEv(it,'Suppression annulée');schedSync();save();render();toast('Remis dans la liste')}
 const refreshItem=it=>it.kind=='m'?fetchMovie(it,0):it.kind=='b'?fetchBook(it,0):it.src=='tmdb'?syncTmdbTv(it):syncShow(it);
 const ratingHtml=sh=>`<div class="rate">${[1,2,3,4].map(n=>`<button class="st4 ${(sh.rate||0)>=n?'on':''}" data-act="rate" data-id="${sh.id}" data-n="${n}" aria-label="${n}/4">★</button>`).join('')}</div><textarea id="nt" data-id="${sh.id}" rows="7" placeholder="Écris ton avis ici…">${esc(sh.note||'')}</textarea>`;
 const vstack=it=>`<div class="vs"><button class="vb ${it.pin?'on':''}" data-act="pin" data-id="${it.id}" aria-label="${it.pin?'Retirer l’épingle':'Épingler en début de liste'}">${PINI}</button><button class="vb ${it.fav?'on':''}" data-act="fav" data-id="${it.id}" aria-label="${it.fav?'Retirer des favoris':'Ajouter aux favoris'}">♥</button><button class="vb ${it.arch?'on':''}" data-act="archive" data-id="${it.id}" aria-label="${it.arch?'Remettre dans la liste':'Archiver la série'}">${ARCH}</button></div>`;
@@ -1187,7 +1194,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='season')view.s=+d.n;
  else if(a=='sw')sh.eps.forEach(e=>{if(e.s==view.s&&past(sh,e))e.w=1});
  else if(a=='aw')sh.eps.forEach(e=>{if(past(sh,e))e.w=1});
- else if(a=='del'){if(!confirm(sh.kind=='m'?'Supprimer ce film ?':sh.kind=='b'?'Supprimer cet élément ?':'Supprimer cette série ?'))return;delete S.shows[d.id];delete MV()[d.id];delete BK()[d.id];(S.del=S.del||{})[d.id]=Date.now();view.open=null;top=2}
+ else if(a=='del'){if(!confirm(sh.kind=='m'?'Supprimer ce film ?':sh.kind=='b'?'Supprimer cet élément ?':'Supprimer cette série ?'))return;undoKeep(sh);delete S.shows[d.id];delete MV()[d.id];delete BK()[d.id];(S.del=S.del||{})[d.id]=Date.now();view.open=null;top=2;setTimeout(()=>undoShow(sh),0)}
+ else if(a=='undo')return undoDo();
  else if(a=='sync1'){toast('Actualisation…');try{const n=await syncShow(sh);toast(n?n+' nouveaux épisodes':'À jour')}catch(e){toast('Connexion impossible')}}
  else if(a=='update')return update();
  else if(a=='import')return $('#file').click();
