@@ -106,7 +106,7 @@ h1 button{vertical-align:middle;margin-left:2px}
 .fvb svg{width:26px;height:26px;fill:currentColor}
 .fvb.on{color:#e53935}
 .fvb.hr.on{color:#e53935}
-.fvb:not(.on):not([data-act=del]){opacity:.4}
+.fvb:not(.on):not(.done):not([data-act=del]){opacity:.4}.fvb.done .edb{stroke:var(--bg);stroke-width:1.2}
 .hrt{position:absolute;top:8px;right:56px;color:#ff5a6e;font-size:22px;line-height:1;text-shadow:0 1px 3px #000;z-index:2}
 .pinb.off .pin{opacity:.28}
 .pinb.on .pin{fill:#ff5252}
@@ -269,6 +269,7 @@ async function update(){
 const card=(sh,s)=>`<article class="card ${view.sel&&view.sel[sh.id]?'sel':''}" data-act="open" data-id="${sh.id}"><div class="poster">${view.sel?`<span class="ck ${view.sel[sh.id]?'on':''}">✓</span>`:''}${sh.img?`<img loading="lazy" src="${esc(sh.img)}" alt="">`:esc(nm(sh)[0])}${s.left?`<b class="badge">${s.left}</b>`:''}${vstack(sh)}</div><h3>${esc(nm(sh))}</h3><div class="bar"><i style="width:${s.a?Math.round(100*s.w/s.a):0}%"></i></div></article>`;
 const ep=(sh,e,x)=>`<div class="ep ${e.d>today()&&!e.w?'fut':''}" ${e.u?`data-act="sum" data-id="${sh.id}" data-k="${e.s}-${e.n}"`:''}><input type="checkbox" data-act="w" data-id="${sh.id}" data-k="${e.s}-${e.n}" ${e.w?'checked':''} aria-label="Vu"><div class="t"><span>${x?esc(nm(sh))+' · S'+e.s+'E'+e.n:e.n+'. '+esc(e.t||'Épisode '+e.n)}</span>${x?`<small>${esc(e.t||'')}</small>`:''}${FR()&&gl(e,'tf')&&gl(e,'tf').toLowerCase()!==(e.t||'').toLowerCase()?`<small class="tf">${esc(gl(e,'tf'))}</small>`:''}<small>${e.d?fmtDate(e.d):'date inconnue'}</small>${view.sx==sh.id+'|'+e.s+'-'+e.n?(fr(e,'u','uf'),`<p class="su">${esc(FR()&&gl(e,'uf')||e.u)}</p>`):''}</div><button class="hb ${e.f?'on':''}" data-act="ef" data-id="${sh.id}" data-k="${e.s}-${e.n}" aria-label="Épisode favori">♥</button></div>`;
 const PIN='<svg class="pin" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>';
+const EYED='<svg viewBox="0 0 24 24"><path fill="#bdbdbd" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/><circle class="edb" cx="18.5" cy="17.5" r="5.5" fill="#43a047"/><path d="M15.8 17.6l1.8 1.8 3.4-3.6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const EYE='<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
 const FILT=[['cours','En cours'],['fav','Séries favorites ♥'],['eps','Épisodes favoris ♥'],['all','Toutes les séries'],['noanim','Toutes sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
 const FILTM=[['tosee','À voir'],['fav','Films favoris ♥'],['all','Tous les films'],['noanim','Tous sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
@@ -821,7 +822,7 @@ function logAct(a,d,sh){const g=lgSeen;lgSeen=null;if(!sh)return;const f=()=>sh.
  if(a=='w'){const x=f();if(x)logEv(sh,'Épisode '+en(x)+(x.w?' marqué vu':' marqué non vu'))}
  else if(a=='seen'){if(g)logEv(sh,'Épisode '+en(g)+' marqué vu')}
  else if(a=='sw')logEv(sh,'Saison '+view.s+' marquée vue');
- else if(a=='aw')logEv(sh,'Tous les épisodes marqués vus');
+ else if(a=='aw'){if(!sh.eps.every(e=>e.w||!past(sh,e)))logEv(sh,'Tous les épisodes marqués vus')}
  else if(a=='fav')logEv(sh,sh.fav?'Ajoutée aux favoris':'Retirée des favoris');
  else if(a=='pin')logEv(sh,sh.pin?'Épinglée':'Épingle retirée');
  else if(a=='archive')logEv(sh,sh.arch?'Archivée':'Sortie de l’archive');
@@ -884,7 +885,7 @@ const TRASH='<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 
 const LGD=t=>`<small class="lg">${t}</small>`;
 const icons=sh=>{const k=sh.kind,eye=k=='m'||k=='b',all=!eye&&sh.eps&&sh.eps.every(e=>e.w||!past(sh,e));
  const b=(on,act,cls,aria,inner,lg,dis)=>`<div class="fvi"><button class="fvb ${cls} ${on?'on':''}" data-act="${act}" data-id="${sh.id}" aria-label="${aria}" ${dis?'disabled':''}>${inner}</button>${LGD(lg)}</div>`;
- return`<div class="fvs">${b(sh.pin,'pin','',sh.pin?'Retirer l’épingle':'Épingler en début de liste',PINI,'Épingler')}${b(sh.fav,'fav','hr',sh.fav?'Retirer des favoris':'Ajouter aux favoris','♥','Favori')}${b(sh.arch,'archive','',sh.arch?'Remettre dans la liste':'Archiver la série',ARCH,'Archiver')}${eye?b(sh.seen,'seen','',sh.seen?'Marquer comme non vu':'Marquer comme vu',EYE,k=='m'?'Vu + archiver':'Lu + archiver'):b(0,'aw','','Tout marquer vu',EYE,'Tout vu',all)}${b(0,'del','','Supprimer',TRASH,'Supprimer')}</div>`};
+ return`<div class="fvs">${b(sh.pin,'pin','',sh.pin?'Retirer l’épingle':'Épingler en début de liste',PINI,'Épingler')}${b(sh.fav,'fav','hr',sh.fav?'Retirer des favoris':'Ajouter aux favoris','♥','Favori')}${b(sh.arch,'archive','',sh.arch?'Remettre dans la liste':'Archiver la série',ARCH,'Archiver')}${eye?b(sh.seen,'seen','',sh.seen?'Marquer comme non vu':'Marquer comme vu',EYE,k=='m'?'Vu + archiver':'Lu + archiver'):(all?b(0,'aw','done','Tous les épisodes sont vus',EYED,'Tout vu',0):b(0,'aw','','Tout marquer vu',EYE,'Tout vu',0))}${b(0,'del','','Supprimer',TRASH,'Supprimer')}</div>`};
 const tabsHtml=(cur,L)=>`<div class="tabs" id="tb">${L.map(([k,l])=>`<button class="${cur==k?'on':''}" data-act="tab2" data-t="${k}">${l}</button>`).join('')}</div>`;
 const pimg=(p,s)=>p.im?`<img loading="lazy" src="${esc(TI(p.im,s))}" alt="">`:'<span class="ph"></span>';
 const pAttr=(sh,p)=>sh.kind=='b'?`data-act="author" data-pn="${esc(p.n)}"`:sh.kind=='m'||sh.src=='tmdb'?`data-act="person" data-pid="${p.id}" data-pn="${esc(p.n)}" data-src="t"`:`data-act="person" data-pn="${esc(p.n)}" data-src="n"`;
@@ -1409,7 +1410,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='ef'){const e=ek();e.f=e.f?0:1}
  else if(a=='season')view.s=+d.n;
  else if(a=='sw')sh.eps.forEach(e=>{if(e.s==view.s&&past(sh,e))e.w=1});
- else if(a=='aw')sh.eps.forEach(e=>{if(past(sh,e))e.w=1});
+ else if(a=='aw'){if(sh.eps.every(e=>e.w||!past(sh,e)))return toast('Tous les épisodes sont déjà vus');sh.eps.forEach(e=>{if(past(sh,e))e.w=1})}
  else if(a=='del'){if(!confirm(sh.kind=='m'?'Supprimer ce film ?':sh.kind=='b'?'Supprimer cet élément ?':'Supprimer cette série ?'))return;undoKeep(sh);delete S.shows[d.id];delete MV()[d.id];delete BK()[d.id];(S.del=S.del||{})[d.id]=Date.now();view.open=null;top=2;setTimeout(()=>undoShow(sh),0)}
  else if(a=='undo')return undoDo();
  else if(a=='sync1'){toast('Actualisation…');try{const n=await syncShow(sh);toast(n?n+' nouveaux épisodes':'À jour')}catch(e){toast('Connexion impossible')}}
