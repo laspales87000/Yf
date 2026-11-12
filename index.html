@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="theme-color" content="#ff8800"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self'; connect-src 'self' blob: data: https://api.tvmaze.com https://api.themoviedb.org https://www.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://openlibrary.org https://api.github.com https://gist.githubusercontent.com https://api.dropboxapi.com https://content.dropboxapi.com https://api.upcitemdb.com https://world.openproductsfacts.org https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self'; connect-src 'self' blob: data: https://api.tvmaze.com https://api.themoviedb.org https://www.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://openlibrary.org https://api.github.com https://gist.githubusercontent.com https://api.dropboxapi.com https://content.dropboxapi.com https://api.pcloud.com https://eapi.pcloud.com https://*.pcloud.com https://*.pcloud.link https://api.upcitemdb.com https://world.openproductsfacts.org https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>Mes séries</title>
 <style>
 :root{--bg:#e9ecef;--sf:#fff;--s2:#e0e0e0;--tx:#212121;--mu:#757575;--ac:#ff8800;--bl:#2196f3;--fv:#e91e63;--t2:#424242;--tf:#546e7a}
@@ -254,7 +254,7 @@ const FILT=[['cours','En cours'],['fav','Séries favorites ♥'],['eps','Épisod
 const FILTM=[['tosee','À voir'],['fav','Films favoris ♥'],['all','Tous les films'],['noanim','Tous sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
-function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','csetdbx','csetgdr'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','csetdbx','csetgdr'].includes(view.menu)?' w':'');
+function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','csetdbx','csetpcl'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','csetdbx','csetpcl'].includes(view.menu)?' w':'');
  m.innerHTML=view.menu=='leg'?legHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():/^cset/.test(view.menu||'')?csetHtml(view.menu.slice(4)):view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join(''):''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
@@ -312,20 +312,20 @@ let CA=null;const AC=()=>CA||S.gh,AP=()=>(AC()&&AC().p)||'gh';
 async function gh(path,opt={}){const r=await fetch('https://api.github.com'+path,{...opt,headers:{Authorization:'Bearer '+AC().t,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
  if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.json()}
 let gbusy=0,gT;
-/* Synchronisation par Dropbox ou Google Drive (en plus de GitHub) */
-const DBX_KEY='vn7n5oxqshf5l9q',GDR_ID='',CLN={gh:'GitHub',dbx:'Dropbox',gdr:'Google Drive'},CP=()=>(S.gh&&S.gh.p)||'gh',RDR=()=>location.origin+location.pathname;
+/* Synchronisation par Dropbox ou pCloud (en plus de GitHub) */
+const DBX_KEY='vn7n5oxqshf5l9q',PCL_ID='',CLN={gh:'GitHub',dbx:'Dropbox',pcl:'pCloud'},CP=()=>(S.gh&&S.gh.p)||'gh',RDR=()=>location.origin+location.pathname;
 const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
 /* En changeant de service principal, l'ancien peut devenir la copie de secours */
 function askKeep(p){const g=S.gh;if(!(g&&g.t)||CP()==p)return 0;const k=S.bk2&&S.bk2.t?S.bk2:null;
  return confirm('Garder '+CLN[CP()]+' comme copie de secours de la sauvegarde ?\nTes sauvegardes de la semaine continueront d’y être envoyées, sans rien ressaisir.'+(k&&k.p!=CP()?'\n(Cela remplace la copie actuelle sur '+CLN[k.p]+'.)':''))?1:0}
 function keepOld(){const g=S.gh;if(!(g&&g.t))return;S.bk2={...g,p:CP(),bkw:S.bkw,lastbk:g.lastbk,err:0,reco:0,dirty:0}}
-async function cConnect(p,role){const key=p=='dbx'?DBX_KEY:GDR_ID;if(!key){view.menu='cset'+p;renderMenu();return}
+async function cConnect(p,role){const key=p=='dbx'?DBX_KEY:PCL_ID;if(!key){view.menu='cset'+p;renderMenu();return}
  if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
  const keep=!role&&askKeep(p);const st=rnd(16);await saveNow();try{sessionStorage.setItem('oa',JSON.stringify({p,st,role,keep}))}catch(e){}
  if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role,keep}))}catch(e){}
   location.href='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st})}
- else location.href='https://accounts.google.com/o/oauth2/v2/auth?'+new URLSearchParams({client_id:key,response_type:'token',scope:'https://www.googleapis.com/auth/drive.appdata',redirect_uri:RDR(),state:st,include_granted_scopes:'true'})}
-/* Retour de la page de connexion Dropbox / Google : on vérifie le « state » (protection contre les connexions forcées) */
+ else location.href='https://my.pcloud.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'token',redirect_uri:RDR(),state:st})}
+/* Retour de la page de connexion Dropbox / pCloud : on vérifie le « state » (protection contre les connexions forcées) */
 async function cReturn(){const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1)),st=q.get('state')||h.get('state');if(!st)return;
  let o=null;try{o=JSON.parse(sessionStorage.getItem('oa')||'null');sessionStorage.removeItem('oa')}catch(e){}
  try{history.replaceState(null,'',RDR())}catch(e){}
@@ -333,33 +333,35 @@ async function cReturn(){const q=new URLSearchParams(location.search),h=new URLS
  if(q.get('error')||h.get('error'))return toast('Connexion annulée',3000);
  let A;try{if(o.p=='dbx'){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({code:q.get('code')||'',grant_type:'authorization_code',client_id:DBX_KEY,code_verifier:o.v,redirect_uri:RDR()})});
    if(!r.ok)throw 0;const j=await r.json();A={p:'dbx',t:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||14400)*1000,g:''}}
-  else{const t=h.get('access_token');if(!t)throw 0;A={p:'gdr',t,exp:Date.now()+(+h.get('expires_in')||3600)*1000,g:''}}
+  else{const t=h.get('access_token');if(!t)throw 0;const hn=h.get('hostname')||(h.get('locationid')=='2'?'eapi.pcloud.com':'api.pcloud.com');if(!PCH.test(hn))throw 0;A={p:'pcl',t,host:hn,g:''}}
   if(o.role=='bk2'){const old=S.bk2;S.bk2=Object.assign(A,old&&old.p==A.p?{b:old.b,fid:old.fid,lastbk:old.lastbk}:{});save();await bk2Now();return}
   if(o.keep)keepOld();S.gh=A;save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
-async function cTok(){const g=AC();if(g.exp&&g.exp>Date.now()+60e3)return g.t;
+async function cTok(){const g=AC();if(g.p=='pcl')return g.t;if(g.exp&&g.exp>Date.now()+60e3)return g.t;
  if(g.p=='dbx'&&g.rt){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:g.rt,client_id:DBX_KEY})});
   if(r.ok){const j=await r.json();g.t=j.access_token;g.exp=Date.now()+(j.expires_in||14400)*1000;save();return g.t}if(r.status==400||r.status==401)throw Error('jeton');throw Error(r.status)}
  throw Error('reco')}
+/* pCloud : appels à son service (l'accès ne s'arrête pas tout seul) */
+const PCH=/^e?api\.pcloud\.com$/;
+async function pc(m,P,opt){const A=AC(),r=await fetch('https://'+A.host+'/'+m+'?'+new URLSearchParams({...P,access_token:A.t}),opt||{});if(!r.ok)throw Error(r.status);const j=await r.json();
+ if(j.result===0)return j;if([1000,2000,2094,2095,1022].includes(j.result))throw Error('jeton');if(j.result==2009||j.result==2005)return null;throw Error('pc'+j.result)}
+async function pcDir(){const A=AC();if(A.dir)return A.dir;const j=await pc('createfolderifnotexists',{path:'/Mon suivi de serie'});A.dir=j.metadata.folderid;save();return A.dir}
+async function pcLs(){const j=await pc('listfolder',{folderid:await pcDir()});const L=((j&&j.metadata&&j.metadata.contents)||[]).filter(f=>!f.isfolder);const A=AC();A.fid={};for(const f of L)A.fid[f.name]=f.fileid;save();return L}
+async function pcId(name){const A=AC();if(A.fid&&A.fid[name])return A.fid[name];await pcLs();return(A.fid||{})[name]||0}
 /* Lecture / écriture d'un fichier dans le dossier privé de l'application */
 async function cGet(name){const t=await cTok();
  if(AP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+t,'Dropbox-API-Arg':JSON.stringify({path:'/'+name})}});if(r.status==409)return null;if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.text()}
- for(let k=0;k<2;k++){const id=await gdrId(name,t);if(!id)return null;const r=await fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+t}});if(r.status==404){gdrForget(name);continue}if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return r.text()}return null}
+ for(let k=0;k<2;k++){const id=await pcId(name);if(!id)return null;const l=await pc('getfilelink',{fileid:id});if(!l){delete AC().fid[name];continue}
+  const r=await fetch('https://'+l.hosts[0]+l.path);if(!r.ok)throw Error(r.status);return r.text()}return null}
 async function cPut(name,txt){const t=await cTok();
  if(AP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:'/'+name,mode:'overwrite',mute:true})},body:txt});if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return}
- const id=await gdrId(name,t);let r;
- if(id){r=await fetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:txt});if(r.status==404){gdrForget(name);r=null}}
- if(!r){const fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,parents:['appDataFolder']})],{type:'application/json'}));fd.append('file',new Blob([txt],{type:'application/json'}));
-  r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+t},body:fd});if(r.ok){try{const A=AC();A.fid=A.fid||{};A.fid[name]=(await r.clone().json()).id;save()}catch(e){}}}
- if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status)}
-async function cList(){const t=await cTok();
- if(AP()=='dbx'){const r=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:''})});if(!r.ok)throw Error(r.status);return((await r.json()).entries||[]).map(e=>e.name)}
- const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=100&fields=files(id,name)',{headers:{Authorization:'Bearer '+t}});if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return((await r.json()).files||[]).map(f=>f.name)}
+ const fd=new FormData();fd.append('file',new Blob([txt],{type:'application/json'}),name);
+ const j=await pc('uploadfile',{folderid:await pcDir(),filename:name,nopartial:1},{method:'POST',body:fd});if(!j)throw Error('pc');const m=(j.metadata||[])[0];if(m){const A=AC();A.fid=A.fid||{};A.fid[name]=m.fileid;save()}}
+async function cList(){await cTok();
+ if(AP()=='dbx'){const t=await cTok(),r=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:''})});if(!r.ok)throw Error(r.status);return((await r.json()).entries||[]).map(e=>e.name)}
+ return(await pcLs()).map(f=>f.name)}
 async function cDel(name){const t=await cTok();
  if(AP()=='dbx'){await fetch('https://api.dropboxapi.com/2/files/delete_v2',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:'/'+name})});return}
- const id=await gdrId(name,t);gdrForget(name);if(id)await fetch('https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+t}})}
-function gdrForget(name){const A=AC();if(A&&A.fid)delete A.fid[name]}
-async function gdrId(name,t){const A=AC();A.fid=A.fid||{};if(A.fid[name])return A.fid[name];const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)&q='+encodeURIComponent("name='"+name.replace(/'/g,"\\'")+"'"),{headers:{Authorization:'Bearer '+t}});
- if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);const id=(((await r.json()).files||[])[0]||{}).id||'';if(id){A.fid[name]=id;save()}return id}
+ const id=await pcId(name);if(id){await pc('deletefile',{fileid:id});delete AC().fid[name];save()}}
 async function csync(quiet){gbusy=1;renderCloud();
  try{const txt=await cGet('suivi-series.json');if(txt)gmerge(JSON.parse(txt));else for(const s of Object.values(S.shows))s.mod=s.mod||Date.now();
   await cPut('suivi-series.json',JSON.stringify(gpay()));S.gh.last=Date.now();S.gh.err=0;S.gh.dirty=0;S.gh.reco=0;save();render();if(!quiet)toast('Synchronisé ✓')}
@@ -378,7 +380,7 @@ async function bk2Now(){toast('Copie de secours de la sauvegarde…');try{await 
 async function bk2Restore(){if(!S.bk2||!S.bk2.t)return;try{await withA(S.bk2,grestore)}catch(e){toast('Restauration impossible')}}
 const bk2Html=()=>{const k=S.bk2,on=S.gh&&S.gh.t,p=CP();
  if(k&&k.t)return`<div class="cp"><b>🛟 Copie de secours de la sauvegarde : ${CLN[k.p]}</b><p>${k.reco?'⚠ Reconnexion nécessaire<br>':k.err?'⚠ Dernière copie échouée<br>':''}Dernière copie : ${k.lastbk?fmtT(k.lastbk):'aucune'}</p></div>${k.reco&&k.p!='gh'?`<button data-act="bk2c" data-p="${k.p}">${ICO[k.p]} Reconnecter ${CLN[k.p]}</button>`:''}<button data-act="bk2now">Faire une copie maintenant</button><button data-act="bk2rest">Restaurer depuis la copie de secours de la sauvegarde…</button><button data-act="bk2off">Retirer la copie de secours de la sauvegarde</button>`;
- return`<div class="cp"><b>🛟 Copie de secours de la sauvegarde</b><p style="font-size:12px">Chaque semaine, ta sauvegarde est aussi envoyée sur un 2e service. Si le premier tombe en panne, tes données sont ailleurs.</p></div>`+['dbx','gdr','gh'].filter(x=>!on||x!=p).map(x=>`<button data-act="bk2c" data-p="${x}">${ICO[x]} Copie sur ${CLN[x]}</button>`).join('')};
+ return`<div class="cp"><b>🛟 Copie de secours de la sauvegarde</b><p style="font-size:12px">Chaque semaine, ta sauvegarde est aussi envoyée sur un 2e service. Si le premier tombe en panne, tes données sont ailleurs.</p></div>`+['dbx','pcl','gh'].filter(x=>!on||x!=p).map(x=>`<button data-act="bk2c" data-p="${x}">${ICO[x]} Copie sur ${CLN[x]}</button>`).join('')};
 const csetHtml=p=>`<div class="cp"><b>${CLN[p]} : réglage à faire une seule fois</b><p>Pour se connecter à ${CLN[p]}, l’application doit d’abord être enregistrée chez ${CLN[p]} par la personne qui gère l’application.</p><p>Quand ce sera fait, ce bouton te mènera directement à la page de connexion ${CLN[p]}.</p></div><button data-act="menu" data-m="cloud">← Retour</button>`;
 async function gsync(quiet){
  if(gbusy||!netOk(1))return;if(S.gh&&S.gh.t&&CP()!='gh')return csync(quiet);
@@ -403,15 +405,15 @@ const CLT={off:'Synchronisation désactivée',ok:'Tout est synchronisé',busy:'S
 const cst=()=>{const g=S.gh;return!(g&&g.t)?'off':gbusy?'busy':(g.err||g.dirty)?'warn':'ok'};
 function renderCloud(){const b=$('#cl'),s=cst();b.innerHTML=CLI[s];b.className=s=='busy'?'busy':'';b.setAttribute('aria-label',CLT[s])}
 const fmtT=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0'),x=z(d.getHours())+':'+z(d.getMinutes());return d.toDateString()==new Date().toDateString()?"aujourd'hui à "+x:fmtDate(d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()))+' '+x};
-/* Logos officiels de Dropbox et Google Drive (pour les boutons de connexion) */
+/* Logos de Dropbox, pCloud et GitHub (pour les boutons de connexion) */
 const ICO={dbx:'<svg class="bico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#0061FF" d="M6 1.807L0 5.629l6 3.822 6.001-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6-3.822-6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452l-6 3.822zM18 9.452l-6 3.822 6 3.822 6-3.822-6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822L6 18.371z"/></svg>',
- gdr:'<svg class="bico" viewBox="0 0 87.3 78" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>',
+ pcl:'<svg class="bico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#17BED0" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>',
  gh:'<svg class="bico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'};
 function cloudHtml(){const g=S.gh,s=cst(),p=CP(),n=COLL('s').length+COLL('m').length+COLL('b').length+COLL('c').length;
- const pick=`<button data-act="cpick" data-p="dbx">${ICO.dbx} Connecter Dropbox</button><button data-act="cpick" data-p="gdr">${ICO.gdr} Connecter Google Drive</button><button data-act="menu" data-m="ghhelp">${ICO.gh} Connecter GitHub</button>`;
+ const pick=`<button data-act="cpick" data-p="dbx">${ICO.dbx} Connecter Dropbox</button><button data-act="cpick" data-p="pcl">${ICO.pcl} Connecter pCloud</button><button data-act="menu" data-m="ghhelp">${ICO.gh} Connecter GitHub</button>`;
  if(s=='off')return`<div class="cp"><b>${CLT.off}</b><p>Tes données restent sur cet appareil uniquement.</p><p><b>Pour les retrouver sur tes autres appareils, choisis un service :</b></p></div>${pick}${bk2Html()}`;
  const t=g.reco?'⚠ Reconnexion nécessaire':s=='warn'?(g.err?'⚠ Dernière synchro échouée':'⚠ Modifications pas encore envoyées'):s=='busy'?CLT.busy:'✓ '+CLT.ok;
- return`<div class="cp cst"><span class="cstl">${ICO[p]}</span><div><b>${t}</b><p>Service : ${CLN[p]}${p=='gh'?' Gist (privé)':' (dossier privé de l’application)'}<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} éléments</p></div></div>${g.reco?`<button data-act="cpick" data-p="${p}">${ICO[p]} Reconnecter ${CLN[p]}</button>`:''}<button data-act="gsync">Synchroniser maintenant</button><button data-act="bknow">💾 Faire une sauvegarde maintenant</button><button data-act="grest">Restaurer une sauvegarde…</button>${p=='gh'?'<button data-act="gchg">🔁 Changer de compte GitHub</button>':''}<div class="cp"><b>Changer de service</b></div>${p!='dbx'?'<button data-act="cpick" data-p="dbx">'+ICO.dbx+' Passer à Dropbox</button>':''}${p!='gdr'?'<button data-act="cpick" data-p="gdr">'+ICO.gdr+' Passer à Google Drive</button>':''}${p!='gh'?'<button data-act="menu" data-m="ghhelp">'+ICO.gh+' Passer à GitHub</button>':''}<button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de service ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien service.</p></div>${bk2Html()}`}
+ return`<div class="cp cst"><span class="cstl">${ICO[p]}</span><div><b>${t}</b><p>Service : ${CLN[p]}${p=='gh'?' Gist (privé)':' (dossier privé de l’application)'}<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} éléments</p></div></div>${g.reco?`<button data-act="cpick" data-p="${p}">${ICO[p]} Reconnecter ${CLN[p]}</button>`:''}<button data-act="gsync">Synchroniser maintenant</button><button data-act="bknow">💾 Faire une sauvegarde maintenant</button><button data-act="grest">Restaurer une sauvegarde…</button>${p=='gh'?'<button data-act="gchg">🔁 Changer de compte GitHub</button>':''}<div class="cp"><b>Changer de service</b></div>${p!='dbx'?'<button data-act="cpick" data-p="dbx">'+ICO.dbx+' Passer à Dropbox</button>':''}${p!='pcl'?'<button data-act="cpick" data-p="pcl">'+ICO.pcl+' Passer à pCloud</button>':''}${p!='gh'?'<button data-act="menu" data-m="ghhelp">'+ICO.gh+' Passer à GitHub</button>':''}<button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de service ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien service.</p></div>${bk2Html()}`}
 const ghHelp=()=>`<div class="cp"><b>Connecter GitHub</b><p>1. Crée un compte gratuit sur github.com.</p><p>2. Touche « Créer le jeton » (le droit « gist » est déjà coché).</p></div><a class="lnk" href="https://github.com/settings/tokens/new?scopes=gist&description=suivi-series" target="_blank" rel="noopener">Créer le jeton</a><div class="cp"><p>3. En bas de la page, touche « Generate token » et copie le jeton (ghp_…).</p><p>4. Reviens ici, touche « Coller mon jeton GitHub ».</p><p>Sur un autre appareil, utilise le même jeton.</p></div><button data-act="gchg">Coller mon jeton GitHub</button><button data-act="menu" data-m="cloud">← Retour</button>`;
 const GEN={comedy:'Humour',drama:'Drame','science-fiction':'Science-fiction','science fiction':'Science-fiction',action:'Action',adventure:'Aventure',animation:'Animation',anime:'Animation',crime:'Policier',documentary:'Documentaire',family:'Famille',fantasy:'Fantastique',horror:'Horreur',mystery:'Mystère',romance:'Romance',thriller:'Thriller',war:'Guerre',western:'Western',history:'Histoire',music:'Musique',medical:'Médical',legal:'Judiciaire',espionage:'Espionnage',supernatural:'Surnaturel',sports:'Sport',suspense:'Suspense',children:'Enfants'};
 const allTags=(k=MODE())=>[...new Set(COLL(k).flatMap(s=>s.tags||[]))].sort((a,b)=>tn(a).localeCompare(tn(b),LANG()));
@@ -823,7 +825,7 @@ function logAct(a,d,sh){const g=lgSeen;lgSeen=null;if(!sh)return;const f=()=>sh.
  else if(a=='tagx')logEv(sh,'Tag « '+tn(d.tag)+' » retiré');
  else if(a=='del')logEv(sh,sh.kind=='m'?'Film supprimé':sh.kind=='b'?'Supprimé':'Série supprimée')}
 const histHtml=()=>{const L=S.log||[];return`<div class="cp"><b>Historique des modifications</b></div>`+(L.length?L.map(e=>`<div class="hi" ${e.id?(IT(e.id)?`data-act="open" data-id="${esc(e.id)}"`:'data-act="hdel"'):''}>${e.n?`<b>${esc(e.n)}</b>`:''}<span>${esc(e.x)}</span><small>${fmtT(e.t)}</small></div>`).join(''):'<div class="cp"><p>Aucune modification</p></div>')};
-function fixCloud(){if(S.gh&&!S.gh.p)S.gh.p='gh';if(S.bk2&&!S.bk2.p)S.bk2.p='gh'}
+function fixCloud(){if(S.gh&&!S.gh.p)S.gh.p='gh';if(S.bk2&&!S.bk2.p)S.bk2.p='gh';if(S.gh&&S.gh.p=='gdr')S.gh=null;if(S.bk2&&S.bk2.p=='gdr')S.bk2=null}
 function migratePin(){if(S.mp)return;const R={};for(const p of(S.raw||[]))for(const x of p.Shows||[])R[x.SeriesId]=x;
  for(const s of Object.values(S.shows)){const x=R[s.id];s.pin=!!s.fav;s.fav=x?!!x.Liked:false}S.mp=1}
 /* Films (TMDB) */
