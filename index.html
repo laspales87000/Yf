@@ -208,6 +208,7 @@ function toast(m,ms){const t=$('#toast');t.textContent=TT(m);t.className='show';
 const idb=new Promise(r=>{try{const q=indexedDB.open('suivi-series',1);q.onupgradeneeded=()=>q.result.createObjectStore('k');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch(e){r(null)}});
 async function load(){const d=await idb;if(!d)return;return new Promise(r=>{const q=d.transaction('k').objectStore('k').get('s');q.onsuccess=()=>r(q.result);q.onerror=()=>r()})}
 let tm0;function save(){clearTimeout(tm0);tm0=setTimeout(async()=>{const d=await idb;if(d)d.transaction('k','readwrite').objectStore('k').put(S,'s')},400)}
+async function saveNow(){clearTimeout(tm0);const d=await idb;if(!d)return;await new Promise(r=>{const t=d.transaction('k','readwrite');t.objectStore('k').put(S,'s');t.oncomplete=t.onerror=t.onabort=()=>r()})}
 
 /* Import */
 function fromBk(j){const o={};for(const x of(j[0]||{}).Shows||[])o[x.SeriesId]={id:x.SeriesId,name:x.Name||'',status:x.Status,net:x.Network,genre:(x.Genre||'').split('|').filter(Boolean).join(', '),sum:x.Summary||'',fav:!!x.Liked,pin:!!x.Starred,arch:x.List==='1'?1:0,eps:x.Episodes.map(e=>({s:+e.Season,n:+e.Episode,t:e.Title,d:(e.Aired||'').slice(0,10),w:e.Watched==='1'?1:0,f:e.Selected?1:0}))};return{shows:o,sync:0,raw:j,mp:1}}
@@ -303,16 +304,17 @@ function gmerge(R){R=R&&typeof R=='object'?R:{};for(const K of['shows','movies',
  for(const id of Object.keys(BK()))if(S.del[id]>(BK()[id].mod||0))delete BK()[id];
  for(const id of Object.keys(MV()))if(S.del[id]>(MV()[id].mod||0))delete MV()[id];
  for(const id of Object.keys(S.shows))if(S.del[id]>(S.shows[id].mod||0))delete S.shows[id];normTags()}
-async function gh(path,opt={}){const r=await fetch('https://api.github.com'+path,{...opt,headers:{Authorization:'Bearer '+S.gh.t,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
+let CA=null;const AC=()=>CA||S.gh,AP=()=>(AC()&&AC().p)||'gh';
+async function gh(path,opt={}){const r=await fetch('https://api.github.com'+path,{...opt,headers:{Authorization:'Bearer '+AC().t,Accept:'application/vnd.github+json','Content-Type':'application/json'}});
  if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.json()}
 let gbusy=0,gT;
 /* Synchronisation par Dropbox ou Google Drive (en plus de GitHub) */
 const DBX_KEY='',GDR_ID='',CLN={gh:'GitHub',dbx:'Dropbox',gdr:'Google Drive'},CP=()=>(S.gh&&S.gh.p)||'gh',RDR=()=>location.origin+location.pathname;
 const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
-async function cConnect(p){const key=p=='dbx'?DBX_KEY:GDR_ID;if(!key){view.menu='cset'+p;renderMenu();return}
- if(S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
- const st=rnd(16);try{sessionStorage.setItem('oa',JSON.stringify({p,st}))}catch(e){}
- if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v}))}catch(e){}
+async function cConnect(p,role){const key=p=='dbx'?DBX_KEY:GDR_ID;if(!key){view.menu='cset'+p;renderMenu();return}
+ if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
+ const st=rnd(16);await saveNow();try{sessionStorage.setItem('oa',JSON.stringify({p,st,role}))}catch(e){}
+ if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role}))}catch(e){}
   location.href='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st})}
  else location.href='https://accounts.google.com/o/oauth2/v2/auth?'+new URLSearchParams({client_id:key,response_type:'token',scope:'https://www.googleapis.com/auth/drive.appdata',redirect_uri:RDR(),state:st,include_granted_scopes:'true'})}
 /* Retour de la page de connexion Dropbox / Google : on vérifie le « state » (protection contre les connexions forcées) */
@@ -321,43 +323,54 @@ async function cReturn(){const q=new URLSearchParams(location.search),h=new URLS
  try{history.replaceState(null,'',RDR())}catch(e){}
  if(!o||o.st!==st)return toast('Connexion refusée (lien non valable)',4000);
  if(q.get('error')||h.get('error'))return toast('Connexion annulée',3000);
- try{if(o.p=='dbx'){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({code:q.get('code')||'',grant_type:'authorization_code',client_id:DBX_KEY,code_verifier:o.v,redirect_uri:RDR()})});
-   if(!r.ok)throw 0;const j=await r.json();S.gh={p:'dbx',t:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||14400)*1000,g:''}}
-  else{const t=h.get('access_token');if(!t)throw 0;S.gh={p:'gdr',t,exp:Date.now()+(+h.get('expires_in')||3600)*1000,g:''}}
-  save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
-async function cTok(){const g=S.gh;if(g.exp&&g.exp>Date.now()+60e3)return g.t;
+ let A;try{if(o.p=='dbx'){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({code:q.get('code')||'',grant_type:'authorization_code',client_id:DBX_KEY,code_verifier:o.v,redirect_uri:RDR()})});
+   if(!r.ok)throw 0;const j=await r.json();A={p:'dbx',t:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||14400)*1000,g:''}}
+  else{const t=h.get('access_token');if(!t)throw 0;A={p:'gdr',t,exp:Date.now()+(+h.get('expires_in')||3600)*1000,g:''}}
+  if(o.role=='bk2'){const old=S.bk2;S.bk2=Object.assign(A,old&&old.p==A.p?{b:old.b,fid:old.fid,lastbk:old.lastbk}:{});save();await bk2Now();return}
+  S.gh=A;save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
+async function cTok(){const g=AC();if(g.exp&&g.exp>Date.now()+60e3)return g.t;
  if(g.p=='dbx'&&g.rt){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:g.rt,client_id:DBX_KEY})});
   if(r.ok){const j=await r.json();g.t=j.access_token;g.exp=Date.now()+(j.expires_in||14400)*1000;save();return g.t}if(r.status==400||r.status==401)throw Error('jeton');throw Error(r.status)}
  throw Error('reco')}
 /* Lecture / écriture d'un fichier dans le dossier privé de l'application */
 async function cGet(name){const t=await cTok();
- if(CP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+t,'Dropbox-API-Arg':JSON.stringify({path:'/'+name})}});if(r.status==409)return null;if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.text()}
- const id=await gdrId(name,t);if(!id)return null;const r=await fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+t}});if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return r.text()}
+ if(AP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+t,'Dropbox-API-Arg':JSON.stringify({path:'/'+name})}});if(r.status==409)return null;if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return r.text()}
+ for(let k=0;k<2;k++){const id=await gdrId(name,t);if(!id)return null;const r=await fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{headers:{Authorization:'Bearer '+t}});if(r.status==404){gdrForget(name);continue}if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return r.text()}return null}
 async function cPut(name,txt){const t=await cTok();
- if(CP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:'/'+name,mode:'overwrite',mute:true})},body:txt});if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return}
+ if(AP()=='dbx'){const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:'/'+name,mode:'overwrite',mute:true})},body:txt});if(r.status==401)throw Error('jeton');if(!r.ok)throw Error(r.status);return}
  const id=await gdrId(name,t);let r;
- if(id)r=await fetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:txt});
- else{const fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,parents:['appDataFolder']})],{type:'application/json'}));fd.append('file',new Blob([txt],{type:'application/json'}));
-  r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+t},body:fd})}
+ if(id){r=await fetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:txt});if(r.status==404){gdrForget(name);r=null}}
+ if(!r){const fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,parents:['appDataFolder']})],{type:'application/json'}));fd.append('file',new Blob([txt],{type:'application/json'}));
+  r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+t},body:fd});if(r.ok){try{const A=AC();A.fid=A.fid||{};A.fid[name]=(await r.clone().json()).id;save()}catch(e){}}}
  if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status)}
 async function cList(){const t=await cTok();
- if(CP()=='dbx'){const r=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:''})});if(!r.ok)throw Error(r.status);return((await r.json()).entries||[]).map(e=>e.name)}
+ if(AP()=='dbx'){const r=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:''})});if(!r.ok)throw Error(r.status);return((await r.json()).entries||[]).map(e=>e.name)}
  const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=100&fields=files(id,name)',{headers:{Authorization:'Bearer '+t}});if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return((await r.json()).files||[]).map(f=>f.name)}
 async function cDel(name){const t=await cTok();
- if(CP()=='dbx'){await fetch('https://api.dropboxapi.com/2/files/delete_v2',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:'/'+name})});return}
- const id=await gdrId(name,t);if(id)await fetch('https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+t}})}
-async function gdrId(name,t){const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)&q='+encodeURIComponent("name='"+name.replace(/'/g,"\\'")+"'"),{headers:{Authorization:'Bearer '+t}});
- if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);return(((await r.json()).files||[])[0]||{}).id||''}
+ if(AP()=='dbx'){await fetch('https://api.dropboxapi.com/2/files/delete_v2',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({path:'/'+name})});return}
+ const id=await gdrId(name,t);gdrForget(name);if(id)await fetch('https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+t}})}
+function gdrForget(name){const A=AC();if(A&&A.fid)delete A.fid[name]}
+async function gdrId(name,t){const A=AC();A.fid=A.fid||{};if(A.fid[name])return A.fid[name];const r=await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)&q='+encodeURIComponent("name='"+name.replace(/'/g,"\\'")+"'"),{headers:{Authorization:'Bearer '+t}});
+ if(r.status==401)throw Error('reco');if(!r.ok)throw Error(r.status);const id=(((await r.json()).files||[])[0]||{}).id||'';if(id){A.fid[name]=id;save()}return id}
 async function csync(quiet){gbusy=1;renderCloud();
  try{const txt=await cGet('suivi-series.json');if(txt)gmerge(JSON.parse(txt));else for(const s of Object.values(S.shows))s.mod=s.mod||Date.now();
   await cPut('suivi-series.json',JSON.stringify(gpay()));S.gh.last=Date.now();S.gh.err=0;S.gh.dirty=0;S.gh.reco=0;save();render();if(!quiet)toast('Synchronisé ✓')}
  catch(e){if(e.message=='reco'){S.gh.reco=1;S.gh.err=1;if(!quiet)toast('Reconnecte '+CLN[CP()]+' dans le menu du nuage',4000)}else if(e.message=='jeton'){S.gh.t='';toast('Accès '+CLN[CP()]+' refusé : reconnecte-le',4000)}else{S.gh.err=1;if(!quiet)toast('Synchronisation impossible')}}
  gbusy=0;renderCloud()}
-async function cbackup(){await cPut('sauvegarde-'+wk()+'.json',JSON.stringify(gpay()));const N=(await cList()).filter(isBk).sort().reverse().slice(12);for(const n of N)await cDel(n);S.bkw=wk();S.gh.lastbk=Date.now();save()}
+async function cbackupCore(){await cPut('sauvegarde-'+wk()+'.json',JSON.stringify(gpay()));const N=(await cList()).filter(isBk).sort().reverse().slice(12);for(const n of N)await cDel(n)}
 async function crestore(){try{const N=(await cList()).filter(isBk).sort().reverse();if(!N.length)return toast('Aucune sauvegarde trouvée');
  const c=prompt('Restaurer quelle sauvegarde ?\n'+N.map((n,i)=>(i+1)+'. '+bkLbl(n)).join('\n')+'\nTape le numéro :'),n=N[(+c||0)-1];if(!n)return;
  if(!confirm('Remplacer l’état de tes listes par cette sauvegarde ?'))return;const j=JSON.parse(await cGet(n)||'null');if(!j)return toast('Sauvegarde illisible');
  for(const r of [...Object.values(j.shows||{}),...Object.values(j.movies||{}),...Object.values(j.books||{})])r.m=Date.now()+1;gmerge(j);save();render();toast('Sauvegarde restaurée')}catch(e){toast('Restauration impossible')}}
+/* Copie de secours : la sauvegarde de la semaine est aussi envoyée sur un 2e service */
+async function withA(A,fn){if(gbusy)throw Error('busy');gbusy=1;const o=CA;CA=A;try{return await fn()}finally{CA=o;gbusy=0;renderCloud()}}
+async function bk2Backup(){const k=S.bk2;if(!k||!k.t)return;try{await withA(k,gbackupCore);k.bkw=wk();k.lastbk=Date.now();k.err=0;k.reco=0;save()}
+ catch(e){k.err=1;if(e.message=='reco')k.reco=1;if(e.message=='jeton')k.t='';save();throw e}}
+async function bk2Now(){toast('Copie de secours…');try{await bk2Backup();toast('Copie de secours faite ✓')}catch(e){toast(e.message=='busy'?'Synchronisation en cours, réessaie dans un instant':e.message=='reco'?'Reconnecte '+CLN[S.bk2.p]+' dans le menu du nuage':'Copie de secours impossible',4000)}render()}
+async function bk2Restore(){if(!S.bk2||!S.bk2.t)return;try{await withA(S.bk2,grestore)}catch(e){toast('Restauration impossible')}}
+const bk2Html=()=>{const k=S.bk2,on=S.gh&&S.gh.t,p=CP();
+ if(k&&k.t)return`<div class="cp"><b>🛟 Copie de secours : ${CLN[k.p]}</b><p>${k.reco?'⚠ Reconnexion nécessaire<br>':k.err?'⚠ Dernière copie échouée<br>':''}Dernière copie : ${k.lastbk?fmtT(k.lastbk):'aucune'}</p></div>${k.reco&&k.p!='gh'?`<button data-act="bk2c" data-p="${k.p}">🔑 Reconnecter ${CLN[k.p]}</button>`:''}<button data-act="bk2now">Faire une copie maintenant</button><button data-act="bk2rest">Restaurer depuis la copie de secours…</button><button data-act="bk2off">Retirer la copie de secours</button>`;
+ return`<div class="cp"><b>🛟 Copie de secours</b><p style="font-size:12px">Chaque semaine, ta sauvegarde est aussi envoyée sur un 2e service. Si le premier tombe en panne, tes données sont ailleurs.</p></div>`+['dbx','gdr','gh'].filter(x=>!on||x!=p).map(x=>`<button data-act="bk2c" data-p="${x}">➕ Copie sur ${CLN[x]}</button>`).join('')};
 const csetHtml=p=>`<div class="cp"><b>${CLN[p]} : réglage à faire une seule fois</b><p>Pour se connecter à ${CLN[p]}, l’application doit d’abord être enregistrée chez ${CLN[p]} par la personne qui gère l’application.</p><p>Quand ce sera fait, ce bouton te mènera directement à la page de connexion ${CLN[p]}.</p></div><button data-act="menu" data-m="cloud">← Retour</button>`;
 async function gsync(quiet){
  if(gbusy||!netOk(1))return;if(S.gh&&S.gh.t&&CP()!='gh')return csync(quiet);
@@ -384,9 +397,9 @@ function renderCloud(){const b=$('#cl'),s=cst();b.innerHTML=CLI[s];b.className=s
 const fmtT=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0'),x=z(d.getHours())+':'+z(d.getMinutes());return d.toDateString()==new Date().toDateString()?"aujourd'hui à "+x:fmtDate(d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()))+' '+x};
 function cloudHtml(){const g=S.gh,s=cst(),p=CP(),n=COLL('s').length+COLL('m').length+COLL('b').length+COLL('c').length;
  const pick=`<button data-act="cpick" data-p="dbx">📦 Connecter Dropbox</button><button data-act="cpick" data-p="gdr">🟢 Connecter Google Drive</button><button data-act="menu" data-m="ghhelp">🐙 Connecter GitHub</button>`;
- if(s=='off')return`<div class="cp"><b>${CLT.off}</b><p>Tes données restent sur cet appareil uniquement.</p><p><b>Pour les retrouver sur tes autres appareils, choisis un service :</b></p></div>${pick}`;
+ if(s=='off')return`<div class="cp"><b>${CLT.off}</b><p>Tes données restent sur cet appareil uniquement.</p><p><b>Pour les retrouver sur tes autres appareils, choisis un service :</b></p></div>${pick}${bk2Html()}`;
  const t=g.reco?'⚠ Reconnexion nécessaire':s=='warn'?(g.err?'⚠ Dernière synchro échouée':'⚠ Modifications pas encore envoyées'):s=='busy'?CLT.busy:'✓ '+CLT.ok;
- return`<div class="cp"><b>${t}</b><p>Service : ${CLN[p]}${p=='gh'?' Gist (privé)':' (dossier privé de l’application)'}<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} éléments</p></div>${g.reco?`<button data-act="cpick" data-p="${p}">🔑 Reconnecter ${CLN[p]}</button>`:''}<button data-act="gsync">Synchroniser maintenant</button><button data-act="grest">Restaurer une sauvegarde…</button>${p=='gh'?'<button data-act="gchg">🔁 Changer de compte GitHub</button>':''}<div class="cp"><b>Changer de service</b></div>${p!='dbx'?'<button data-act="cpick" data-p="dbx">📦 Passer à Dropbox</button>':''}${p!='gdr'?'<button data-act="cpick" data-p="gdr">🟢 Passer à Google Drive</button>':''}${p!='gh'?'<button data-act="menu" data-m="ghhelp">🐙 Passer à GitHub</button>':''}<button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de service ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien service.</p></div>`}
+ return`<div class="cp"><b>${t}</b><p>Service : ${CLN[p]}${p=='gh'?' Gist (privé)':' (dossier privé de l’application)'}<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} éléments</p></div>${g.reco?`<button data-act="cpick" data-p="${p}">🔑 Reconnecter ${CLN[p]}</button>`:''}<button data-act="gsync">Synchroniser maintenant</button><button data-act="grest">Restaurer une sauvegarde…</button>${p=='gh'?'<button data-act="gchg">🔁 Changer de compte GitHub</button>':''}<div class="cp"><b>Changer de service</b></div>${p!='dbx'?'<button data-act="cpick" data-p="dbx">📦 Passer à Dropbox</button>':''}${p!='gdr'?'<button data-act="cpick" data-p="gdr">🟢 Passer à Google Drive</button>':''}${p!='gh'?'<button data-act="menu" data-m="ghhelp">🐙 Passer à GitHub</button>':''}<button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de service ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien service.</p></div>${bk2Html()}`}
 const ghHelp=()=>`<div class="cp"><b>Connecter GitHub</b><p>1. Crée un compte gratuit sur github.com.</p><p>2. Touche « Créer le jeton » (le droit « gist » est déjà coché).</p></div><a class="lnk" href="https://github.com/settings/tokens/new?scopes=gist&description=suivi-series" target="_blank" rel="noopener">Créer le jeton</a><div class="cp"><p>3. En bas de la page, touche « Generate token » et copie le jeton (ghp_…).</p><p>4. Reviens ici, touche « Coller mon jeton GitHub ».</p><p>Sur un autre appareil, utilise le même jeton.</p></div><button data-act="gchg">Coller mon jeton GitHub</button><button data-act="menu" data-m="cloud">← Retour</button>`;
 const GEN={comedy:'Humour',drama:'Drame','science-fiction':'Science-fiction','science fiction':'Science-fiction',action:'Action',adventure:'Aventure',animation:'Animation',anime:'Animation',crime:'Policier',documentary:'Documentaire',family:'Famille',fantasy:'Fantastique',horror:'Horreur',mystery:'Mystère',romance:'Romance',thriller:'Thriller',war:'Guerre',western:'Western',history:'Histoire',music:'Musique',medical:'Médical',legal:'Judiciaire',espionage:'Espionnage',supernatural:'Surnaturel',sports:'Sport',suspense:'Suspense',children:'Enfants'};
 const allTags=(k=MODE())=>[...new Set(COLL(k).flatMap(s=>s.tags||[]))].sort((a,b)=>tn(a).localeCompare(tn(b),LANG()));
@@ -412,20 +425,22 @@ async function bkShare(){
  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sauvegarde Mes séries'});S.bk=mo();save();render();return}catch(e){if(e.name=='AbortError')return}}
  bkNow();render();toast('Partage indisponible : fichier téléchargé')}
 const isBk=n=>n.startsWith('sauvegarde-');
-async function gbfind(){if(S.gh.b)return S.gh.b;const l=await gh('/gists?per_page=100'),f=l.find(x=>x.files&&Object.keys(x.files).some(isBk));if(f)S.gh.b=f.id;return S.gh.b}
+async function gbfind(){const A=AC();if(A.b)return A.b;const l=await gh('/gists?per_page=100'),f=l.find(x=>x.files&&Object.keys(x.files).some(isBk));if(f)A.b=f.id;return A.b}
 const wk=()=>{const t=new Date(),d=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())),n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=d.getUTCFullYear();return y+'-W'+String(Math.ceil(((d-Date.UTC(y,0,1))/864e5+1)/7)).padStart(2,'0')};
 const bkLbl=n=>{const m=n.match(/(\d{4})-W(\d+)/);return m?'semaine '+(+m[2])+' de '+m[1]:n.slice(11,-5)};
 let bkBusy=0;
-async function autoBk(skip){if(bkBusy||!netOk(1)||!(S.gh&&S.gh.t)||!hasAny()||S.bkw===wk())return;bkBusy=1;
- try{if(!skip)await gsync(1);await gbackup();toast('Sauvegarde '+CLN[CP()]+' de la semaine effectuée');render()}catch(e){}bkBusy=0}
-async function gbackup(){if(CP()!='gh')return cbackup();
+async function autoBk(skip){if(bkBusy||!netOk(1)||!hasAny())return;const m=S.gh&&S.gh.t&&S.bkw!==wk(),k=S.bk2&&S.bk2.t&&S.bk2.bkw!==wk();if(!m&&!k)return;bkBusy=1;
+ try{if(m){if(!skip)await gsync(1);await gbackup();toast('Sauvegarde '+CLN[CP()]+' de la semaine effectuée');render()}}catch(e){}
+ try{if(k){await bk2Backup();render()}}catch(e){}bkBusy=0}
+async function gbackupCore(){if(AP()!='gh')return cbackupCore();
  const files={['sauvegarde-'+wk()+'.json']:{content:JSON.stringify(gpay())}};
- if(await gbfind()){const g=await gh('/gists/'+S.gh.b);Object.keys(g.files).filter(isBk).sort().reverse().slice(11).forEach(n=>{files[n]=null});await gh('/gists/'+S.gh.b,{method:'PATCH',body:JSON.stringify({files})})}
- else S.gh.b=(await gh('/gists',{method:'POST',body:JSON.stringify({description:'Suivi séries (sauvegardes)',public:false,files})})).id;
- S.bk=mo();S.bkw=wk();S.gh.lastbk=Date.now();save()}
-async function grestore(){if(CP()!='gh')return crestore();try{
- if(!await gbfind())return toast('Aucune sauvegarde GitHub trouvée');
- const g=await gh('/gists/'+S.gh.b),N=Object.keys(g.files).filter(isBk).sort().reverse();
+ if(await gbfind()){const g=await gh('/gists/'+AC().b);Object.keys(g.files).filter(isBk).sort().reverse().slice(11).forEach(n=>{files[n]=null});await gh('/gists/'+AC().b,{method:'PATCH',body:JSON.stringify({files})})}
+ else AC().b=(await gh('/gists',{method:'POST',body:JSON.stringify({description:'Suivi séries (sauvegardes)',public:false,files})})).id;
+}
+async function gbackup(){await gbackupCore();S.bk=mo();S.bkw=wk();S.gh.lastbk=Date.now();save()}
+async function grestore(){if(AP()!='gh')return crestore();try{
+ if(!await gbfind())return toast('Aucune sauvegarde trouvée');
+ const g=await gh('/gists/'+AC().b),N=Object.keys(g.files).filter(isBk).sort().reverse();
  const c=prompt('Restaurer quelle sauvegarde ?\n'+N.map((n,i)=>(i+1)+'. '+bkLbl(n)).join('\n')+'\nTape le numéro :'),f=g.files[N[(+c||0)-1]];if(!f)return;
  if(!confirm('Remplacer l’état des séries par cette sauvegarde ?'))return;
  const j=JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content);
@@ -1143,6 +1158,10 @@ document.addEventListener('click',async ev=>{
  else if(a=='selx')view.sel=null;
  else if(a=='gsync')return gsync().then(()=>{if(Object.values(S.shows).some(s=>!s.upd&&!s.nf))update()});
  else if(a=='cpick')return cConnect(d.p);
+ else if(a=='bk2c'){if(d.p!='gh')return cConnect(d.p,'bk2');const t=prompt('Colle un jeton GitHub (jeton classique avec le droit « gist ») pour la copie de secours.');if(!t||!t.trim())return;S.bk2={p:'gh',t:t.trim(),g:''};save();return bk2Now()}
+ else if(a=='bk2now')return bk2Now();
+ else if(a=='bk2rest')return bk2Restore();
+ else if(a=='bk2off'){if(!confirm('Retirer la copie de secours ? Les copies déjà envoyées restent sur ce service.'))return;S.bk2=null;toast('Copie de secours retirée')}
  else if(a=='gout'){if(!confirm('Arrêter la synchronisation sur cet appareil ? Tes données restent sur ce téléphone.'))return;S.gh=null;toast('Synchronisation arrêtée')}
  else if(a=='gchg'){if(S.gh&&S.gh.t&&CP()!='gh'&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par GitHub ? Tes données restent sur cet appareil.'))return;const t=prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;S.gh={p:'gh',t:t.trim(),g:''};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
  else if(a=='lang')S.lang=d.v;
