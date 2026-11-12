@@ -945,15 +945,24 @@ const guessN=b=>{const m=String(b.name||'').match(/\b0*(\d{1,3})\b/);return m?+m
 /* Séries TV : univers (Star Trek, Dexter, The Walking Dead…) */
 const uBase=n=>String(n||'').split(/\s*:\s|\s+[-–]\s+/)[0].trim();
 function uniAll(){const L=Object.values(S.shows),U={};const add=(n)=>{const k=norm(n);if(k.length>=3)U[k]=U[k]||n};
- for(const sh of L){if(sh.uni&&sh.uni.s){add(sh.uni.s);continue}const n=nm(sh),b=uBase(n);if(b&&b!=n)add(b)}
+ for(const sh of L){if(sh.uni&&sh.uni.s){add(sh.uni.s);continue}const n=nm(sh),b=uBase(n);if(b&&b!=n)add(b);const c=(S.uniChk||{})[sh.id];if(c&&c.u)add(c.u)}
  for(const a of L)for(const b of L)if(a!==b){const x=norm(nm(a)),y=norm(nm(b));if(y.length>=4&&x!=y&&x.endsWith(' '+y))add(nm(b))}
  return U}
 function uniOf(sh,U){if(sh.uni)return sh.uni.s||null;U=U||uniAll();const k=norm(nm(sh));let best=null;
  for(const[u,n]of Object.entries(U))if(k==u||k.startsWith(u+' ')||k.endsWith(' '+u))if(!best||u.length>norm(best).length)best=n;return best}
 function uniList(){const U=uniAll(),C={};for(const sh of Object.values(S.shows)){const u=uniOf(sh,U);if(u){const k=norm(u);C[k]=C[k]||{s:u,c:0,m:0};C[k].c++;if(sh.uni&&sh.uni.s)C[k].m=1}}
- return Object.values(C).filter(x=>x.c>=2||x.m).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
-const UNIC={};
-async function uniLoad(name){const k=norm(name);if(UNIC[k])return UNIC[k];let R=[];try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(name));R=((r&&r.results)||[]).filter(x=>{const n=norm(x.name),o=norm(x.original_name);return[n,o].some(v=>v==k||v.startsWith(k+' ')||v.endsWith(' '+k)||v.includes(' '+k+' '))})}catch(e){}
+ return Object.values(C).filter(x=>x.c>=2||x.m||Object.values(S.uniChk||{}).some(c=>c.u&&norm(c.u)==norm(x.s))).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
+const UNIC={},uInK=(x,k)=>[x.name,x.original_name].some(v=>{const n=norm(v),b=norm(uBase(v));return n==k||b==k||n.endsWith(' '+k)});
+/* Recherche en arrière-plan : cette série a-t-elle d'autres séries du même univers ? (une fois par série) */
+let uniScanOn=0;
+async function uniScan(){if(uniScanOn||!netOk(1))return;S.uniChk=S.uniChk||{};const L=Object.values(S.shows).filter(sh=>!S.uniChk[sh.id]&&!sh.uni);if(!L.length)return;uniScanOn=1;
+ try{let i=0;
+  for(const sh of L){if(!S.shows[sh.id])continue;i++;view.uniProg=i+'/'+L.length;if(view.menu=='serlist')renderMenu();
+   const q=uBase(sh.orig||nm(sh));let u='';try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(q));const k=norm(q),R=((r&&r.results)||[]).filter(x=>uInK(x,k));
+    if(R.filter(x=>x.id!=sh.tmdbtv&&norm(x.name)!=norm(nm(sh))&&norm(x.original_name||'')!=norm(sh.orig||sh.name||'')).length)u=q}catch(e){continue}
+   S.uniChk[sh.id]={u,t:Date.now()};save();await sleep(300)}}
+ finally{uniScanOn=0;view.uniProg='';if(view.menu=='serlist')renderMenu()}}
+async function uniLoad(name){const k=norm(name);if(UNIC[k])return UNIC[k];let R=[];try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(name));R=((r&&r.results)||[]).filter(x=>uInK(x,k))}catch(e){}
  return UNIC[k]=R.map(x=>({id:x.id,t:x.name,o:x.original_name,po:x.poster_path,d:x.first_air_date||''}))}
 function uniHtml(){const V=view.ser,k=norm(V.s),U=uniAll(),own=Object.values(S.shows).filter(sh=>{const u=uniOf(sh,U);return u&&norm(u)==k}),F=UNIC[k];
  if(!F)uniLoad(V.s).then(()=>{if(view.ser&&norm(view.ser.s)==k)render()});
@@ -968,7 +977,7 @@ function uniHtml(){const V=view.ser,k=norm(V.s),U=uniAll(),own=Object.values(S.s
 function uniPickHtml(){const sh=S.shows[view.spid];if(!sh)return'';const cur=uniOf(sh),L=uniList();
  return`<div class="cp"><b>Univers de « ${esc(nm(sh))} »</b></div>${L.map(x=>`<button data-act="unichoose" data-s="${esc(x.s)}">🌌 ${esc(x.s)}${cur&&norm(cur)==norm(x.s)?' ✓':''}</button>`).join('')}<button data-act="unichoose" data-new="1">➕ Nouvel univers…</button><button data-act="unichoose" data-none="1">🚫 Aucun univers</button>`}
 function serListHtml(){const md=MODE();
- if(md=='s'){const L=uniList();return`<div class="cp"><b>🌌 Univers</b></div>`+(L.length?L.map(x=>`<button data-act="ser" data-s="${esc(x.s)}" data-kind="tv">${esc(x.s)}</button>`).join(''):'<div class="cp"><p>Aucun univers pour l’instant. Ils apparaissent quand tu as au moins deux séries d’un même univers (ex. Star Trek, Dexter), ou ouvre une série et touche « ✏️ Indiquer un univers ».</p></div>')}
+ if(md=='s'){uniScan();const L=uniList();return`<div class="cp"><b>🌌 Univers</b>${view.uniProg?`<p style="font-size:12px">Recherche des univers sur Internet… ${view.uniProg}</p>`:''}</div>`+(L.length?L.map(x=>`<button data-act="ser" data-s="${esc(x.s)}" data-kind="tv">${esc(x.s)}</button>`).join(''):'<div class="cp"><p>Aucun univers pour l’instant. Ils apparaissent quand tu as au moins deux séries d’un même univers (ex. Star Trek, Dexter), ou ouvre une série et touche « ✏️ Indiquer un univers ».</p></div>')}
  if(md=='m'){const M={};for(const m of Object.values(MV()))if(m.col&&m.col.id)M[m.col.id]=m.col.n;const L=Object.entries(M).sort((a,b)=>a[1].localeCompare(b[1],'fr'));
   return`<div class="cp"><b>🎞 Sagas</b></div>`+(L.length?L.map(([id,n])=>`<button data-act="ser" data-s="${esc(n)}" data-cid="${esc(id)}">${esc(n)}</button>`).join(''):'<div class="cp"><p>Aucune saga dans tes films pour l’instant. Elles apparaissent quand tu as un film qui fait partie d’une saga (Star Wars, James Bond…).</p></div>')}
  const bd=md=='c',M={};for(const b of Object.values(BK())){if(!!b.bd!=bd)continue;const o=serOf(b);if(o){const k=norm(o.s);M[k]=M[k]||o.s}}const L=Object.values(M).sort((a,b)=>a.localeCompare(b,'fr'));
@@ -988,17 +997,26 @@ function sagaHtml(){const V=view.ser,P=SAGC[V.cid];if(!P)sagaLoad(V.cid).then(()
 <p class="mu">${own.length} film${own.length>1?'s':''} dans ta liste · ${seen} vu${seen>1?'s':''}${P?` · ${P.length} films dans la saga`:''}</p>
 <p class="mu" style="font-size:12px">Couleurs vives : vu. Couleurs pâles : à voir ou pas encore dans ta liste. Touche une affiche pour changer : un film absent est ajouté comme vu.${P?'':' Chargement de la saga…'}</p>
 <div class="sgrid">${L.map(({x,m})=>{const st=m?(m.seen?'on':'own'):'none';return`<button class="stile ${st}" data-act="sagtap" ${m?`data-id="${esc(m.id)}"`:`data-tm="${esc(String(x.id))}"`} aria-label="${esc(x.t)}">${x.po?`<img loading="lazy" src="${esc(TI(x.po,'w185'))}" alt="">`:`<span class="sph">${esc(x.t)}</span>`}${st=='on'?'<i class="sok">✓</i>':''}<small>${esc(yr(x.d)||x.t)}</small></button>`}).join('')}</div></div>`}
+/* Année de première parution d'un album (Open Library), cherchée une fois */
+let fyOn=0;
+async function fyLoad(L){L=L.filter(t=>(S.fy||{})[t.b?t.b.gid:t.d.gid]==null);if(fyOn||!L.length||!netOk(1))return;fyOn=1;S.fy=S.fy||{};let n=0;
+ try{for(const t of L){const g=t.b?t.b.gid:t.d.gid;if(!g||S.fy[g]!=null)continue;const ttl=t.b?nm(t.b):t.d.t,au=((t.b?(t.b.ppl||[]).map(p=>p.n):t.d.au)||[])[0]||'';
+   const parts=[ttl.split(/\s:\s|:\s/).slice(1).join(' : ').trim(),ttl].filter(Boolean);let y=0;
+   for(const q of parts){try{const r=await fetch(OLU+'/search.json?limit=5&fields=first_publish_year,title&title='+encodeURIComponent(q)+(au?'&author='+encodeURIComponent(au):''));if(!r.ok)continue;
+     const D=((await r.json()).docs||[]).filter(d=>d.first_publish_year).sort((a,b)=>a.first_publish_year-b.first_publish_year);if(D.length){y=D[0].first_publish_year;break}}catch(e){}}
+   S.fy[g]=y;if(++n%4==0){save();if(view.ser)render()}await sleep(200)}}
+ finally{fyOn=0;save();if(view.ser)render()}}
 function serHtml(){if(view.ser.kind=='m')return sagaHtml();if(view.ser.kind=='tv')return uniHtml();const V=view.ser,k=norm(V.s),own=Object.values(BK()).map(b=>({b,n:(serOf(b)||{}).n||0,o:serOf(b)})).filter(x=>x.o&&norm(x.o.s)==k);
  const F=SERC[k];if(!F)serLoad(V.s,V.bd).then(()=>{if(view.ser&&norm(view.ser.s)==k)render()});
  const have=new Set(own.map(x=>x.n).filter(Boolean)),gids=new Set(own.map(x=>x.b.gid)),T=own.map(x=>({b:x.b,n:x.n})),seenN=new Set(have);
  for(const f0 of F||[]){const fx=(S.serFix||{})[f0.d.gid],f=fx!=null?{d:f0.d,n:fx}:f0;if(f.n<0||gids.has(f.d.gid)||(f.n&&seenN.has(f.n)))continue;if(f.n)seenN.add(f.n);T.push({d:f.d,n:f.n})}
- const tY=t=>+yr(t.b?t.b.date:t.d.y)||0,byD=(S.serSort||'date')=='date';T.sort(byD?(a,b)=>(tY(a)||9999)-(tY(b)||9999)||(a.n||999)-(b.n||999):(a,b)=>(a.n||999)-(b.n||999)||(tY(a)||9999)-(tY(b)||9999));const max=Math.max(0,...T.map(t=>t.n||0)),miss=[];for(let i=1;i<=max;i++)if(!have.has(i))miss.push(i);
+ const tY=t=>{const g=t.b?t.b.gid:t.d.gid,f=(S.fy||{})[g];return f>0?f:+yr(t.b?t.b.date:t.d.y)||0},byD=(S.serSort||'date')=='date';{const P=T.filter(t=>(S.fy||{})[t.b?t.b.gid:t.d.gid]==null);if(byD&&F&&P.length&&!fyOn)setTimeout(()=>fyLoad(P),0)}T.sort(byD?(a,b)=>(tY(a)||9999)-(tY(b)||9999)||(a.n||999)-(b.n||999):(a,b)=>(a.n||999)-(b.n||999)||(tY(a)||9999)-(tY(b)||9999));const max=Math.max(0,...T.map(t=>t.n||0)),miss=[];for(let i=1;i<=max;i++)if(!have.has(i))miss.push(i);
  const read=own.filter(x=>x.b.seen).length,tile=t=>{const b=t.b,cv=b?b.po:t.d.po,st=b?(b.seen?'on':'own'):'none',ttl=b?nm(b):t.d.t;
   return`<button class="stile ${st}" data-act="sertap" data-n="${t.n||0}" ${b?`data-id="${esc(b.id)}"`:`data-gid="${esc(t.d.gid)}"`} aria-label="${esc(ttl)}">${cv?`<img loading="lazy" src="${esc(cv)}" alt="">`:`<span class="sph">${esc(ttl)}</span>`}${st=='on'?'<i class="sok">✓</i>':''}<small>${[t.n?'T'+t.n:'',tY(t)||''].filter(Boolean).join(' · ')||esc(ttl)}</small></button>`};
  return`<div class="det"><button data-act="back">← Retour</button><h2 style="margin:12px 0 4px">📚 ${esc(V.s)}</h2>
 <p class="mu">${own.length} tome${own.length>1?'s':''} dans ta liste · ${read} lu${read>1?'s':''}${max?` · ${max} tomes connus`:''}${miss.length?`<br>Tomes manquants : ${miss.length>40?miss.length+' tomes':miss.join(', ')}`:''}</p>
 <p class="mu" style="font-size:12px">Couleurs vives : lu. Couleurs pâles : à lire ou pas encore dans ta liste. Touche une couverture pour changer : un tome absent est ajouté comme lu. Appui long : changer son numéro (ou le retirer de la série).${F?'':' Recherche des autres tomes…'}</p>
-<div class="srt"><button class="${byD?'on':''}" data-act="sersort" data-v="date">📅 Date de sortie</button><button class="${byD?'':'on'}" data-act="sersort" data-v="num">#️⃣ Numéro de tome</button></div><div class="sgrid">${T.map(tile).join('')}</div>${F&&!F.length?'<p class="mu">Aucun autre tome trouvé en ligne. Les sites de livres renseignent parfois mal les séries.</p>':''}</div>`}
+<div class="srt"><button class="${byD?'on':''}" data-act="sersort" data-v="date">📅 Date de sortie</button>${fyOn?'<span class="mu" style="font-size:12px;align-self:center">recherche des dates…</span>':''}<button class="${byD?'':'on'}" data-act="sersort" data-v="num">#️⃣ Numéro de tome</button></div><div class="sgrid">${T.map(tile).join('')}</div>${F&&!F.length?'<p class="mu">Aucun autre tome trouvé en ligne. Les sites de livres renseignent parfois mal les séries.</p>':''}</div>`}
 /* Livre en cours (page) et prêts */
 function bkExtra(b){if(b.pv)return'';const so=serOf(b),pc=b.pages&&b.pg?Math.min(100,Math.round(100*b.pg/b.pages)):0;
  return`<div class="bxt">${so?`<button class="pls" data-act="ser" data-s="${esc(so.s)}" data-bd="${b.bd?1:0}">📚 Toute la série « ${esc(so.s)} »${so.n?' · tome '+so.n:''}</button>`:''}<button class="lnk2" data-act="serset" data-id="${esc(b.id)}">✏️ ${so?'Corriger la série':'Indiquer une série'}</button>
