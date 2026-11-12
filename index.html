@@ -1367,6 +1367,16 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
  const go=n=='touchend'&&f.nb&&(Math.abs(f.dx)>W*.25||Math.abs(f.dx)>40&&Math.abs(f.v)>.5);
  fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
 let lp=0,lpT,px=0,py=0;
+/* Appui long sur un tag de la liste : le renommer */
+function renameTag(t){const old=tn(t),n0=prompt('Nouveau nom pour le tag « '+old+' » :',old);if(n0===null)return;const v=n0.trim().slice(0,30);if(!v||v===old)return;
+ const nt=ntag(v),L=COLL(MODE()),ex=allTags().find(x=>x!==t&&(x===nt||tn(x).toLowerCase()===v.toLowerCase()));
+ if(ex&&!confirm('Le tag « '+tn(ex)+' » existe déjà : réunir les deux ?'))return;const to=ex||nt;
+ for(const it of L){const T=it.tags||[];if(!T.includes(t))continue;it.tags=[...new Set(T.map(x=>x===t?to:x))];it.mod=Date.now()}
+ if(view.tag===t)view.tag=to;logEv(null,'Tag « '+old+' » renommé en « '+tn(to)+' »');save();schedSync();render();toast('Tag renommé')}
+let tgT=0;document.addEventListener('pointerdown',ev=>{const b=ev.target.closest('#tgr [data-act=tagf]');if(!b)return;clearTimeout(tgT);const x0=ev.clientX,y0=ev.clientY;
+ const mv=e=>{if(Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)end()},end=()=>{clearTimeout(tgT);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',end);document.removeEventListener('pointercancel',end)};
+ document.addEventListener('pointermove',mv);document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+ tgT=setTimeout(()=>{end();lp=1;if(navigator.vibrate)navigator.vibrate(40);const t=b.dataset.tag;setTimeout(()=>{renameTag(t);setTimeout(()=>lp=0,600)},0)},600)});
 /* Page de série : appui long sur une couverture pour changer son numéro */
 let stT=0;document.addEventListener('pointerdown',ev=>{const t=ev.target.closest('.stile');if(!t||!view.ser||view.ser.kind)return;clearTimeout(stT);const x0=ev.clientX,y0=ev.clientY;
  const mv=e=>{if(Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)end()},end=()=>{clearTimeout(stT);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',end);document.removeEventListener('pointercancel',end)};
@@ -1398,7 +1408,7 @@ document.addEventListener('pointerdown',ev=>{const mi=ev.target.closest('#menu [
  lpT=setTimeout(()=>{lp=1;view.sel={};view.sel[c.dataset.id]=1;if(navigator.vibrate)navigator.vibrate(30);render()},500)});
 document.addEventListener('pointermove',ev=>{if(Math.abs(ev.clientX-px)+Math.abs(ev.clientY-py)>12)clearTimeout(lpT)});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(lpT);setTimeout(()=>lp=0,400)}));
-document.addEventListener('contextmenu',ev=>{if(ev.target.closest('.tc,.card,.sw,#menu button,#hd .cat,.stile'))ev.preventDefault()});
+document.addEventListener('contextmenu',ev=>{if(ev.target.closest('.tc,.card,.sw,#menu button,#hd .cat,.stile,#tgr button'))ev.preventDefault()});
 let sw=null;
 document.addEventListener('pointerdown',ev=>{const w=ev.target.closest('.sw');if(!w||view.sel||view.menu||ev.target.closest('.pinb,.eye'))return;sw={w,a:w.querySelector('.tc'),bg:w.querySelector('.swbg'),x:ev.clientX,y:ev.clientY,dx:0,on:0}});
 document.addEventListener('pointermove',ev=>{if(!sw)return;const dx=ev.clientX-sw.x,dy=ev.clientY-sw.y;
