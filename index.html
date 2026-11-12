@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="theme-color" content="#ff8800"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self'; connect-src 'self' blob: data: https://api.tvmaze.com https://api.themoviedb.org https://www.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://openlibrary.org https://api.github.com https://gist.githubusercontent.com https://api.dropboxapi.com https://content.dropboxapi.com https://api.upcitemdb.com https://world.openproductsfacts.org https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self'; connect-src 'self' blob: data: https://api.tvmaze.com https://api.themoviedb.org https://www.googleapis.com https://api.mymemory.translated.net https://openlibrary.org https://api.github.com https://gist.githubusercontent.com https://api.dropboxapi.com https://content.dropboxapi.com https://api.upcitemdb.com https://world.openproductsfacts.org https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>Mes séries</title>
 <style>
 :root{--bg:#e9ecef;--sf:#fff;--s2:#e0e0e0;--tx:#212121;--mu:#757575;--ac:#ff8800;--bl:#2196f3;--fv:#e91e63;--t2:#424242;--tf:#546e7a}
@@ -290,14 +290,21 @@ const ARCH='<svg viewBox="0 0 24 24"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 
 function renderSel(){const b=$('#selb'),n=view.sel?Object.keys(view.sel).length:0,t=(view.f=='arch'?'Remettre dans la liste':'Archiver')+' ('+n+')';
  b.hidden=!n;b.innerHTML=view.f=='arch'?UNARCH:ARCH;b.title=t;b.setAttribute('aria-label',t)}
 const FR=()=>LANG()!='en',busyT=new Set(),LS=()=>LANG()=='fr'?'':'_'+LANG(),gl=(o,b)=>o[b+LS()];
+/* Traduction : toute la traduction passe par cette seule fonction (facile à remplacer dans une version des stores).
+   1) traduction intégrée au navigateur, sur l'appareil, quand elle existe ; 2) MyMemory (gratuit, avec une limite par jour). */
+const trDev={};
+const tOut=(p,ms)=>Promise.race([p,new Promise((_,ko)=>setTimeout(()=>ko(Error('délai')),ms))]);
+async function trLocal(t){if(trLocal.off)return null;try{const T=self.Translator;if(!T||!T.availability)return null;const lg=LANG(),k='en-'+lg;
+ if(!trDev[k]){const av=await tOut(T.availability({sourceLanguage:'en',targetLanguage:lg}),3000);if(av!=='available')return null;trDev[k]=await tOut(T.create({sourceLanguage:'en',targetLanguage:lg}),5000)}
+ const r=await tOut(trDev[k].translate(t),8000);return r&&r.trim()?r:null}catch(e){trLocal.off=1;return null}}
 async function tr(t){
- try{const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl='+LANG()+'&dt=t&q='+encodeURIComponent(t));if(!r.ok)throw 0;const j=await r.json();return j[0].map(x=>x[0]).join('')}catch(e){}
+ const L0=await trLocal(t);if(L0)return L0;
  const ss=t.match(/[^.!?]+[.!?]*\s*/g)||[t],ch=[];let c='';
  for(const s of ss){if((c+s).length>450&&c){ch.push(c);c=''}c+=s}if(c)ch.push(c);
  const out=[];for(const k of ch){const r=await fetch('https://api.mymemory.translated.net/get?langpair=en|'+LANG()+'&q='+encodeURIComponent(k));const j=await r.json();if(j.responseStatus!=200)throw 0;out.push(j.responseData.translatedText)}
  return out.join(' ')}
-async function fr(o,a,b){if(!FR()||!o[a]||o[b+LS()]||busyT.has(o))return;busyT.add(o);
- try{o[b+LS()]=await tr(o[a]);busyT.delete(o);save();render()}catch(e){toast('Traduction indisponible')}}
+async function fr(o,a,b){if(!FR()||!o[a]||o[b+LS()]||busyT.has(o))return;const fk='trF'+b+LS();if(o[fk]&&Date.now()-o[fk]<432e5)return;busyT.add(o);
+ try{o[b+LS()]=await tr(o[a]);busyT.delete(o);save();render()}catch(e){busyT.delete(o);o[fk]=Date.now();if(!fr.warn){fr.warn=1;toast('Traduction indisponible pour le moment (limite du jour atteinte) : réessai plus tard',4000)}}}
 const busyS=new Set();
 async function trT(L){
  try{const a=(await tr(L.join('\n'))).split('\n').map(s=>s.trim());if(a.length==L.length)return a}catch(e){}
@@ -1207,7 +1214,16 @@ function list(){
  const L=all.filter(it=>{if(view.tag)return(it.tags||[]).includes(view.tag);const s=md=='s'?st(it):null;return({cours:!it.arch,loan:!!it.loan,fav:!!it.fav,anim:isAnim(it),noanim:!isAnim(it),all:true,arch:!!it.arch,tosee:!it.seen&&!it.arch,toread:!it.seen&&!it.arch})[f]}).sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||(f=='cours'?noInfo(a)-noInfo(b):0)||sk(a).localeCompare(sk(b),'fr'));
  view.ids=L.map(x=>x.id);
  return tb+(view.grid?`<div class="grid">${L.map(it=>it.kind=='s'||!it.kind?card(it,st(it)):mposter(it)).join('')}</div>`:`<div class="list">${L.map(cardOf).join('')}</div>`)+(L.length?'':`<p class="mu pad">${md!='s'&&!all.length?({m:"Aucun film pour l'instant.",b:"Aucun livre pour l'instant.",c:"Aucune BD pour l'instant."})[md]:'Rien ici.'}</p>`)+FOOT}
-function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return detailB(sh);fr(sh,'sum','sumf');
+/* Séries : le résumé dans la langue de l'appli vient de TMDB quand il existe (meilleur qu'une traduction) */
+const sumBusy=new Set();
+async function sumFr(sh){if(!FR()||sumBusy.has(sh.id)||(sh.src=='tmdb'&&sh.sum))return;const k='sumT'+LS(),f='sumf'+LS();
+ if(sh[k]!==undefined){if(sh[k]){if(sh[f]!==sh[k]){sh[f]=sh[k];save()}}else fr(sh,'sum','sumf');return}
+ sumBusy.add(sh.id);
+ try{let id=sh.tmdbtv||sh.trlTv;const y=+yr(((sh.eps||[]).filter(e=>e.s>0&&e.d).map(e=>e.d).sort()[0])||'');
+  if(!id){const r=await tmdb('/search/tv','&query='+encodeURIComponent(sh.name||nm(sh))+(y?'&first_air_date_year='+y:''));const x0=((r&&r.results)||[]).find(x=>[x.name,x.original_name].some(n=>norm(n)==norm(sh.name||'')||norm(n)==norm(sh.orig||''))&&(!y||Math.abs((+yr(x.first_air_date)||y)-y)<=1));if(x0){id=x0.id;sh.trlTv=id}}
+  let ov='';if(id){const x=await tmdb('/tv/'+id);ov=(x&&x.overview||'').trim()}sh[k]=ov;if(ov)sh[f]=ov;save();render();if(!ov)fr(sh,'sum','sumf')}
+ catch(e){fr(sh,'sum','sumf')}finally{sumBusy.delete(sh.id)}}
+function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return detailB(sh);sumFr(sh);
  const s=st(sh),ss=[...new Set(sh.eps.map(e=>e.s))].sort((a,b)=>a-b),tab=view.tab||'ep';
  if(view.s==null||!ss.includes(view.s))view.s=ss.find(n=>sh.eps.some(e=>e.s==n&&!e.w&&aired(e)))??ss[ss.length-1];
  frT(sh,view.s);return`<div class="det"><button data-act="back">← Retour</button>${icons(sh)}
