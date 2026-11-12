@@ -66,7 +66,7 @@ body[data-leg=none] .lg,body[data-leg=none] #flb small,body[data-leg=list] .lg{d
 #flb small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;text-align:center;max-width:48px;font-size:9px;line-height:1.05;margin-top:-1px;overflow:hidden;word-break:break-word;color:var(--on);opacity:.85}
 #q{display:none;flex:1;min-width:0;background:#fff3;border:0;border-radius:4px;color:var(--on);padding:8px 10px;font:inherit}
 #q::placeholder{color:var(--on);opacity:.7}
-header.sq h1{display:none}header.sq #q{display:block}
+header.sq h1:not(.cas){display:none}header.sq #clw,header.sq [data-act=grid],header.sq #flb{display:none}header.sq #q{display:block}
 #menu{max-height:78vh;overflow-y:auto;position:fixed;top:52px;right:8px;background:var(--sf);border-radius:4px;box-shadow:0 4px 14px #0005;z-index:9;min-width:210px;padding:6px 0}
 #menu.l{left:8px;right:auto}
 #menu button{display:block;width:100%;text-align:left;background:none;border-radius:0;padding:12px 16px}
@@ -192,6 +192,7 @@ body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{w
 .srt{display:flex;gap:6px;margin:6px 0 0}.srt button{border-radius:99px;font-size:13px;padding:6px 12px}.srt .on{background:var(--ac);color:var(--on)}
 .sinf{position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fffe;color:#333;font:italic 700 14px/24px Georgia,serif;text-align:center;box-shadow:0 1px 3px #0007;pointer-events:auto}
 #menu .sdim{color:var(--mu);opacity:.55}.sfav{color:#e91e63}#menu [data-act=ser]{touch-action:pan-y}.srs{display:flex;flex-direction:column;gap:6px;padding:0 8px 6px;align-items:flex-start}
+header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd .cat,#hd.sq .cat{height:34px;padding:0}#hd.sq .cat .cl{display:none}#hd.sq .cat svg{width:22px;height:22px}#hd.sq #q{margin:0 2px}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -1256,7 +1257,7 @@ document.addEventListener('click',async ev=>{
  if(view.sel&&(a=='open'||a=='seen'||a=='fav'||a=='pin')){skipLog=1;view.sel[d.id]?delete view.sel[d.id]:view.sel[d.id]=1;if(!Object.keys(view.sel).length)view.sel=null}
  else if(a=='open'){view.ly=scrollY;view.pp=null;view.open=d.id;view.s=null;view.tab=null;top=1}
  else if(a=='back'){goBack();return;if(view.pp){view.pp=null;top=view.open?3:2}else{view.open=null;view.add=0;top=2}}
- else if(a=='mode'){if(d.v!=MODE())setMode(d.v);top=1}
+ else if(a=='mode'){const sq=$('#hd').classList.contains('sq'),q=view.q;if(d.v!=MODE())setMode(d.v);if(sq){$('#hd').classList.add('sq');view.q=q;$('#q').value=q}top=1}
  else if(a=='tg'){S[d.k]=!S[d.k]}
  else if(a=='df'){S.dfmt=d.k}
  else if(a=='lg'){S.leg=d.k}
