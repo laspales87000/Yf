@@ -167,13 +167,14 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 .scx{position:absolute;top:14px;right:14px;width:48px;height:48px;border-radius:50%;background:#0008;color:#fff;font-size:22px;padding:0}
 .pres{margin-top:18px;border-top:2px solid var(--s2);padding-top:6px}.prh{margin:8px 0 4px;font-size:18px}.prh small{font-weight:400;color:var(--mu);font-size:13px}
 h1.cas{display:flex;gap:4px;margin:0 4px;padding:3px;flex:1 1 auto;min-width:0;max-width:240px;background:#00000030;border-radius:12px;box-shadow:inset 0 1px 3px #0005;overflow:visible}
-#hd .cat{flex:1 1 0;min-width:0;width:auto;height:44px;border-radius:9px;padding:2px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(#ffffff38,#ffffff0a);box-shadow:0 3px 0 #0000004d,0 1px 3px #0000004d;transition:transform .08s,box-shadow .08s,background .08s}
+#hd .cat{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;-webkit-tap-highlight-color:transparent;flex:1 1 0;min-width:0;width:auto;height:44px;border-radius:9px;padding:2px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(#ffffff38,#ffffff0a);box-shadow:0 3px 0 #0000004d,0 1px 3px #0000004d;transition:transform .08s,box-shadow .08s,background .08s}
 #hd .cat svg{width:27px;height:27px;fill:var(--on);opacity:.7}
 #hd .cat .cl{display:block;font-size:9.5px;line-height:1;color:var(--on);opacity:.75;white-space:nowrap}
 #hd .cat.on{transform:translateY(3px);background:#00000045;box-shadow:inset 0 3px 5px #0000008c}
 #hd .cat.on svg{opacity:1}#hd .cat.on .cl{opacity:1;font-weight:700}
 body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{width:29px;height:29px}
 .nxs{justify-content:flex-end;gap:0}.nxs>span{color:var(--mu);font-size:13px}
+#hd .cat *{pointer-events:none}#hd .cat.drg{z-index:3;transition:none;transform:translateY(-3px) scale(1.12);box-shadow:0 8px 16px #0007}#hd .cat.drg.on{background:#00000060}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -797,7 +798,7 @@ ${m.pv?'':tagBlock(m)}${tabsHtml(tab,m.pv?[['cast','Distribution'],['rel','Films
 const mcard=m=>{const u=TI(m.bk,'w780')||TI(m.po,'w500'),fut=m.date&&m.date>today(),subt=fut?'Sortie le '+dd(m.date):[yr(m.date),rt(m.run)].filter(Boolean).join(' · ');
  return`<article class="tc ${view.sel&&view.sel[m.id]?'sel':''}" data-act="open" data-id="${m.id}"><div class="bn" ${u?`style="background-image:url('${esc(u)}')"`:''}>${view.sel?`<span class="ck ${view.sel[m.id]?'on':''}">✓</span>`:''}${m.arch?`<button class="ai" data-act="archive" data-id="${m.id}" aria-label="Remettre dans la liste" style="${view.sel?'left:46px':''}">${ARCH}</button>`:''}<button class="pinb ${m.pin?'on':'off'}" data-act="pin" data-id="${m.id}" aria-label="${m.pin?'Retirer l’épingle':'Épingler en début de liste'}">${PIN}</button><button class="hrb ${m.fav?'on':''}" data-act="fav" data-id="${m.id}" aria-label="${m.fav?'Retirer des favoris':'Ajouter aux favoris'}">♥</button><h3>${esc(nm(m))}</h3><p>${esc(subt)}</p></div><div class="nx nxs"><span>${m.seen?(m.arch?'Vu et archivé':'Vu'):'À voir'}</span><button class="eye ${m.seen?'seen':''}" data-act="seen" data-id="${m.id}" aria-label="${m.seen?'Marquer comme non vu':'Marquer comme vu'}">${EYE}</button></div></article>`};
 const mposter=m=>`<article class="card ${view.sel&&view.sel[m.id]?'sel':''}" data-act="open" data-id="${m.id}"><div class="poster">${view.sel?`<span class="ck ${view.sel[m.id]?'on':''}">✓</span>`:''}${m.po?`<img loading="lazy" src="${esc(TI(m.po,'w342'))}" alt="">`:esc(nm(m)[0]||'?')}${vstack(m)}</div><h3>${esc(nm(m))}</h3></article>`;
-function renderMode(){document.querySelectorAll('.ttl,.cat').forEach(b=>b.classList.toggle('on',b.dataset.v==MODE()));document.querySelectorAll('.grp').forEach(b=>b.classList.toggle('on',(b.dataset.v=='bk')==(GRP()=='b')));$('#hd').dataset.g=GRP()}
+function renderMode(){catOrder();document.querySelectorAll('.ttl,.cat').forEach(b=>b.classList.toggle('on',b.dataset.v==MODE()));document.querySelectorAll('.grp').forEach(b=>b.classList.toggle('on',(b.dataset.v=='bk')==(GRP()=='b')));$('#hd').dataset.g=GRP()}
 /* Livres et BD (Open Library, Google Books en secours) */
 const OLU='https://openlibrary.org',BKRES={};
 const strip=s=>String(s||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -1140,13 +1141,28 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
  const go=n=='touchend'&&f.nb&&(Math.abs(f.dx)>W*.25||Math.abs(f.dx)>40&&Math.abs(f.v)>.5);
  fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
 let lp=0,lpT,px=0,py=0;
+/* Touches de catégorie : appui long (1 s) pour les déplacer et choisir leur ordre */
+function catOrder(){const h=$('h1.cas');if(!h||catD)return;const o=(S.catOrder||[]).filter(v=>h.querySelector(`.cat[data-v="${v}"]`));
+ for(const v of['s','m','b','c'])if(!o.includes(v))o.push(v);const cur=[...h.children].map(b=>b.dataset.v).join();if(cur!=o.join())o.forEach(v=>h.appendChild(h.querySelector(`.cat[data-v="${v}"]`)))}
+let catD=null,catT=0;
+document.addEventListener('pointerdown',ev=>{const b=ev.target.closest('#hd .cat');if(!b)return;clearTimeout(catT);const x0=ev.clientX,y0=ev.clientY,id=ev.pointerId;
+ const mv=e=>{if(!catD&&Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)stop()},stop=()=>{clearTimeout(catT);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',stop);document.removeEventListener('pointercancel',stop)};
+ document.addEventListener('pointermove',mv);document.addEventListener('pointerup',stop);document.addEventListener('pointercancel',stop);
+ catT=setTimeout(()=>{stop();const h=b.parentNode,r=b.getBoundingClientRect();catD={b,h,id,g:x0-(r.left+r.width/2)};lp=1;b.classList.add('drg');try{b.setPointerCapture(id)}catch(e){}if(navigator.vibrate)navigator.vibrate(40)},1000)});
+document.addEventListener('pointermove',ev=>{const d=catD;if(!d||ev.pointerId!=d.id)return;const H=d.h.getBoundingClientRect(),W=d.b.offsetWidth;
+ let c=Math.max(H.left+W/2,Math.min(H.right-W/2,ev.clientX-d.g));const sib=[...d.h.children].filter(x=>x!=d.b);
+ let i=sib.findIndex(x=>{const r=x.getBoundingClientRect();return c<r.left+r.width/2});if(i<0)i=sib.length;
+ const ref=sib[i]||null;if(d.b.nextElementSibling!==ref)d.h.insertBefore(d.b,ref);
+ d.b.style.transform='';const n=d.b.getBoundingClientRect();d.b.style.transform=`translate(${c-(n.left+n.width/2)}px,-3px) scale(1.12)`});
+['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,ev=>{const d=catD;if(!d||ev.pointerId!=d.id)return;catD=null;d.b.classList.remove('drg');d.b.style.transform='';
+ S.catOrder=[...d.h.children].map(x=>x.dataset.v);save();setTimeout(()=>lp=0,400)}));
 document.addEventListener('pointerdown',ev=>{const mi=ev.target.closest('#menu [data-act="tab"]');
  if(mi){lp=0;clearTimeout(lpT);lpT=setTimeout(()=>{lp=1;S.deff=S.deff||{};S.deff[MODE()]=mi.dataset.f;save();if(navigator.vibrate)navigator.vibrate(40);view.menu=0;renderMenu();toast('Cette liste sera désormais la liste qui s’affichera en premier',2000)},2000);return}
  const c=ev.target.closest('.tc,.card');if(!c||view.sel||view.menu)return;lp=0;px=ev.clientX;py=ev.clientY;clearTimeout(lpT);
  lpT=setTimeout(()=>{lp=1;view.sel={};view.sel[c.dataset.id]=1;if(navigator.vibrate)navigator.vibrate(30);render()},500)});
 document.addEventListener('pointermove',ev=>{if(Math.abs(ev.clientX-px)+Math.abs(ev.clientY-py)>12)clearTimeout(lpT)});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(lpT);setTimeout(()=>lp=0,400)}));
-document.addEventListener('contextmenu',ev=>{if(ev.target.closest('.tc,.card,.sw,#menu button'))ev.preventDefault()});
+document.addEventListener('contextmenu',ev=>{if(ev.target.closest('.tc,.card,.sw,#menu button,#hd .cat'))ev.preventDefault()});
 let sw=null;
 document.addEventListener('pointerdown',ev=>{const w=ev.target.closest('.sw');if(!w||view.sel||view.menu||ev.target.closest('.pinb,.eye'))return;sw={w,a:w.querySelector('.tc'),bg:w.querySelector('.swbg'),x:ev.clientX,y:ev.clientY,dx:0,on:0}});
 document.addEventListener('pointermove',ev=>{if(!sw)return;const dx=ev.clientX-sw.x,dy=ev.clientY-sw.y;
