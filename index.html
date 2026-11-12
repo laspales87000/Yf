@@ -180,6 +180,7 @@ body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{w
 .bico{width:20px;height:20px;vertical-align:-4px;margin-right:4px}
 #cl{position:relative}.clb{position:absolute;right:-7px;bottom:4px;width:17px;height:17px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 1px 2px #0007;pointer-events:none}.clb .bico{width:11px;height:11px;margin:0;vertical-align:0;color:#000}
 .cst{display:flex;gap:14px;align-items:center}.cstl{flex:none;width:52px;height:52px;border-radius:14px;background:#fff;display:grid;place-items:center;box-shadow:0 1px 4px #0004}.cstl .bico{width:34px;height:34px;margin:0;vertical-align:0;color:#000}.cstl:not(:has(svg)){font-size:30px}
+.trl{display:inline-flex;align-items:center;gap:8px;background:var(--s2);color:var(--tx);border-radius:99px;padding:9px 18px 9px 12px;text-decoration:none;font-weight:600;margin:10px 0 0}.trl span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#e53935;color:#fff;font-size:12px;padding-left:2px}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -863,9 +864,18 @@ const pAttr=(sh,p)=>sh.kind=='b'?`data-act="author" data-pn="${esc(p.n)}"`:sh.ki
 function castHtml(sh){const P=sh.ppl||[],c=P.filter(p=>p.r!='crew'),w=P.filter(p=>p.r=='crew'),row=(p,s)=>`<div class="cr" ${pAttr(sh,p)}>${pimg(p,'w185')}<div class="t"><span>${esc(p.n)}</span><small>${esc(s||'')}</small></div></div>`;
  return(c.length?c.map(p=>row(p,p.c)).join(''):'<p class="mu">Aucune information</p>')+(w.length?'<h4 class="shd">Équipe</h4>'+w.map(p=>row(p,CREW[p.j]||p.j)).join(''):'')}
 const relHtml=m=>(m.rel&&m.rel.length)?`<div class="rl">${m.rel.map(r=>`<button class="rlc" data-act="relm" data-tm="${r.id}">${r.po?`<img loading="lazy" src="${esc(TI(r.po,'w185'))}" alt="">`:'<span class="ph"></span>'}<small>${esc(r.t||'')}${r.d?' ('+yr(r.d)+')':''}</small></button>`).join('')}</div>`:'<p class="mu">Aucune information</p>';
+/* Bande-annonce (TMDB → YouTube), cherchée une fois puis gardée */
+const trlBusy=new Set();
+function trlBtn(it){if(it.trlL!==LANG()){loadTrl(it);return''}return it.trl?`<a class="trl" href="https://www.youtube.com/watch?v=${encodeURIComponent(it.trl)}" target="_blank" rel="noopener"><span>▶</span> Bande-annonce</a>`:''}
+async function loadTrl(it){if(trlBusy.has(it.id))return;trlBusy.add(it.id);
+ try{let path;if(it.kind=='m'){if(!it.tmdb)return;path='/movie/'+it.tmdb}
+  else{let id=it.tmdbtv||it.trlTv;if(!id){const r=await tmdb('/search/tv','&query='+encodeURIComponent(it.orig||it.name||'')+(it.eps&&it.eps[0]&&yr(it.eps[0].d)?'&first_air_date_year='+yr(it.eps[0].d):''));const f=r&&r.results&&r.results[0];if(!f){it.trl='';it.trlL=LANG();save();return}id=it.trlTv=f.id}path='/tv/'+id}
+  const lg=TLG[LANG()].slice(0,2),r=await tmdb(path+'/videos','&include_video_language='+lg+',en,null'),V=((r&&r.results)||[]).filter(v=>v.site=='YouTube'&&/^[\w-]{6,20}$/.test(v.key||''));
+  const sc=v=>(v.iso_639_1==lg?8:v.iso_639_1=='en'?2:0)+(v.type=='Trailer'?4:v.type=='Teaser'?2:0)+(v.official?1:0);V.sort((a,b)=>sc(b)-sc(a));
+  it.trl=(V[0]||{}).key||'';it.trlL=LANG();save();if(view.open==it.id)render()}catch(e){}finally{trlBusy.delete(it.id)}}
 function detailM(m){const tab=view.tab||'cast',dir=(m.ppl||[]).filter(p=>p.j=='Director').map(p=>p.n).join(', ');
  return`<div class="det"><button data-act="back">← Retour</button>${m.pv?'':icons(m)}
-<div class="hd"><div class="poster">${m.po?`<img src="${esc(TI(m.po,'w342'))}" alt="">`:''}</div><div><h2>${esc(nm(m))}</h2><p class="mu">${esc([m.orig&&m.orig!==m.name?m.orig:'',[m.date?dd(m.date):'',rt(m.run)].filter(Boolean).join(' · '),(m.gn||[]).join(', ')].filter(Boolean).join(' – '))}${dir?`<br>Réalisé par ${esc(dir)}`:''}</p></div></div>
+<div class="hd"><div class="poster">${m.po?`<img src="${esc(TI(m.po,'w342'))}" alt="">`:''}</div><div><h2>${esc(nm(m))}</h2><p class="mu">${esc([m.orig&&m.orig!==m.name?m.orig:'',[m.date?dd(m.date):'',rt(m.run)].filter(Boolean).join(' · '),(m.gn||[]).join(', ')].filter(Boolean).join(' – '))}${dir?`<br>Réalisé par ${esc(dir)}`:''}</p></div></div>${trlBtn(m)}
 <p class="sum">${esc(m.ov||'')}</p>
 ${m.pv?`<div class="act"><button class="pri" data-act="addmovie" data-tm="${m.tmdb}">Ajouter à mes films</button></div>`:''}
 ${m.pv?'':tagBlock(m)}${tabsHtml(tab,m.pv?[['cast','Distribution'],['rel','Films associés']]:[['cast','Distribution'],['rel','Films associés'],['rate','Avis']])}${tab=='rate'&&!m.pv?ratingHtml(m):tab=='rel'?relHtml(m):castHtml(m)}</div>`}
@@ -1026,7 +1036,7 @@ function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return de
  const s=st(sh),ss=[...new Set(sh.eps.map(e=>e.s))].sort((a,b)=>a-b),tab=view.tab||'ep';
  if(view.s==null||!ss.includes(view.s))view.s=ss.find(n=>sh.eps.some(e=>e.s==n&&!e.w&&aired(e)))??ss[ss.length-1];
  frT(sh,view.s);return`<div class="det"><button data-act="back">← Retour</button>${icons(sh)}
-<div class="hd"><div class="poster">${sh.img?`<img src="${esc(sh.img)}" alt="">`:''}</div><div><h2>${esc(nm(sh))}</h2><p class="mu">${[sh.orig&&sh.orig!==nm(sh)?sh.orig:'',sh.status,sh.net,sh.genre].filter(Boolean).map(esc).join(' – ')}<br>${s.w}/${s.a} épisodes vus</p></div></div>
+<div class="hd"><div class="poster">${sh.img?`<img src="${esc(sh.img)}" alt="">`:''}</div><div><h2>${esc(nm(sh))}</h2><p class="mu">${[sh.orig&&sh.orig!==nm(sh)?sh.orig:'',sh.status,sh.net,sh.genre].filter(Boolean).map(esc).join(' – ')}<br>${s.w}/${s.a} épisodes vus</p></div></div>${trlBtn(sh)}
 <p class="sum">${esc(FR()&&gl(sh,'sumf')||sh.sum)}</p>
 ${tagBlock(sh)}${tabsHtml(tab,[['ep','Épisodes'],['cast','Distribution'],['rate','Avis']])}${tab=='rate'?ratingHtml(sh):tab=='cast'?castHtml(sh):`<div class="tabs" id="st">${ss.map(n=>`<button class="${n==view.s?'on':''}" data-act="season" data-n="${n}">${n?'Saison '+n:'Spéciaux'}</button>`).join('')}</div>
 <div class="act"><button data-act="sw" data-id="${sh.id}" ${sh.eps.filter(e=>e.s==view.s).every(e=>e.w||!past(sh,e))?'disabled':''}>Marquer la saison vue</button></div>
