@@ -312,10 +312,14 @@ let gbusy=0,gT;
 /* Synchronisation par Dropbox ou Google Drive (en plus de GitHub) */
 const DBX_KEY='vn7n5oxqshf5l9q',GDR_ID='',CLN={gh:'GitHub',dbx:'Dropbox',gdr:'Google Drive'},CP=()=>(S.gh&&S.gh.p)||'gh',RDR=()=>location.origin+location.pathname;
 const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
+/* En changeant de service principal, l'ancien peut devenir la copie de secours */
+function askKeep(p){const g=S.gh;if(!(g&&g.t)||CP()==p)return 0;const k=S.bk2&&S.bk2.t?S.bk2:null;
+ return confirm('Garder '+CLN[CP()]+' comme copie de secours ?\nTes sauvegardes de la semaine continueront d’y être envoyées, sans rien ressaisir.'+(k&&k.p!=CP()?'\n(Cela remplace la copie actuelle sur '+CLN[k.p]+'.)':''))?1:0}
+function keepOld(){const g=S.gh;if(!(g&&g.t))return;S.bk2={...g,bkw:S.bkw,lastbk:g.lastbk,err:0,reco:0,dirty:0}}
 async function cConnect(p,role){const key=p=='dbx'?DBX_KEY:GDR_ID;if(!key){view.menu='cset'+p;renderMenu();return}
  if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
- const st=rnd(16);await saveNow();try{sessionStorage.setItem('oa',JSON.stringify({p,st,role}))}catch(e){}
- if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role}))}catch(e){}
+ const keep=!role&&askKeep(p);const st=rnd(16);await saveNow();try{sessionStorage.setItem('oa',JSON.stringify({p,st,role,keep}))}catch(e){}
+ if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role,keep}))}catch(e){}
   location.href='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st})}
  else location.href='https://accounts.google.com/o/oauth2/v2/auth?'+new URLSearchParams({client_id:key,response_type:'token',scope:'https://www.googleapis.com/auth/drive.appdata',redirect_uri:RDR(),state:st,include_granted_scopes:'true'})}
 /* Retour de la page de connexion Dropbox / Google : on vérifie le « state » (protection contre les connexions forcées) */
@@ -328,7 +332,7 @@ async function cReturn(){const q=new URLSearchParams(location.search),h=new URLS
    if(!r.ok)throw 0;const j=await r.json();A={p:'dbx',t:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||14400)*1000,g:''}}
   else{const t=h.get('access_token');if(!t)throw 0;A={p:'gdr',t,exp:Date.now()+(+h.get('expires_in')||3600)*1000,g:''}}
   if(o.role=='bk2'){const old=S.bk2;S.bk2=Object.assign(A,old&&old.p==A.p?{b:old.b,fid:old.fid,lastbk:old.lastbk}:{});save();await bk2Now();return}
-  S.gh=A;save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
+  if(o.keep)keepOld();S.gh=A;save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
 async function cTok(){const g=AC();if(g.exp&&g.exp>Date.now()+60e3)return g.t;
  if(g.p=='dbx'&&g.rt){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:g.rt,client_id:DBX_KEY})});
   if(r.ok){const j=await r.json();g.t=j.access_token;g.exp=Date.now()+(j.expires_in||14400)*1000;save();return g.t}if(r.status==400||r.status==401)throw Error('jeton');throw Error(r.status)}
@@ -1170,7 +1174,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='bk2rest')return bk2Restore();
  else if(a=='bk2off'){if(!confirm('Retirer la copie de secours ? Les copies déjà envoyées restent sur ce service.'))return;S.bk2=null;toast('Copie de secours retirée')}
  else if(a=='gout'){if(!confirm('Arrêter la synchronisation sur cet appareil ? Tes données restent sur ce téléphone.'))return;S.gh=null;toast('Synchronisation arrêtée')}
- else if(a=='gchg'){if(S.gh&&S.gh.t&&CP()!='gh'&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par GitHub ? Tes données restent sur cet appareil.'))return;const t=prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;S.gh={p:'gh',t:t.trim(),g:''};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
+ else if(a=='gchg'){const sw=S.gh&&S.gh.t&&CP()!='gh';if(sw&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par GitHub ? Tes données restent sur cet appareil.'))return;const old=S.bk2&&S.bk2.p=='gh'&&S.bk2.t?S.bk2:null;
+  let t=sw&&old&&confirm('Reprendre le jeton GitHub déjà enregistré pour la copie de secours ?')?old.t:prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;const keep=sw&&askKeep('gh');const prevB=old&&old.t==t?{g:old.g,b:old.b}:{};if(keep)keepOld();else if(old&&old.t==t)S.bk2=null;S.gh={p:'gh',t:t.trim(),g:'',...prevB};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
  else if(a=='lang')S.lang=d.v;
  else if(a=='tagdel'){const t=view.tag;if(!confirm('Supprimer le tag « '+tn(t)+' » de toutes les séries ?'))return;logEv(null,'Tag « '+tn(t)+' » supprimé partout');
   COLL(MODE()).forEach(s=>{if((s.tags||[]).includes(t)){s.tags=s.tags.filter(x=>x!==t);s.mod=Date.now()}});view.tag='';
