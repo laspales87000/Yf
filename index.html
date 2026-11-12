@@ -872,7 +872,7 @@ async function movSearch(q){const ym=q.match(/^(.*?)\s*\(?((?:19|20)\d{2})\)?$/)
  for(const v of V)for(const pg of[1,2])J.push(tmdb('/search/movie','&include_adult=true&page='+pg+'&query='+encodeURIComponent(v)+(y?'&year='+y:'')).catch(()=>null));
  const R=await Promise.all(J),M=new Map();for(const r of R)for(const x of(r&&r.results)||[])if(!M.has(x.id))M.set(x.id,x);
  const k=norm(base),kw=k.replace(/\b[dlj] /g,''),sc=x=>{const t=norm(x.title),o=norm(x.original_title||'');let v=0;for(const n of[t,o]){const nw=n.replace(/\b[dlj] /g,'');if(n==k||nw==kw)v=Math.max(v,100);else if(n.startsWith(k)||nw.startsWith(kw))v=Math.max(v,60);else if(n.includes(k)||nw.includes(kw))v=Math.max(v,30)}return v+Math.min(20,Math.log10(1+(x.popularity||0))*8)};
- return[...M.values()].sort((a,b)=>sc(b)-sc(a))}
+ const yb=x=>y?(+yr(x.release_date)==+y?60:-Math.min(30,Math.abs((+yr(x.release_date)||0)-y))):0;return[...M.values()].sort((a,b)=>sc(b)+yb(b)-sc(a)-yb(a))}
 async function findM(q){$('#res').textContent='Recherche…';
  try{const L=await movSearch(q);$('#res').innerHTML=L.slice(0,20).map(x=>`<div class="ep ${MV()['m'+x.id]?'ex':''}" ${MV()['m'+x.id]?`data-act="openex" data-id="m${x.id}"`:''}><div class="poster sm">${x.poster_path?`<img src="${esc(TI(x.poster_path,'w154'))}" alt="">`:''}</div><div class="t"><span>${esc(x.title)}</span><small>${esc([yr(x.release_date),x.original_title!==x.title?x.original_title:''].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addmovie" data-tm="${x.id}" ${MV()['m'+x.id]?'disabled':''}>Ajouter</button></div>`).join('')||'<p class="mu">Aucun résultat.</p>'}catch(e){$('#res').textContent='Connexion impossible.'}}
 const PINI='<svg viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>';
@@ -1107,15 +1107,31 @@ async function addMq(tm){const id='m'+tm;if(MV()[id])return;const m=MV()[id]={id
  try{if(!await fetchMovie(m,1))throw 0;logEv(m,'Film ajouté');toast('Film ajouté')}catch(e){delete MV()[id];toast('Connexion impossible')}save();render()}
 const exShow=x=>{const i=String(x.externals&&x.externals.thetvdb||'tm'+x.id);return S.shows[i]?i:((Object.values(S.shows).find(s=>s.tm==x.id)||{}).id||'')};
 const exTm=t=>(Object.values(S.shows).find(s=>s.tmdbtv==t.id||norm(s.name)==norm(t.name)||(s.orig&&norm(s.orig)==norm(t.original_name)))||{}).id||'';
-async function findS(q){$('#res').textContent='Recherche…';let A=[],T=[],err;
- try{A=(await api('/search/shows?q='+encodeURIComponent(q)))||[]}catch(e){err=e}
- try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(q));T=(r&&r.results)||[]}catch(e){err=err||e}
- if(!A.length&&!T.length&&err){$('#res').innerHTML='Connexion impossible.<small>'+esc(err.message)+'</small>';return}
+/* Recherche commune : année en fin de recherche (« … 1983 »), « d' » toléré, meilleurs titres et bonne année en premier */
+function qSplit(q){const ym=q.match(/^(.*?)\s*\(?((?:19|20)\d{2})\)?$/),base=(ym&&ym[1].trim()?ym[1]:q).trim();return{base,y:ym&&ym[1].trim()?ym[2]:'',V:[...new Set([base,base.replace(/\b[dlj]['’]\s*/gi,'').replace(/\s+/g,' ').trim()])].filter(Boolean)}}
+function tScore(names,base,y,yy,pop){const k=norm(base),kw=k.replace(/\b[dlj] /g,'');let v=0;for(const n0 of names){const n=norm(n0),nw=n.replace(/\b[dlj] /g,'');if(!n)continue;if(n==k||nw==kw)v=Math.max(v,100);else if(n.startsWith(k)||nw.startsWith(kw))v=Math.max(v,60);else if(n.includes(k)||nw.includes(kw))v=Math.max(v,30)}
+ return v+(y&&yy?(yy==y?60:-Math.min(30,Math.abs(yy-y))):0)+Math.min(20,Math.log10(1+(pop||0))*8)}
+async function tvSearch(q){const{base,y,V}=qSplit(q),J=[];let err;
+ for(const v of V)for(const pg of[1,2])J.push(tmdb('/search/tv','&page='+pg+'&query='+encodeURIComponent(v)+(y?'&first_air_date_year='+y:'')).catch(e=>{err=e;return null}));
+ const A=await api('/search/shows?q='+encodeURIComponent(base)).catch(e=>{err=err||e;return null}),R=await Promise.all(J),M=new Map();
+ for(const r of R)for(const t of(r&&r.results)||[])if(!M.has(t.id))M.set(t.id,t);
+ const L=[];for(const o of A||[]){const x=o.show;L.push({k:'a',x,sc:tScore([x.name],base,y,+yr(x.premiered),(o.score||0)*30)})}
+ for(const t of M.values())L.push({k:'t',x:t,sc:tScore([t.name,t.original_name],base,y,+yr(t.first_air_date),t.popularity)});
+ L.sort((a,b)=>b.sc-a.sc);return{L,err}}
+async function findS(q){$('#res').textContent='Recherche…';const{L,err}=await tvSearch(q);
+ if(!L.length&&err){$('#res').innerHTML='Connexion impossible.<small>'+esc(err.message)+'</small>';return}
  const seen=new Set(),rows=[];
- for(const{show:x}of A.slice(0,12)){seen.add(norm(x.name)+yr(x.premiered));const id=exShow(x);rows.push(`<div class="ep ${id?'ex':''}" ${id?`data-act="openex" data-id="${esc(id)}"`:''}><div class="poster sm">${x.image?`<img src="${esc(x.image.medium)}" alt="">`:''}</div><div class="t"><span>${esc(x.name)}</span><small>${esc([yr(x.premiered),(x.network||x.webChannel||{}).name,x.status].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addshow" data-tm="${x.id}" data-tv="${x.externals.thetvdb||''}" ${id?'disabled':''}>Ajouter</button></div>`)}
- for(const t of T.slice(0,12)){const y=yr(t.first_air_date);if(seen.has(norm(t.original_name)+y)||seen.has(norm(t.name)+y))continue;const id=exTm(t);
-  rows.push(`<div class="ep ${id?'ex':''}" ${id?`data-act="openex" data-id="${esc(id)}"`:''}><div class="poster sm">${t.poster_path?`<img src="${esc(TI(t.poster_path,'w154'))}" alt="">`:''}</div><div class="t"><span>${esc(t.name)}</span><small>${esc([y,t.original_name!==t.name?t.original_name:''].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addtv" data-tm="${t.id}" data-tn="${esc(t.name)}" ${id?'disabled':''}>Ajouter</button></div>`)}
+ for(const it of L){if(rows.length>=20)break;
+  if(it.k=='a'){const x=it.x,y=yr(x.premiered);if(seen.has(norm(x.name)+y))continue;seen.add(norm(x.name)+y);const id=exShow(x);rows.push(`<div class="ep ${id?'ex':''}" ${id?`data-act="openex" data-id="${esc(id)}"`:''}><div class="poster sm">${x.image?`<img src="${esc(x.image.medium)}" alt="">`:''}</div><div class="t"><span>${esc(x.name)}</span><small>${esc([y,(x.network||x.webChannel||{}).name,x.status].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addshow" data-tm="${x.id}" data-tv="${(x.externals||{}).thetvdb||''}" ${id?'disabled':''}>Ajouter</button></div>`)}
+  else{const t=it.x,y=yr(t.first_air_date);if(seen.has(norm(t.original_name)+y)||seen.has(norm(t.name)+y))continue;seen.add(norm(t.name)+y);seen.add(norm(t.original_name)+y);const id=exTm(t);
+   rows.push(`<div class="ep ${id?'ex':''}" ${id?`data-act="openex" data-id="${esc(id)}"`:''}><div class="poster sm">${t.poster_path?`<img src="${esc(TI(t.poster_path,'w154'))}" alt="">`:''}</div><div class="t"><span>${esc(t.name)}</span><small>${esc([y,t.original_name!==t.name?t.original_name:''].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addtv" data-tm="${t.id}" data-tn="${esc(t.name)}" ${id?'disabled':''}>Ajouter</button></div>`)}}
  $('#res').innerHTML=rows.join('')||'<p class="mu">Aucun résultat.</p>'}
+/* Le titre cherché existe peut-être dans l'autre catégorie (série ↔ film) */
+async function crossRes(q){const md=MODE();if(md!='s'&&md!='m')return'';const{base,y}=qSplit(q);
+ try{if(md=='m'){const{L}=await tvSearch(q);const G=L.filter(it=>it.k=='t'&&it.sc>=60).slice(0,3);if(!G.length)return'';
+   return`<div class="pres"><h4 class="shd">📺 Aussi trouvé dans les séries</h4>${G.map(({x:t})=>{const id=exTm(t);return`<div class="ep"><div class="poster sm">${t.poster_path?`<img loading="lazy" src="${esc(TI(t.poster_path,'w154'))}" alt="">`:''}</div><div class="t"><span>${esc(t.name)}</span><small>${esc([yr(t.first_air_date),'Série'].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addtv" data-tm="${t.id}" data-tn="${esc(t.name)}" ${id?'disabled':''}>Ajouter</button></div>`}).join('')}</div>`}
+  const L=(await movSearch(q)).map(x=>({x,sc:tScore([x.title,x.original_title],base,y,+yr(x.release_date),x.popularity)})).filter(o=>o.sc>=60).sort((a,b)=>b.sc-a.sc).slice(0,3);if(!L.length)return'';
+  return`<div class="pres"><h4 class="shd">🎬 Aussi trouvé dans les films</h4>${L.map(({x})=>`<div class="ep"><div class="poster sm">${x.poster_path?`<img loading="lazy" src="${esc(TI(x.poster_path,'w154'))}" alt="">`:''}</div><div class="t"><span>${esc(x.title)}</span><small>${esc([yr(x.release_date),'Film'].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addmq" data-tm="${x.id}" ${MV()['m'+x.id]?'disabled':''}>Ajouter</button></div>`).join('')}</div>`}catch(e){return''}}
 async function syncTmdbTv(sh){const x=await tmdb('/tv/'+sh.tmdbtv,'&append_to_response=credits');if(!x)return 0;
  sh.name=sh.name||x.name;sh.orig=x.original_name;sh.status=(x.status=='Returning Series'||x.in_production)?'Continuing':'Ended';sh.net=((x.networks||[])[0]||{}).name||sh.net;
  sh.genre=sh.genre||(x.genres||[]).map(g=>g.name).join(', ');sh.sum=sh.sum||x.overview||'';sh.img=TI(x.poster_path,'w342');sh.bg=TI(x.backdrop_path,'w780');if((x.genres||[]).some(g=>g.id==16))sh.type='Animation';
@@ -1262,7 +1278,7 @@ function personRes(P){if(!P)return'';const cr=P.id&&PP[P.id]?PP[P.id].cr||[]:[],
  const open=P.id?`data-act="person" data-pid="${esc(String(P.id))}" data-pn="${esc(P.n)}" data-src="t"`:`data-act="author" data-pn="${esc(P.n)}"`;
  return`<div class="pres"><h3 class="prh">👤 ${esc(P.n)} <small>dans toutes les catégories</small></h3><button class="pls" ${open}>Voir sa fiche</button>${G.map(([t,L])=>`<h4 class="shd">${esc(t)} (${L.length})</h4>${L.join('')}`).join('')}</div>`}
 async function find(){const q=$('#aq').value.trim();if(!q)return;const c=codeOf(q);if(c)return findCode(c);
- view.resP=null;const tok=find.t=(find.t||0)+1,pp=findPerson(q).catch(()=>null);await findTitle(q);const P=await pp;if(tok!=find.t||!view.add||!P)return;
+ view.resP=null;const tok=find.t=(find.t||0)+1,pp=findPerson(q).catch(()=>null),cx=crossRes(q);await findTitle(q);const X=await cx;if(X&&tok==find.t&&view.add&&$('#res')){const R=$('#res');R.querySelector('.mu')&&!R.querySelector('.ep')&&(R.innerHTML='');R.insertAdjacentHTML('beforeend',X);view.resK=R.innerHTML}const P=await pp;if(tok!=find.t||!view.add||!P)return;
  view.resP=P;const R=$('#res');if(!R)return;R.querySelector('.mu')&&!R.querySelector('.ep')&&(R.innerHTML='');R.insertAdjacentHTML('beforeend',personRes(P));i18n();view.resK=R.innerHTML}
 async function findTitle(q){if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
