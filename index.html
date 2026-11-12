@@ -263,8 +263,8 @@ const FILT=[['cours','En cours'],['fav','Séries favorites ♥'],['eps','Épisod
 const FILTM=[['tosee','À voir'],['fav','Films favoris ♥'],['all','Tous les films'],['noanim','Tous sans les dessins animés'],['anim','Dessins animés'],['arch','Archive']];
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
-function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','serpick','serlist'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','serpick','serlist'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
+function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','serpick','serlist','unipick'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','serpick','serlist','unipick'].includes(view.menu)?' w':'');
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -296,7 +296,7 @@ async function frT(sh,s){const k=sh.id+'|'+s+LS();if(!FR()||busyS.has(k))return;
 const encE=(eps,k)=>{const m={};for(const e of eps)if(e[k])(m[e.s]=m[e.s]||[]).push(e.n);
  return Object.entries(m).map(([s,a])=>{a.sort((x,y)=>x-y);const r=[];let i=0;while(i<a.length){let j=i;while(j+1<a.length&&a[j+1]==a[j]+1)j++;r.push(j>i?a[i]+'-'+a[j]:''+a[i]);i=j+1}return s+':'+r.join(',')}).join(';')};
 const decE=t=>{const o=[];for(const p of(t||'').split(';').filter(Boolean)){const[s,r]=p.split(':');for(const q of r.split(',')){const[a,b]=q.split('-').map(Number);for(let n=a;n<=(b??a);n++)o.push([+s,n])}}return o};
-function gpay(){const o={};for(const[id,s]of Object.entries(S.shows))o[id]={n:s.name||'',tm:s.tm,f:s.fav?1:0,p:s.pin?1:0,a:s.arch?1:0,m:s.mod||0,w:encE(s.eps,'w'),h:encE(s.eps,'f'),t:s.tags||[],r:s.rate||0,nt:s.note||''};const om={};for(const[id,m]of Object.entries(MV()))om[id]={n:m.name||'',tm:m.tmdb,f:m.fav?1:0,p:m.pin?1:0,a:m.arch?1:0,s:m.seen?1:0,m:m.mod||0,t:m.tags||[],r:m.rate||0,nt:m.note||''};const ob={};for(const[id,b]of Object.entries(BK()))ob[id]={n:b.name||'',g:b.gid,bd:b.bd?1:0,f:b.fav?1:0,p:b.pin?1:0,a:b.arch?1:0,s:b.seen?1:0,m:b.mod||0,t:b.tags||[],r:b.rate||0,nt:b.note||'',au:(b.ppl||[]).map(p=>p.n),src:b.src||'gb',po:b.po||'',y:b.date||'',pg:b.pg||0,ln:b.loan||null,se:b.ser||null};return{v:1,del:S.del||{},shows:o,movies:om,books:ob,ui:{co:S.catOrder||null,com:S.catOrderM||0,sf:S.serFix||null}}}
+function gpay(){const o={};for(const[id,s]of Object.entries(S.shows))o[id]={n:s.name||'',tm:s.tm,f:s.fav?1:0,p:s.pin?1:0,a:s.arch?1:0,m:s.mod||0,w:encE(s.eps,'w'),h:encE(s.eps,'f'),t:s.tags||[],r:s.rate||0,nt:s.note||'',u:s.uni||null};const om={};for(const[id,m]of Object.entries(MV()))om[id]={n:m.name||'',tm:m.tmdb,f:m.fav?1:0,p:m.pin?1:0,a:m.arch?1:0,s:m.seen?1:0,m:m.mod||0,t:m.tags||[],r:m.rate||0,nt:m.note||''};const ob={};for(const[id,b]of Object.entries(BK()))ob[id]={n:b.name||'',g:b.gid,bd:b.bd?1:0,f:b.fav?1:0,p:b.pin?1:0,a:b.arch?1:0,s:b.seen?1:0,m:b.mod||0,t:b.tags||[],r:b.rate||0,nt:b.note||'',au:(b.ppl||[]).map(p=>p.n),src:b.src||'gb',po:b.po||'',y:b.date||'',pg:b.pg||0,ln:b.loan||null,se:b.ser||null};return{v:1,del:S.del||{},shows:o,movies:om,books:ob,ui:{co:S.catOrder||null,com:S.catOrderM||0,sf:S.serFix||null}}}
 const okId=k=>typeof k=='string'&&/^[A-Za-z0-9:_.-]{1,100}$/.test(k)&&!['__proto__','constructor','prototype'].includes(k);
 function cleanData(n){for(const K of['shows','movies','books']){const o=n[K];if(!o||typeof o!='object'){if(K!='shows')delete n[K];continue}
  for(const k of Object.keys(o)){const v=o[k];if(!okId(k)||!v||typeof v!='object'){delete o[k];continue}v.id=k;if(Array.isArray(v.eps))v.eps=v.eps.filter(e=>e&&typeof e=='object').map(e=>({...e,s:+e.s||0,n:+e.n||0}));if(v.tags&&!Array.isArray(v.tags))v.tags=[]}}return n}
@@ -305,7 +305,7 @@ function gmerge(R){R=R&&typeof R=='object'?R:{};if(R.ui&&R.ui.sf&&typeof R.ui.sf
   if(S.del[id]>(r.m||0))continue;
   if(l&&(r.m||0)<=(l.mod||0))continue;
   if(!l)l=S.shows[id]={id,name:r.n||'',tm:r.tm,sum:'',eps:[]};
-  l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.tags=Array.isArray(r.t)?r.t.filter(x=>typeof x=='string'):[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0;
+  l.fav=!!r.f;l.pin=!!r.p;l.arch=!!r.a;l.tags=Array.isArray(r.t)?r.t.filter(x=>typeof x=='string'):[];l.rate=r.r||0;l.note=r.nt||'';l.mod=r.m||0;l.uni=r.u&&typeof r.u=='object'&&typeof r.u.s=='string'?{s:r.u.s.slice(0,80)}:null;
   const W=new Set(decE(r.w).map(x=>x.join('-'))),H=new Set(decE(r.h).map(x=>x.join('-'))),have=new Set();
   for(const e of l.eps){const k=e.s+'-'+e.n;have.add(k);e.w=W.has(k)?1:0;e.f=H.has(k)?1:0}
   for(const k of new Set([...W,...H]))if(!have.has(k)){const[s,n]=k.split('-').map(Number);l.eps.push({s,n,t:'',d:'',w:W.has(k)?1:0,f:H.has(k)?1:0})}
@@ -941,7 +941,33 @@ function nearSer(n){const k=norm(n);let best=null,bd=9;for(const x of allSeries(
 function allSeries(){const M={};for(const b of Object.values(BK())){const o=serOf0(b);if(!o)continue;const k=norm(o.s);(M[k]=M[k]||{k,s:o.s,c:0,au:new Set()}).c++;for(const p of b.ppl||[])M[k].au.add(norm(p.n))}return Object.values(M).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
 const serOf0=b=>b.ser&&b.ser.s?{s:b.ser.s,n:+b.ser.n||0}:b.ser&&b.ser.s===''?null:(()=>{const t=String(b.name||'');const m=t.match(/^(.{2,}?)[\s,.:;(–-]+(?:tome|t|vol(?:ume)?|n°|no|#)\.?\s*0*(\d{1,3})\b/i)||t.match(/^(.{2,}?)\s[-–]\s0*(\d{1,3})\s[-–]\s/);if(!m)return null;const n=m[1].replace(/[\s,.:;(–-]+$/,'').trim();return n.length>=2&&!/^\d+$/.test(n)?{s:n,n:+m[2]}:null})();
 const guessN=b=>{const m=String(b.name||'').match(/\b0*(\d{1,3})\b/);return m?+m[1]:''};
+/* Séries TV : univers (Star Trek, Dexter, The Walking Dead…) */
+const uBase=n=>String(n||'').split(/\s*:\s|\s+[-–]\s+/)[0].trim();
+function uniAll(){const L=Object.values(S.shows),U={};const add=(n)=>{const k=norm(n);if(k.length>=3)U[k]=U[k]||n};
+ for(const sh of L){if(sh.uni&&sh.uni.s){add(sh.uni.s);continue}const n=nm(sh),b=uBase(n);if(b&&b!=n)add(b)}
+ for(const a of L)for(const b of L)if(a!==b){const x=norm(nm(a)),y=norm(nm(b));if(y.length>=4&&x!=y&&x.endsWith(' '+y))add(nm(b))}
+ return U}
+function uniOf(sh,U){if(sh.uni)return sh.uni.s||null;U=U||uniAll();const k=norm(nm(sh));let best=null;
+ for(const[u,n]of Object.entries(U))if(k==u||k.startsWith(u+' ')||k.endsWith(' '+u))if(!best||u.length>norm(best).length)best=n;return best}
+function uniList(){const U=uniAll(),C={};for(const sh of Object.values(S.shows)){const u=uniOf(sh,U);if(u){const k=norm(u);C[k]=C[k]||{s:u,c:0,m:0};C[k].c++;if(sh.uni&&sh.uni.s)C[k].m=1}}
+ return Object.values(C).filter(x=>x.c>=2||x.m).sort((a,b)=>a.s.localeCompare(b.s,'fr'))}
+const UNIC={};
+async function uniLoad(name){const k=norm(name);if(UNIC[k])return UNIC[k];let R=[];try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(name));R=((r&&r.results)||[]).filter(x=>{const n=norm(x.name),o=norm(x.original_name);return[n,o].some(v=>v==k||v.startsWith(k+' ')||v.endsWith(' '+k)||v.includes(' '+k+' '))})}catch(e){}
+ return UNIC[k]=R.map(x=>({id:x.id,t:x.name,o:x.original_name,po:x.poster_path,d:x.first_air_date||''}))}
+function uniHtml(){const V=view.ser,k=norm(V.s),U=uniAll(),own=Object.values(S.shows).filter(sh=>{const u=uniOf(sh,U);return u&&norm(u)==k}),F=UNIC[k];
+ if(!F)uniLoad(V.s).then(()=>{if(view.ser&&norm(view.ser.s)==k)render()});
+ const T=own.map(sh=>({sh,d:(sh.eps&&sh.eps[0]&&sh.eps[0].d)||''}));
+ for(const f of F||[]){if(own.some(sh=>sh.tmdbtv==f.id||norm(nm(sh))==norm(f.t)||norm(sh.name||'')==norm(f.o)))continue;T.push({f,d:f.d})}
+ T.sort((a,b)=>(a.d||'9999').localeCompare(b.d||'9999'));const done=own.filter(sh=>{const x=st(sh);return x.a&&!x.left}).length;
+ return`<div class="det"><button data-act="back">← Retour</button><h2 style="margin:12px 0 4px">🌌 ${esc(V.s)}</h2>
+<p class="mu">${own.length} série${own.length>1?'s':''} dans ta liste · ${done} terminée${done>1?'s':''}${F?` · ${T.length} séries dans cet univers`:''}</p>
+<p class="mu" style="font-size:12px">Couleurs vives : série vue en entier. Couleurs pâles : en cours, à voir ou pas encore dans ta liste. Touche une affiche pour ouvrir sa fiche, ou pour l’ajouter si tu ne l’as pas.${F?'':' Recherche des autres séries…'}</p>
+<div class="sgrid">${T.map(t=>{if(t.sh){const x=st(t.sh),stt=x.a&&!x.left?'on':'own';return`<button class="stile ${stt}" data-act="unitap" data-id="${esc(t.sh.id)}" aria-label="${esc(nm(t.sh))}">${t.sh.img?`<img loading="lazy" src="${esc(t.sh.img)}" alt="">`:`<span class="sph">${esc(nm(t.sh))}</span>`}${stt=='on'?'<i class="sok">✓</i>':''}<small>${esc(nm(t.sh))}</small></button>`}
+  return`<button class="stile none" data-act="unitap" data-tm="${esc(String(t.f.id))}" data-tn="${esc(t.f.t)}" aria-label="${esc(t.f.t)}">${t.f.po?`<img loading="lazy" src="${esc(TI(t.f.po,'w185'))}" alt="">`:`<span class="sph">${esc(t.f.t)}</span>`}<small>${esc(t.f.t)}${yr(t.f.d)?' ('+yr(t.f.d)+')':''}</small></button>`}).join('')}</div></div>`}
+function uniPickHtml(){const sh=S.shows[view.spid];if(!sh)return'';const cur=uniOf(sh),L=uniList();
+ return`<div class="cp"><b>Univers de « ${esc(nm(sh))} »</b></div>${L.map(x=>`<button data-act="unichoose" data-s="${esc(x.s)}">🌌 ${esc(x.s)}${cur&&norm(cur)==norm(x.s)?' ✓':''}</button>`).join('')}<button data-act="unichoose" data-new="1">➕ Nouvel univers…</button><button data-act="unichoose" data-none="1">🚫 Aucun univers</button>`}
 function serListHtml(){const md=MODE();
+ if(md=='s'){const L=uniList();return`<div class="cp"><b>🌌 Univers</b></div>`+(L.length?L.map(x=>`<button data-act="ser" data-s="${esc(x.s)}" data-kind="tv">${esc(x.s)}</button>`).join(''):'<div class="cp"><p>Aucun univers pour l’instant. Ils apparaissent quand tu as au moins deux séries d’un même univers (ex. Star Trek, Dexter), ou ouvre une série et touche « ✏️ Indiquer un univers ».</p></div>')}
  if(md=='m'){const M={};for(const m of Object.values(MV()))if(m.col&&m.col.id)M[m.col.id]=m.col.n;const L=Object.entries(M).sort((a,b)=>a[1].localeCompare(b[1],'fr'));
   return`<div class="cp"><b>🎞 Sagas</b></div>`+(L.length?L.map(([id,n])=>`<button data-act="ser" data-s="${esc(n)}" data-cid="${esc(id)}">${esc(n)}</button>`).join(''):'<div class="cp"><p>Aucune saga dans tes films pour l’instant. Elles apparaissent quand tu as un film qui fait partie d’une saga (Star Wars, James Bond…).</p></div>')}
  const bd=md=='c',M={};for(const b of Object.values(BK())){if(!!b.bd!=bd)continue;const o=serOf(b);if(o){const k=norm(o.s);M[k]=M[k]||o.s}}const L=Object.values(M).sort((a,b)=>a.localeCompare(b,'fr'));
@@ -961,7 +987,7 @@ function sagaHtml(){const V=view.ser,P=SAGC[V.cid];if(!P)sagaLoad(V.cid).then(()
 <p class="mu">${own.length} film${own.length>1?'s':''} dans ta liste · ${seen} vu${seen>1?'s':''}${P?` · ${P.length} films dans la saga`:''}</p>
 <p class="mu" style="font-size:12px">Couleurs vives : vu. Couleurs pâles : à voir ou pas encore dans ta liste. Touche une affiche pour changer : un film absent est ajouté comme vu.${P?'':' Chargement de la saga…'}</p>
 <div class="sgrid">${L.map(({x,m})=>{const st=m?(m.seen?'on':'own'):'none';return`<button class="stile ${st}" data-act="sagtap" ${m?`data-id="${esc(m.id)}"`:`data-tm="${esc(String(x.id))}"`} aria-label="${esc(x.t)}">${x.po?`<img loading="lazy" src="${esc(TI(x.po,'w185'))}" alt="">`:`<span class="sph">${esc(x.t)}</span>`}${st=='on'?'<i class="sok">✓</i>':''}<small>${esc(yr(x.d)||x.t)}</small></button>`}).join('')}</div></div>`}
-function serHtml(){if(view.ser.kind=='m')return sagaHtml();const V=view.ser,k=norm(V.s),own=Object.values(BK()).map(b=>({b,n:(serOf(b)||{}).n||0,o:serOf(b)})).filter(x=>x.o&&norm(x.o.s)==k);
+function serHtml(){if(view.ser.kind=='m')return sagaHtml();if(view.ser.kind=='tv')return uniHtml();const V=view.ser,k=norm(V.s),own=Object.values(BK()).map(b=>({b,n:(serOf(b)||{}).n||0,o:serOf(b)})).filter(x=>x.o&&norm(x.o.s)==k);
  const F=SERC[k];if(!F)serLoad(V.s,V.bd).then(()=>{if(view.ser&&norm(view.ser.s)==k)render()});
  const have=new Set(own.map(x=>x.n).filter(Boolean)),gids=new Set(own.map(x=>x.b.gid)),T=own.map(x=>({b:x.b,n:x.n})),seenN=new Set(have);
  for(const f0 of F||[]){const fx=(S.serFix||{})[f0.d.gid],f=fx!=null?{d:f0.d,n:fx}:f0;if(f.n<0||gids.has(f.d.gid)||(f.n&&seenN.has(f.n)))continue;if(f.n)seenN.add(f.n);T.push({d:f.d,n:f.n})}
@@ -1088,7 +1114,7 @@ function list(){
   return(body||'<p class="mu pad">Rien ici.</p>')+FOOT}
  if(md=='s'&&f=='eps'){const r=[];for(const sh of ALL.s)for(const e of sh.eps)if(e.f)r.push(ep(sh,e,1));return`<div class="det">${r.join('')||'<p class="mu">Aucun épisode favori. Touche ♥ sur un épisode.</p>'}</div>`}
  const T=allTags();if(view.tag&&!T.includes(view.tag))view.tag='';
- const sb=md=='s'?'':`<button class="serb" data-act="menu" data-m="serlist" aria-label="${md=='m'?'Sagas':'Séries'}" title="${md=='m'?'Sagas':'Séries'}">${md=='m'?'🎞':'📚'}</button>`;
+ const sb=`<button class="serb" data-act="menu" data-m="serlist" aria-label="${md=='m'?'Sagas':md=='s'?'Univers':'Séries'}" title="${md=='m'?'Sagas':md=='s'?'Univers':'Séries'}">${md=='m'?'🎞':md=='s'?'🌌':'📚'}</button>`;
  const tb0=T.length?`<div class="tabs" id="tgr">${T.map(t=>`<button class="${view.tag==t?'on':(view.tag?'mini':'')}" data-act="tagf" data-tag="${esc(t)}">${esc(tn(t))}</button>`).join('')}${view.tag?`<button class="chip" data-act="tagdel" style="background:#e53935;color:#fff;white-space:nowrap">🗑 Supprimer « ${esc(tn(view.tag))} »</button>`:''}</div>`:'';
  const tb=sb||tb0?`<div class="tgw ${view.tag?'stk':''}">${sb}${tb0}</div>`:'';
  const L=all.filter(it=>{if(view.tag)return(it.tags||[]).includes(view.tag);const s=md=='s'?st(it):null;return({cours:!it.arch,loan:!!it.loan,fav:!!it.fav,anim:isAnim(it),noanim:!isAnim(it),all:true,arch:!!it.arch,tosee:!it.seen&&!it.arch,toread:!it.seen&&!it.arch})[f]}).sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||(f=='cours'?noInfo(a)-noInfo(b):0)||sk(a).localeCompare(sk(b),'fr'));
@@ -1098,7 +1124,7 @@ function detail(sh){if(sh.kind=='m')return detailM(sh);if(sh.kind=='b')return de
  const s=st(sh),ss=[...new Set(sh.eps.map(e=>e.s))].sort((a,b)=>a-b),tab=view.tab||'ep';
  if(view.s==null||!ss.includes(view.s))view.s=ss.find(n=>sh.eps.some(e=>e.s==n&&!e.w&&aired(e)))??ss[ss.length-1];
  frT(sh,view.s);return`<div class="det"><button data-act="back">← Retour</button>${icons(sh)}
-<div class="hd"><div class="poster">${sh.img?`<img src="${esc(sh.img)}" alt="">`:''}</div><div><h2>${esc(nm(sh))}</h2><p class="mu">${[sh.orig&&sh.orig!==nm(sh)?sh.orig:'',sh.status,sh.net,sh.genre].filter(Boolean).map(esc).join(' – ')}<br>${s.w}/${s.a} épisodes vus</p></div></div>${trlBtn(sh)}
+<div class="hd"><div class="poster">${sh.img?`<img src="${esc(sh.img)}" alt="">`:''}</div><div><h2>${esc(nm(sh))}</h2><p class="mu">${[sh.orig&&sh.orig!==nm(sh)?sh.orig:'',sh.status,sh.net,sh.genre].filter(Boolean).map(esc).join(' – ')}<br>${s.w}/${s.a} épisodes vus</p></div></div>${trlBtn(sh)}${(()=>{const u=uniOf(sh);return`<div class="bxt">${u?`<button class="pls" data-act="ser" data-s="${esc(u)}" data-kind="tv">🌌 Tout l’univers « ${esc(u)} »</button>`:''}<button class="lnk2" data-act="uniset" data-id="${esc(sh.id)}">✏️ ${u?'Corriger l’univers':'Indiquer un univers'}</button></div>`})()}
 <p class="sum">${esc(FR()&&gl(sh,'sumf')||sh.sum)}</p>
 ${tagBlock(sh)}${tabsHtml(tab,[['ep','Épisodes'],['cast','Distribution'],['rate','Avis']])}${tab=='rate'?ratingHtml(sh):tab=='cast'?castHtml(sh):`<div class="tabs" id="st">${ss.map(n=>`<button class="${n==view.s?'on':''}" data-act="season" data-n="${n}">${n?'Saison '+n:'Spéciaux'}</button>`).join('')}</div>
 <div class="act"><button data-act="sw" data-id="${sh.id}" ${sh.eps.filter(e=>e.s==view.s).every(e=>e.w||!past(sh,e))?'disabled':''}>Marquer la saison vue</button></div>
@@ -1245,7 +1271,10 @@ document.addEventListener('click',async ev=>{
  else if(a=='bk2now')return bk2Now();
  else if(a=='sagtap'){if(d.id){const m=MV()[d.id];if(!m)return;m.seen=m.seen?0:1;m.mod=Date.now();logEv(m,m.seen?'Vu':'Pas encore vu');save();schedSync();render();return}
   if(d.tm){const tm=d.tm;await addMq(tm);const m=MV()['m'+tm];if(m){m.seen=1;m.mod=Date.now();save();schedSync();render()}return}}
- else if(a=='ser'){view.fy=scrollY;view.ser=d.cid?{s:d.s,cid:+d.cid,kind:'m'}:{s:d.s,bd:+d.bd||0};top=1}
+ else if(a=='ser'){view.fy=scrollY;view.ser=d.kind=='tv'?{s:d.s,kind:'tv'}:d.cid?{s:d.s,cid:+d.cid,kind:'m'}:{s:d.s,bd:+d.bd||0};top=1}
+ else if(a=='unitap'){if(d.id){view.ser=null;view.open=d.id;view.s=null;view.tab=null;top=1}else if(d.tm){await addTv(d.tm,d.tn,1);render();return}}
+ else if(a=='uniset'){view.spid=d.id;view.menu='unipick';renderMenu();return}
+ else if(a=='unichoose'){const sh=S.shows[view.spid];if(!sh)return;if(d.none)sh.uni={s:''};else{let n=d.s;if(d.new){n=prompt('Nom de l’univers (ex. Star Trek) :',uniOf(sh)||uBase(nm(sh)));if(!n||!n.trim())return;n=n.trim().slice(0,80);const c=uniList().find(x=>norm(x.s)==norm(n)||lev(norm(x.s),norm(n))<=2);if(c&&norm(c.s)!=norm(n)&&confirm('Tu as déjà l’univers « '+c.s+' ». C’est le même ?'))n=c.s;else if(c)n=c.s}sh.uni={s:n}}sh.mod=Date.now();save();schedSync();toast(sh.uni.s?'Univers : '+sh.uni.s:'Aucun univers')}
  else if(a=='sertap'){if(d.id){const b=BK()[d.id];if(!b)return;b.seen=b.seen?0:1;b.mod=Date.now();logEv(b,b.seen?'Lu':'Pas encore lu');save();schedSync();render();return}
   if(d.gid){const gid=d.gid;await addBook(gid,view.ser&&view.ser.bd?1:0,1);const b=BK()['b'+gid];if(b){b.seen=1;b.mod=Date.now();save();schedSync();render()}return}}
  else if(a=='serset'){view.spid=d.id;view.menu='serpick';renderMenu();return}
@@ -1319,7 +1348,7 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
  fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
 let lp=0,lpT,px=0,py=0;
 /* Page de série : appui long sur une couverture pour changer son numéro */
-let stT=0;document.addEventListener('pointerdown',ev=>{const t=ev.target.closest('.stile');if(!t||!view.ser||view.ser.kind=='m')return;clearTimeout(stT);const x0=ev.clientX,y0=ev.clientY;
+let stT=0;document.addEventListener('pointerdown',ev=>{const t=ev.target.closest('.stile');if(!t||!view.ser||view.ser.kind)return;clearTimeout(stT);const x0=ev.clientX,y0=ev.clientY;
  const mv=e=>{if(Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)end()},end=()=>{clearTimeout(stT);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',end);document.removeEventListener('pointercancel',end)};
  document.addEventListener('pointermove',mv);document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
  stT=setTimeout(()=>{end();lp=1;if(navigator.vibrate)navigator.vibrate(40);setTimeout(()=>{serRenum(t.dataset);setTimeout(()=>lp=0,600)},0)},600)});
