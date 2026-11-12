@@ -165,6 +165,7 @@ h2{margin:0 0 4px;font-size:20px;font-weight:500}
 #scan video{width:100%;height:100%;object-fit:cover}.sfr{position:absolute;left:8%;right:8%;top:38%;height:22%;border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 100vmax #0006}
 #scan p{position:absolute;bottom:15%;left:0;right:0;text-align:center;color:#fff;font-size:17px;margin:0;text-shadow:0 1px 4px #000}
 .scx{position:absolute;top:14px;right:14px;width:48px;height:48px;border-radius:50%;background:#0008;color:#fff;font-size:22px;padding:0}
+.pres{margin-top:18px;border-top:2px solid var(--s2);padding-top:6px}.prh{margin:8px 0 4px;font-size:18px}.prh small{font-weight:400;color:var(--mu);font-size:13px}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -744,8 +745,8 @@ const TI=(p,s)=>p?(String(p).startsWith('http')?p:'https://image.tmdb.org/t/p/'+
 const yr=d=>d?d.slice(0,4):'',rt=m=>m>=60?Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'):m?m+' min':'';
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const cmp=(a,b)=>(b.pin?1:0)-(a.pin?1:0)||sk(a).localeCompare(sk(b),'fr');
-function matchIt(it,nq,qt){if(norm(nm(it)+' '+(it.orig||'')+' '+(it.alt||[]).join(' ')+' '+(it.tags||[]).map(tn).join(' ')).includes(nq))return true;
- return(it.ppl||[]).some(p=>{const t=p.k||(p.k=norm(p.n).split(' '));return qt.every(w=>t.some(x=>x.startsWith(w)))})}
+function matchIt(it,nq,qt){if(norm(nm(it)+' '+(it.orig||'')+' '+(it.alt||[]).join(' ')+' '+(it.tags||[]).map(tn).join(' ')).includes(nq))return true;return matchP(it,qt)}
+function matchP(it,qt){return(it.ppl||[]).some(p=>{const t=p.k||(p.k=norm(p.n).split(' '));return qt.every(w=>t.some(x=>x.startsWith(w)))})}
 async function tmdb(path,extra=''){for(let i=0;i<3;i++){const r=await fetch('https://api.themoviedb.org/3'+path+(path.includes('?')?'&':'?')+'api_key='+TK+'&language='+TLG[LANG()]+extra);
  if(r.status==429){await sleep(1500);continue}if(r.status==404)return null;if(!r.ok)throw Error(r.status);return r.json()}throw Error('429')}
 function applyMovie(m,x,first){m.name=x.title||x.original_title||m.name;m.orig=x.original_title;m.po=x.poster_path;m.bk=x.backdrop_path;m.date=x.release_date||'';m.run=x.runtime||0;m.ov=x.overview||m.ov||'';
@@ -847,9 +848,10 @@ async function openAuthor(name,nav){try{const c=nav&&view.ppl&&view.ppl[view.ppi
 function ppAt(i){const L=view.ppl||[],n=L[i];if(!n)return;view.ppi=i;return n.au?openAuthor(n.pn,1):openPerson(n.pid,n.pn,n.src,1)}
 function ppPre(){const L=view.ppl;if(!L||view.ppi==null)return;for(const d of[1,-1]){const n=L[view.ppi+d];if(!n||n.k&&PP[n.k]||n.ld)continue;n.ld=1;
  (n.au?loadAuthor(n.pn):loadPerson(n.pid,n.pn,n.src,1)).then(id=>{if(id)n.k=id}).catch(()=>{}).finally(()=>{n.ld=0})}}
+const sameT=(o,c)=>[o.name,o.orig,nm(o)].some(n=>n&&norm(n)==norm(c.t)),
+ haveC=c=>c.gid?!!BK()['b'+c.gid]||Object.values(BK()).some(b=>sameT(b,c)):c.mt=='movie'?!!MV()['m'+c.id]||Object.values(MV()).some(m=>m.tmdb==c.id):Object.values(S.shows).some(s=>s.tmdbtv==c.id||sameT(s,c));
 function personHtml(id){const p=PP[id];if(!p)return'';const lib=libOf(p),imp=p.cr||[],t=view.ppt||{};
- const same=(o,c)=>[o.name,o.orig,nm(o)].some(n=>n&&norm(n)==norm(c.t)),
-  have=c=>c.gid?!!BK()['b'+c.gid]||Object.values(BK()).some(b=>same(b,c)):c.mt=='movie'?!!MV()['m'+c.id]||Object.values(MV()).some(m=>m.tmdb==c.id):Object.values(S.shows).some(s=>s.tmdbtv==c.id||same(s,c));
+ const have=haveC;
  const pst=u=>u?`<img loading="lazy" src="${esc(TI(u,'w154'))}" alt="">`:'<span class="ph"></span>';
  return`<div class="det"><button data-act="back">← Retour</button>
 <div class="hd"><div class="poster">${p.im?`<img src="${esc(TI(p.im,'w342'))}" alt="">`:''}</div><div><h2>${esc(p.n)}</h2><p class="mu">${esc([p.dept,[fd(p.bd),p.dd?'† '+fd(p.dd):''].filter(Boolean).join(' '),p.pl].filter(Boolean).join(' – '))}</p></div></div>
@@ -879,7 +881,7 @@ async function syncTmdbTv(sh){const x=await tmdb('/tv/'+sh.tmdbtv,'&append_to_re
  sh.eps=[...m.values()].sort((a,b)=>a.s-b.s||a.n-b.n);
  const cr=x.credits||{};sh.ppl=[...(cr.cast||[]).slice(0,30).map(c=>({id:c.id,n:c.name,c:c.character,im:c.profile_path,r:'cast'})),...(cr.crew||[]).filter(c=>CREW[c.job]).slice(0,20).map(c=>({id:c.id,n:c.name,j:c.job,im:c.profile_path,r:'crew'}))];
  sh.v=6;sh.upd=Date.now();return n}
-async function addTv(tid,name){const fromAdd=!!view.add;
+async function addTv(tid,name,quiet){const fromAdd=!!view.add&&!quiet;
  try{toast('Ajout…');if(Object.values(S.shows).some(s=>s.tmdbtv==tid))return toast('Déjà dans ta liste');
   const d=await tmdb('/tv/'+tid),ex=await tmdb('/tv/'+tid+'/external_ids');let x=null;
   if(ex&&ex.tvdb_id)x=await api('/lookup/shows?thetvdb='+ex.tvdb_id);
@@ -913,8 +915,8 @@ function list(){
  const md=MODE(),q=view.q.trim(),f=view.f,ALL={s:COLL('s'),m:COLL('m'),b:COLL('b'),c:COLL('c')},all=ALL[md];
  if(!hasAny())return`<div class="empty"><p>${({s:"Aucune série pour l'instant.",m:"Aucun film pour l'instant.",b:"Aucun livre pour l'instant.",c:"Aucune BD pour l'instant."})[md]}</p><button class="pri" data-act="import">Importer une sauvegarde</button></div>`;
  const cardOf=it=>`<div class="sw" data-id="${esc(it.id)}"><div class="swbg"></div>${it.kind=='m'?mcard(it):it.kind=='b'?bcard(it):tcard(it)}</div>`;
- if(q){const nq=norm(q),qt=nq.split(' ').filter(Boolean),ok=it=>qt.length&&matchIt(it,nq,qt),LB={s:'Séries',m:'Films',b:'Livres',c:'BDs'},order=[md,...['s','m','b','c'].filter(x=>x!=md)],R={};
-  view.ids=[];let body='';for(const k of order){R[k]=ALL[k].filter(ok).sort(cmp);view.ids.push(...R[k].map(x=>x.id));if(R[k].length)body+=`<h4 class="shd">${LB[k]}</h4><div class="list">${R[k].map(cardOf).join('')}</div>`}
+ if(q){const nq=norm(q),qt=nq.split(' ').filter(Boolean),ok=it=>qt.length&&matchIt(it,nq,qt),okP=it=>qt.length&&matchP(it,qt),LB={s:'Séries',m:'Films',b:'Livres',c:'BDs'},order=[md,...['s','m','b','c'].filter(x=>x!=md)],R={};
+  view.ids=[];let body='';for(const k of order){R[k]=ALL[k].filter(k==md?ok:okP).sort(cmp);view.ids.push(...R[k].map(x=>x.id));if(R[k].length)body+=`<h4 class="shd">${LB[k]}</h4><div class="list">${R[k].map(cardOf).join('')}</div>`}
   return(body||'<p class="mu pad">Rien ici.</p>')+FOOT}
  if(md=='s'&&f=='eps'){const r=[];for(const sh of ALL.s)for(const e of sh.eps)if(e.f)r.push(ep(sh,e,1));return`<div class="det">${r.join('')||'<p class="mu">Aucun épisode favori. Touche ♥ sur un épisode.</p>'}</div>`}
  const T=allTags();if(view.tag&&!T.includes(view.tag))view.tag='';
@@ -986,13 +988,37 @@ async function fromPhoto(f){if(!f)return;const url=URL.createObjectURL(f);
   $('#aq').value=t;toast('Titre lu sur la photo : corrige-le si besoin',4000);find()}
  catch(e){toast('Lecture de la photo impossible',4000)}finally{setTimeout(()=>URL.revokeObjectURL(url),1000)}}
 document.addEventListener('change',ev=>{if(ev.target.id=='phi'||ev.target.id=='phg'){const f=ev.target.files&&ev.target.files[0];ev.target.value='';fromPhoto(f)}});
-async function find(){const q=$('#aq').value.trim();if(!q)return;const c=codeOf(q);if(c)return findCode(c);if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
+const wordsEq=(a,b)=>{const x=norm(a).split(' ').filter(Boolean).sort().join(' '),y=norm(b).split(' ').filter(Boolean).sort().join(' ');return!!x&&x==y};
+async function findPerson(q){const bk=MODE()=='b'||MODE()=='c',P={q};let r=null;
+ try{r=await tmdb('/search/person','&include_adult=true&query='+encodeURIComponent(q))}catch(e){}
+ const f=((r&&r.results)||[]).find(x=>wordsEq(x.name,q));
+ if(f){try{const id=await loadPerson(f.id,f.name,'t',1);if(id){P.id=id;P.n=PP[id].n}}catch(e){}}
+ const name=P.n||q;let au=[],ab=[];
+ if(P.id||bk){const[a,b]=await Promise.allSettled([bkSearch(name,false,true),P.id?bkSearch('"'+name+'"'):Promise.resolve([])]);
+  au=a.status=='fulfilled'?a.value.filter(d=>(d.au||[]).some(n=>wordsEq(n,name))):[];
+  const own=new Set(au.map(d=>d.gid));ab=b.status=='fulfilled'?b.value.filter(d=>!own.has(d.gid)&&!(d.au||[]).some(n=>wordsEq(n,name))).slice(0,15):[]}
+ if(!P.id&&!au.length)return null;P.n=name;P.au=au;P.ab=ab;return P}
+function personRes(P){if(!P)return'';const cr=P.id&&PP[P.id]?PP[P.id].cr||[]:[],bd=MODE()=='c'?1:0;
+ const pst=u=>`<div class="poster sm">${u?`<img loading="lazy" src="${esc(u)}" alt="">`:''}</div>`;
+ const row=(c,img,sub,act)=>`<div class="ep">${pst(img)}<div class="t"><span>${esc(c.t)}</span><small>${esc(sub)}</small></div><button class="pri" ${act} ${haveC(c)?'disabled':''}>Ajouter</button></div>`;
+ const tm=c=>row(c,c.po?TI(c.po,'w154'):'',[yr(c.d),c.role].filter(Boolean).join(' · '),`data-act="${c.mt=='movie'?'addmq':'addtv'}" data-tm="${c.id}" data-tn="${esc(c.t)}"`);
+ const bkr=d=>{const c={gid:d.gid,t:d.t};return row(c,d.po,[(d.au||[]).join(', '),d.y].filter(Boolean).join(' – '),`data-act="addpb" data-gid="${esc(d.gid)}" data-bd="${bd}"`)};
+ const G=[['Films',cr.filter(c=>c.mt=='movie').map(tm)],['Séries',cr.filter(c=>c.mt=='tv').map(tm)],['Livres et BDs de '+P.n,P.au.map(bkr)],['Livres et BDs sur '+P.n,P.ab.map(bkr)]].filter(g=>g[1].length);
+ if(!G.length)return'';
+ const open=P.id?`data-act="person" data-pid="${esc(String(P.id))}" data-pn="${esc(P.n)}" data-src="t"`:`data-act="author" data-pn="${esc(P.n)}"`;
+ return`<div class="pres"><h3 class="prh">👤 ${esc(P.n)} <small>dans toutes les catégories</small></h3><button class="pls" ${open}>Voir sa fiche</button>${G.map(([t,L])=>`<h4 class="shd">${esc(t)} (${L.length})</h4>${L.join('')}`).join('')}</div>`}
+async function find(){const q=$('#aq').value.trim();if(!q)return;const c=codeOf(q);if(c)return findCode(c);
+ view.resP=null;const tok=find.t=(find.t||0)+1,pp=findPerson(q).catch(()=>null);await findTitle(q);const P=await pp;if(tok!=find.t||!view.add||!P)return;
+ view.resP=P;const R=$('#res');if(!R)return;R.querySelector('.mu')&&!R.querySelector('.ep')&&(R.innerHTML='');R.insertAdjacentHTML('beforeend',personRes(P));i18n();view.resK=R.innerHTML}
+async function findTitle(q){if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,mod:Date.now(),eps:[]};toast('Ajout…');
  try{await syncShow(sh);logEv(sh,'Série ajoutée');view.add=0;view.open=id;view.s=null;view.f='all';toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
 function render(top){applyUI();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
  const hs=['st','tgr','tb','tgb'].map(id=>{const e=$('#'+id);return[id,e,e?e.scrollLeft:0]});
+ if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq').value}const kR=view.add&&!view.pp?view.resK:null,kQ=view.aqK||'';
  $('#app').innerHTML=view.pp?personHtml(view.pp):view.add?addView():view.open&&IT(view.open)?detail(IT(view.open)):list();
+ if(kR!=null&&view.add&&!view.pp&&$('#res')){$('#res').innerHTML=kR;$('#aq').value=kQ;const pr=$('#res .pres');if(pr&&view.resP)pr.outerHTML=personRes(view.resP)}
  for(const[id,o,sl]of hs){const n=$('#'+id);if(n){if(o)n.scrollLeft=sl;else{const a=n.querySelector('.on');if(a)n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.offsetWidth/2}}}if(top===2||top===3){const l=(top===3?view.fy:view.ly)||0;scrollTo(0,l);requestAnimationFrame(()=>scrollTo(0,l));setTimeout(()=>scrollTo(0,l),150)}else scrollTo(0,top?0:y);hsync();i18n()}
 
 /* Actions */
@@ -1018,9 +1044,10 @@ document.addEventListener('click',async ev=>{
   return a=='author'?openAuthor(d.pn):openPerson(d.pid?+d.pid:0,d.pn,d.src)}
  else if(a=='pp'){view.ppt=view.ppt||{};view.ppt[d.t]=!view.ppt[d.t]}
  else if(a=='addmq')return addMq(d.tm);
- else if(a=='addtv')return addTv(d.tm,d.tn);
+ else if(a=='addtv')return addTv(d.tm,d.tn,!!view.add);
  else if(a=='addbook')return addBook(d.gid,+d.bd);
  else if(a=='addbq')return addBook(d.gid,MODE()=='c'?1:0,1);
+ else if(a=='addpb')return addBook(d.gid,+d.bd,1);
  else if(a=='relb')return openBook(d.gid);
  else if(a=='syncb'){toast('Actualisation…');try{await fetchBook(sh,0);toast('À jour')}catch(e){toast('Connexion impossible')}}
  else if(a=='tab2')view.tab=d.t;
@@ -1028,7 +1055,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='addmovie')return addMovie(d.tm);
  else if(a=='syncm'){toast('Actualisation…');try{await fetchMovie(sh,0);toast('À jour')}catch(e){toast('Connexion impossible')}}
  else if(a=='tab'){view.f=d.f;view.tag='';view.open=null;view.add=0;top=1}
- else if(a=='add'){clearQ();view.ly=scrollY;view.add=1;view.open=null;top=1}
+ else if(a=='add'){clearQ();view.ly=scrollY;view.add=1;view.resK=null;view.resP=null;view.open=null;top=1}
  else if(a=='menu'){view.menu=view.menu==d.m?0:d.m;renderMenu();i18n();return}
  else if(a=='sq'){const o=$('#hd').classList.toggle('sq');if(o)$('#q').focus();else{view.q='';$('#q').value=''}top=1}
  else if(a=='grid'){view.grid=!view.grid;top=1}
