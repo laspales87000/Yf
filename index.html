@@ -947,9 +947,13 @@ const serOf0=b=>b.ser&&b.ser.s?{s:b.ser.s,n:+b.ser.n||0}:b.ser&&b.ser.s===''?nul
 const guessN=b=>{const m=String(b.name||'').match(/\b0*(\d{1,3})\b/);return m?+m[1]:''};
 /* Séries TV : univers (Star Trek, Dexter, The Walking Dead…) */
 const uBase=n=>String(n||'').split(/\s*:\s|\s+[-–]\s+/)[0].trim();
+const USTOP=new Set(['the','les','des','une','dans','pour','doctor','docteur','black','young','little','house','night','super','first','great','after','under','where','other']);
 function uniAll(){const L=Object.values(S.shows),U={};const add=(n)=>{const k=norm(n);if(k.length>=3)U[k]=U[k]||n};
  for(const sh of L){if(sh.uni&&sh.uni.s){add(sh.uni.s);continue}const n=nm(sh),b=uBase(n);if(b&&b!=n)add(b);const c=(S.uniChk||{})[sh.id];if(c&&c.u)add(c.u)}
  for(const a of L)for(const b of L)if(a!==b){const x=norm(nm(a)),y=norm(nm(b));if(y.length>=4&&x!=y&&x.endsWith(' '+y))add(nm(b))}
+ /* même premier mot pour au moins 2 de tes séries (ex. Stargate SG-1 / Stargate Atlantis) */
+ const W={};for(const sh of L){if(sh.uni&&!sh.uni.s)continue;const n=nm(sh),w=norm(n).split(' ');if(w.length>=2&&w[0].length>=5&&!USTOP.has(w[0]))(W[w[0]]=W[w[0]]||[]).push(n.split(/\s+/)[0].replace(/[:,.;–-]+$/,''))}
+ for(const v of Object.values(W))if(v.length>=2)add(v[0])
  return U}
 function uniOf(sh,U){if(sh.uni)return sh.uni.s||null;U=U||uniAll();const k=norm(nm(sh));let best=null;
  for(const[u,n]of Object.entries(U))if(k==u||k.startsWith(u+' ')||k.endsWith(' '+u))if(!best||u.length>norm(best).length)best=n;return best}
@@ -965,7 +969,7 @@ async function uniScan(){if(uniScanOn||!netOk(1))return;S.uniChk=S.uniChk||{};co
     if(R.filter(x=>x.id!=sh.tmdbtv&&norm(x.name)!=norm(nm(sh))&&norm(x.original_name||'')!=norm(sh.orig||sh.name||'')).length)u=q}catch(e){continue}
    S.uniChk[sh.id]={u,t:Date.now()};save();await sleep(300)}}
  finally{uniScanOn=0;view.uniProg='';if(view.menu=='serlist')renderMenu()}}
-async function uniLoad(name){const k=norm(name);if(UNIC[k])return UNIC[k];let R=[];try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(name));R=((r&&r.results)||[]).filter(x=>uInK(x,k))}catch(e){}
+async function uniLoad(name){const k=norm(name);if(UNIC[k])return UNIC[k];let R=[];try{const r=await tmdb('/search/tv','&query='+encodeURIComponent(name));R=((r&&r.results)||[]).filter(x=>uInK(x,k)||[x.name,x.original_name].some(v=>norm(v||'').startsWith(k+' ')))}catch(e){}
  return UNIC[k]=R.map(x=>({id:x.id,t:x.name,o:x.original_name,po:x.poster_path,d:x.first_air_date||''}))}
 const ownTv=f=>Object.values(S.shows).find(sh=>sh.tmdbtv==f.id||sh.trlTv==f.id||[sh.name,sh.orig,nm(sh)].some(n=>n&&(norm(n)==norm(f.t)||norm(n)==norm(f.o||''))));
 const uHid=(k,x)=>((S.uniHide||{})[k]||[]).includes(x);
