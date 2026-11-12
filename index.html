@@ -917,10 +917,15 @@ async function findB(q){$('#res').textContent='Recherche…';
  try{showB(await bkSearch(q,MODE()=='c'))}catch(e){$('#res').innerHTML='Connexion impossible.<small>'+esc(e.message)+'</small>'}}
 function showB(L){$('#res').innerHTML=L.map(d=>`<div class="ep ${BK()['b'+d.gid]?'ex':''}" ${BK()['b'+d.gid]?`data-act="openex" data-id="b${esc(d.gid)}"`:''}><div class="poster sm">${d.po?`<img src="${esc(d.po)}" alt="">`:''}</div><div class="t"><span>${esc(d.t)}</span><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' – '))}</small></div><button class="pri" data-act="addbook" data-gid="${esc(d.gid)}" data-bd="${MODE()=='c'?1:0}" ${BK()['b'+d.gid]?'disabled':''}>Ajouter</button></div>`).join('')||'<p class="mu">Aucun résultat.</p>';i18n()}
 const relB=b=>b.rel===undefined?'<p class="mu">Chargement…</p>':b.rel.length?`<div class="rl">${b.rel.map(r=>`<button class="rlc" data-act="relb" data-gid="${esc(r.gid)}">${r.po?`<img loading="lazy" src="${esc(r.po)}" alt="">`:'<span class="ph"></span>'}<small>${esc(r.t)}${r.y?' ('+esc(String(r.y))+')':''}</small></button>`).join('')}</div>`:'<p class="mu">Aucune information</p>';
-function detailB(b){const tab=view.tab||'cast',au=(b.ppl||[]).filter(p=>p.r=='author');if(tab=='rel'&&b.rel===undefined)loadRel(b);
+/* Livres : résumé et genres en anglais traduits automatiquement */
+const isEn=t=>{const w=' '+String(t||'').toLowerCase().replace(/[^a-zà-ÿ' ]/g,' ')+' ',c=re=>(w.match(re)||[]).length;return c(/ (the|and|of|is|with|was|that|her|his|to|from|this) /g)>c(/ (le|la|les|et|des|est|une|dans|qui|du|un|pour|sur) /g)+1};
+const EN_G=/\b(fiction|science|history|juvenile|comics|biography|novel|novels|fantasy|mystery|romance|thriller|horror|poetry|drama|adventure|general|literary|graphic|young adult|humor|crime|war|french)\b/i;
+function trB(b){if(!FR())return;if(b.ov&&isEn(b.ov))fr(b,'ov','ovf');const g=(b.gn||[]).join(', ');if(g&&EN_G.test(g)&&!/[àâçéèêëîïôûùüÿœ]/i.test(g)){if(b.gns!==g){b.gns=g;delete b['gnsf'+LS()]}fr(b,'gns','gnsf')}}
+const ovB=b=>b.ov&&isEn(b.ov)&&gl(b,'ovf')||b.ov||'',gnB=b=>{const g=(b.gn||[]).join(', ');return b.gns===g&&gl(b,'gnsf')||g};
+function detailB(b){trB(b);const tab=view.tab||'cast',au=(b.ppl||[]).filter(p=>p.r=='author');if(tab=='rel'&&b.rel===undefined)loadRel(b);
  return`<div class="det"><button data-act="back">← Retour</button>${b.pv?'':icons(b)}
-<div class="hd"><div class="poster">${b.po?`<img src="${esc(b.po)}" alt="">`:''}</div><div><h2>${esc(nm(b))}</h2><p class="mu">${esc([b.sub,au.map(p=>p.n).join(', '),[b.pub,yr(b.date),b.pages?b.pages+' p.':''].filter(Boolean).join(' · '),(b.gn||[]).join(', ')].filter(Boolean).join(' – '))}</p></div></div>
-<p class="sum">${esc(b.ov||'')}</p>
+<div class="hd"><div class="poster">${b.po?`<img src="${esc(b.po)}" alt="">`:''}</div><div><h2>${esc(nm(b))}</h2><p class="mu">${esc([b.sub,au.map(p=>p.n).join(', '),[b.pub,yr(b.date),b.pages?b.pages+' p.':''].filter(Boolean).join(' · '),gnB(b)].filter(Boolean).join(' – '))}</p></div></div>
+<p class="sum">${esc(ovB(b))}</p>
 ${b.pv?`<div class="act"><button class="pri" data-act="addbook" data-gid="${esc(b.gid)}" data-bd="${b.bd?1:0}">Ajouter à ma bibliothèque</button></div>`:''}
 ${b.pv?'':tagBlock(b)}${tabsHtml(tab,b.pv?[['cast','Auteur'],['rel','Du même auteur']]:[['cast','Auteur'],['rel','Du même auteur'],['rate','Avis']])}${tab=='rate'&&!b.pv?ratingHtml(b):tab=='rel'?relB(b):castHtml(b)}</div>`}
 const bcard=b=>{const sub=[(b.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).join(', '),yr(b.date)].filter(Boolean).join(' · ');
