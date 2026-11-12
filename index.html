@@ -184,8 +184,8 @@ body[data-leg=none] #hd .cat .cl{display:none}body[data-leg=none] #hd .cat svg{w
 .bxt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin:4px 0 10px}.lnk2{background:none;color:var(--mu);font-size:13px;padding:2px 0;text-decoration:underline}
 .pgb{width:100%}.pgb input{width:74px;font:inherit;padding:6px 8px;border:1px solid var(--s2);border-radius:6px;background:var(--sf);color:var(--tx)}.pgbar{height:6px;border-radius:3px;background:var(--s2);margin-top:6px;overflow:hidden}.pgbar i{display:block;height:100%;background:var(--ac)}
 .loan{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#ff880022;border-radius:8px;padding:8px 10px}.loan button{padding:6px 12px}.lnb{margin-right:auto;color:var(--ac)!important;font-weight:600}
-.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px;margin-top:10px}.stile{position:relative;background:none;padding:0;display:flex;flex-direction:column;gap:4px;text-align:center;color:var(--tx)}
-.stile img,.stile .sph{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;box-shadow:0 2px 6px #0005;transition:filter .2s,opacity .2s}.stile .sph{display:grid;place-items:center;background:var(--s2);font-size:11px;padding:6px;overflow:hidden}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px;margin-top:10px}.stile{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;position:relative;background:none;padding:0;display:flex;flex-direction:column;gap:4px;text-align:center;color:var(--tx)}
+.stile img{-webkit-user-drag:none;pointer-events:none}.stile img,.stile .sph{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;box-shadow:0 2px 6px #0005;transition:filter .2s,opacity .2s}.stile .sph{display:grid;place-items:center;background:var(--s2);font-size:11px;padding:6px;overflow:hidden}
 .stile.own img,.stile.own .sph{filter:grayscale(.7) brightness(.85);opacity:.5}.stile.none img,.stile.none .sph{filter:grayscale(1);opacity:.28}.stile small{font-size:12px;color:var(--mu)}.stile.on small{color:var(--tx);font-weight:700}
 .sok{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:var(--ac);color:#fff;font-style:normal;font-size:13px;display:grid;place-items:center;box-shadow:0 1px 3px #0007}
 .dfh{margin-right:6px}
@@ -296,11 +296,11 @@ async function frT(sh,s){const k=sh.id+'|'+s+LS();if(!FR()||busyS.has(k))return;
 const encE=(eps,k)=>{const m={};for(const e of eps)if(e[k])(m[e.s]=m[e.s]||[]).push(e.n);
  return Object.entries(m).map(([s,a])=>{a.sort((x,y)=>x-y);const r=[];let i=0;while(i<a.length){let j=i;while(j+1<a.length&&a[j+1]==a[j]+1)j++;r.push(j>i?a[i]+'-'+a[j]:''+a[i]);i=j+1}return s+':'+r.join(',')}).join(';')};
 const decE=t=>{const o=[];for(const p of(t||'').split(';').filter(Boolean)){const[s,r]=p.split(':');for(const q of r.split(',')){const[a,b]=q.split('-').map(Number);for(let n=a;n<=(b??a);n++)o.push([+s,n])}}return o};
-function gpay(){const o={};for(const[id,s]of Object.entries(S.shows))o[id]={n:s.name||'',tm:s.tm,f:s.fav?1:0,p:s.pin?1:0,a:s.arch?1:0,m:s.mod||0,w:encE(s.eps,'w'),h:encE(s.eps,'f'),t:s.tags||[],r:s.rate||0,nt:s.note||''};const om={};for(const[id,m]of Object.entries(MV()))om[id]={n:m.name||'',tm:m.tmdb,f:m.fav?1:0,p:m.pin?1:0,a:m.arch?1:0,s:m.seen?1:0,m:m.mod||0,t:m.tags||[],r:m.rate||0,nt:m.note||''};const ob={};for(const[id,b]of Object.entries(BK()))ob[id]={n:b.name||'',g:b.gid,bd:b.bd?1:0,f:b.fav?1:0,p:b.pin?1:0,a:b.arch?1:0,s:b.seen?1:0,m:b.mod||0,t:b.tags||[],r:b.rate||0,nt:b.note||'',au:(b.ppl||[]).map(p=>p.n),src:b.src||'gb',po:b.po||'',y:b.date||'',pg:b.pg||0,ln:b.loan||null,se:b.ser||null};return{v:1,del:S.del||{},shows:o,movies:om,books:ob,ui:{co:S.catOrder||null,com:S.catOrderM||0}}}
+function gpay(){const o={};for(const[id,s]of Object.entries(S.shows))o[id]={n:s.name||'',tm:s.tm,f:s.fav?1:0,p:s.pin?1:0,a:s.arch?1:0,m:s.mod||0,w:encE(s.eps,'w'),h:encE(s.eps,'f'),t:s.tags||[],r:s.rate||0,nt:s.note||''};const om={};for(const[id,m]of Object.entries(MV()))om[id]={n:m.name||'',tm:m.tmdb,f:m.fav?1:0,p:m.pin?1:0,a:m.arch?1:0,s:m.seen?1:0,m:m.mod||0,t:m.tags||[],r:m.rate||0,nt:m.note||''};const ob={};for(const[id,b]of Object.entries(BK()))ob[id]={n:b.name||'',g:b.gid,bd:b.bd?1:0,f:b.fav?1:0,p:b.pin?1:0,a:b.arch?1:0,s:b.seen?1:0,m:b.mod||0,t:b.tags||[],r:b.rate||0,nt:b.note||'',au:(b.ppl||[]).map(p=>p.n),src:b.src||'gb',po:b.po||'',y:b.date||'',pg:b.pg||0,ln:b.loan||null,se:b.ser||null};return{v:1,del:S.del||{},shows:o,movies:om,books:ob,ui:{co:S.catOrder||null,com:S.catOrderM||0,sf:S.serFix||null}}}
 const okId=k=>typeof k=='string'&&/^[A-Za-z0-9:_.-]{1,100}$/.test(k)&&!['__proto__','constructor','prototype'].includes(k);
 function cleanData(n){for(const K of['shows','movies','books']){const o=n[K];if(!o||typeof o!='object'){if(K!='shows')delete n[K];continue}
  for(const k of Object.keys(o)){const v=o[k];if(!okId(k)||!v||typeof v!='object'){delete o[k];continue}v.id=k;if(Array.isArray(v.eps))v.eps=v.eps.filter(e=>e&&typeof e=='object').map(e=>({...e,s:+e.s||0,n:+e.n||0}));if(v.tags&&!Array.isArray(v.tags))v.tags=[]}}return n}
-function gmerge(R){R=R&&typeof R=='object'?R:{};for(const K of['shows','movies','books'])if(R[K])for(const k of Object.keys(R[K]))if(!okId(k)||!R[K][k]||typeof R[K][k]!='object')delete R[K][k];if(R.ui&&R.ui.co&&(R.ui.com||0)>(S.catOrderM||0)){S.catOrder=R.ui.co;S.catOrderM=R.ui.com}S.del=S.del||{};for(const[k,v]of Object.entries(R.del||{}))S.del[k]=Math.max(S.del[k]||0,v);
+function gmerge(R){R=R&&typeof R=='object'?R:{};if(R.ui&&R.ui.sf&&typeof R.ui.sf=='object'){S.serFix=S.serFix||{};for(const[k,v]of Object.entries(R.ui.sf))if(okId(k)&&Number.isInteger(v)&&S.serFix[k]==null)S.serFix[k]=v}for(const K of['shows','movies','books'])if(R[K])for(const k of Object.keys(R[K]))if(!okId(k)||!R[K][k]||typeof R[K][k]!='object')delete R[K][k];if(R.ui&&R.ui.co&&(R.ui.com||0)>(S.catOrderM||0)){S.catOrder=R.ui.co;S.catOrderM=R.ui.com}S.del=S.del||{};for(const[k,v]of Object.entries(R.del||{}))S.del[k]=Math.max(S.del[k]||0,v);
  for(const[id,r]of Object.entries(R.shows||{})){let l=S.shows[id];
   if(S.del[id]>(r.m||0))continue;
   if(l&&(r.m||0)<=(l.mod||0))continue;
@@ -950,13 +950,13 @@ async function serLoad(name,bd){const k=norm(name);if(SERC[k])return SERC[k];let
 function serHtml(){const V=view.ser,k=norm(V.s),own=Object.values(BK()).map(b=>({b,n:(serOf(b)||{}).n||0,o:serOf(b)})).filter(x=>x.o&&norm(x.o.s)==k);
  const F=SERC[k];if(!F)serLoad(V.s,V.bd).then(()=>{if(view.ser&&norm(view.ser.s)==k)render()});
  const have=new Set(own.map(x=>x.n).filter(Boolean)),gids=new Set(own.map(x=>x.b.gid)),T=own.map(x=>({b:x.b,n:x.n})),seenN=new Set(have);
- for(const f of F||[]){if(gids.has(f.d.gid)||(f.n&&seenN.has(f.n)))continue;if(f.n)seenN.add(f.n);T.push({d:f.d,n:f.n})}
+ for(const f0 of F||[]){const fx=(S.serFix||{})[f0.d.gid],f=fx!=null?{d:f0.d,n:fx}:f0;if(f.n<0||gids.has(f.d.gid)||(f.n&&seenN.has(f.n)))continue;if(f.n)seenN.add(f.n);T.push({d:f.d,n:f.n})}
  T.sort((a,b)=>(a.n||999)-(b.n||999));const max=Math.max(0,...T.map(t=>t.n||0)),miss=[];for(let i=1;i<=max;i++)if(!have.has(i))miss.push(i);
  const read=own.filter(x=>x.b.seen).length,tile=t=>{const b=t.b,cv=b?b.po:t.d.po,st=b?(b.seen?'on':'own'):'none',ttl=b?nm(b):t.d.t;
-  return`<button class="stile ${st}" data-act="sertap" ${b?`data-id="${esc(b.id)}"`:`data-gid="${esc(t.d.gid)}"`} aria-label="${esc(ttl)}">${cv?`<img loading="lazy" src="${esc(cv)}" alt="">`:`<span class="sph">${esc(ttl)}</span>`}${st=='on'?'<i class="sok">✓</i>':''}<small>${t.n?'T'+t.n:esc(ttl)}</small></button>`};
+  return`<button class="stile ${st}" data-act="sertap" data-n="${t.n||0}" ${b?`data-id="${esc(b.id)}"`:`data-gid="${esc(t.d.gid)}"`} aria-label="${esc(ttl)}">${cv?`<img loading="lazy" src="${esc(cv)}" alt="">`:`<span class="sph">${esc(ttl)}</span>`}${st=='on'?'<i class="sok">✓</i>':''}<small>${t.n?'T'+t.n:esc(ttl)}</small></button>`};
  return`<div class="det"><button data-act="back">← Retour</button><h2 style="margin:12px 0 4px">📚 ${esc(V.s)}</h2>
 <p class="mu">${own.length} tome${own.length>1?'s':''} dans ta liste · ${read} lu${read>1?'s':''}${max?` · ${max} tomes connus`:''}${miss.length?`<br>Tomes manquants : ${miss.length>40?miss.length+' tomes':miss.join(', ')}`:''}</p>
-<p class="mu" style="font-size:12px">Couleurs vives : lu. Couleurs pâles : à lire ou pas encore dans ta liste. Touche une couverture pour changer : un tome absent est ajouté comme lu.${F?'':' Recherche des autres tomes…'}</p>
+<p class="mu" style="font-size:12px">Couleurs vives : lu. Couleurs pâles : à lire ou pas encore dans ta liste. Touche une couverture pour changer : un tome absent est ajouté comme lu. Appui long : changer son numéro (ou le retirer de la série).${F?'':' Recherche des autres tomes…'}</p>
 <div class="sgrid">${T.map(tile).join('')}</div>${F&&!F.length?'<p class="mu">Aucun autre tome trouvé en ligne. Les sites de livres renseignent parfois mal les séries.</p>':''}</div>`}
 /* Livre en cours (page) et prêts */
 function bkExtra(b){if(b.pv)return'';const so=serOf(b),pc=b.pages&&b.pg?Math.min(100,Math.round(100*b.pg/b.pages)):0;
@@ -1300,6 +1300,16 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
  const go=n=='touchend'&&f.nb&&(Math.abs(f.dx)>W*.25||Math.abs(f.dx)>40&&Math.abs(f.v)>.5);
  fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
 let lp=0,lpT,px=0,py=0;
+/* Page de série : appui long sur une couverture pour changer son numéro */
+let stT=0;document.addEventListener('pointerdown',ev=>{const t=ev.target.closest('.stile');if(!t||!view.ser)return;clearTimeout(stT);const x0=ev.clientX,y0=ev.clientY;
+ const mv=e=>{if(Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)end()},end=()=>{clearTimeout(stT);document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',end);document.removeEventListener('pointercancel',end)};
+ document.addEventListener('pointermove',mv);document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+ stT=setTimeout(()=>{end();lp=1;if(navigator.vibrate)navigator.vibrate(40);setTimeout(()=>{serRenum(t.dataset);setTimeout(()=>lp=0,600)},0)},600)});
+function serRenum(d){const V=view.ser;if(!V)return;const v0=prompt('Numéro du tome dans « '+V.s+' » (0 = ce n’est pas un tome de cette série) :',+d.n||'');if(v0===null||String(v0).trim()==='')return;
+ const v=Math.max(0,Math.round(+v0));if(isNaN(v))return;
+ if(d.id){const b=BK()[d.id];if(!b)return;b.ser=v?{s:canonSer(V.s),n:v}:{s:'',n:0};b.mod=Date.now()}
+ else if(d.gid&&okId(d.gid)){S.serFix=S.serFix||{};S.serFix[d.gid]=v||-1;if(S.gh)S.gh.dirty=1}
+ save();schedSync();render();toast(v?'Tome '+v:'Retiré de la série')}
 /* Touches de catégorie : appui long (1 s) pour les déplacer et choisir leur ordre */
 function catOrder(){const h=$('h1.cas');if(!h||catD)return;const o=(S.catOrder||[]).filter(v=>h.querySelector(`.cat[data-v="${v}"]`));
  for(const v of['s','m','b','c'])if(!o.includes(v))o.push(v);const cur=[...h.children].map(b=>b.dataset.v).join();if(cur!=o.join())o.forEach(v=>h.appendChild(h.querySelector(`.cat[data-v="${v}"]`)))}
@@ -1321,7 +1331,7 @@ document.addEventListener('pointerdown',ev=>{const mi=ev.target.closest('#menu [
  lpT=setTimeout(()=>{lp=1;view.sel={};view.sel[c.dataset.id]=1;if(navigator.vibrate)navigator.vibrate(30);render()},500)});
 document.addEventListener('pointermove',ev=>{if(Math.abs(ev.clientX-px)+Math.abs(ev.clientY-py)>12)clearTimeout(lpT)});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(lpT);setTimeout(()=>lp=0,400)}));
-document.addEventListener('contextmenu',ev=>{if(ev.target.closest('.tc,.card,.sw,#menu button,#hd .cat'))ev.preventDefault()});
+document.addEventListener('contextmenu',ev=>{if(ev.target.closest('.tc,.card,.sw,#menu button,#hd .cat,.stile'))ev.preventDefault()});
 let sw=null;
 document.addEventListener('pointerdown',ev=>{const w=ev.target.closest('.sw');if(!w||view.sel||view.menu||ev.target.closest('.pinb,.eye'))return;sw={w,a:w.querySelector('.tc'),bg:w.querySelector('.swbg'),x:ev.clientX,y:ev.clientY,dx:0,on:0}});
 document.addEventListener('pointermove',ev=>{if(!sw)return;const dx=ev.clientX-sw.x,dy=ev.clientY-sw.y;
