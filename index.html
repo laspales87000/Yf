@@ -292,7 +292,7 @@ function renderSel(){const b=$('#selb'),n=view.sel?Object.keys(view.sel).length:
 const FR=()=>LANG()!='en',busyT=new Set(),LS=()=>LANG()=='fr'?'':'_'+LANG(),gl=(o,b)=>o[b+LS()];
 /* Traduction : toute la traduction passe par cette seule fonction (facile à remplacer dans une version des stores).
    1) traduction intégrée au navigateur, sur l'appareil, quand elle existe ; 2) MyMemory (gratuit, avec une limite par jour). */
-const trDev={};
+const trDev={},MM_MAIL='yyannick283@gmail.com';/* adresse dédiée à l'application : augmente la limite gratuite de MyMemory */
 const tOut=(p,ms)=>Promise.race([p,new Promise((_,ko)=>setTimeout(()=>ko(Error('délai')),ms))]);
 async function trLocal(t){if(trLocal.off)return null;try{const T=self.Translator;if(!T||!T.availability)return null;const lg=LANG(),k='en-'+lg;
  if(!trDev[k]){const av=await tOut(T.availability({sourceLanguage:'en',targetLanguage:lg}),3000);if(av!=='available')return null;trDev[k]=await tOut(T.create({sourceLanguage:'en',targetLanguage:lg}),5000)}
@@ -301,7 +301,7 @@ async function tr(t){
  const L0=await trLocal(t);if(L0)return L0;
  const ss=t.match(/[^.!?]+[.!?]*\s*/g)||[t],ch=[];let c='';
  for(const s of ss){if((c+s).length>450&&c){ch.push(c);c=''}c+=s}if(c)ch.push(c);
- const out=[];for(const k of ch){const r=await fetch('https://api.mymemory.translated.net/get?langpair=en|'+LANG()+'&q='+encodeURIComponent(k));const j=await r.json();if(j.responseStatus!=200)throw 0;out.push(j.responseData.translatedText)}
+ const out=[];for(const k of ch){const r=await fetch('https://api.mymemory.translated.net/get?langpair=en|'+LANG()+'&de='+encodeURIComponent(MM_MAIL)+'&q='+encodeURIComponent(k));const j=await r.json();if(j.responseStatus!=200)throw 0;out.push(j.responseData.translatedText)}
  return out.join(' ')}
 async function fr(o,a,b){if(!FR()||!o[a]||o[b+LS()]||busyT.has(o))return;const fk='trF'+b+LS();if(o[fk]&&Date.now()-o[fk]<432e5)return;busyT.add(o);
  try{o[b+LS()]=await tr(o[a]);busyT.delete(o);save();render()}catch(e){busyT.delete(o);o[fk]=Date.now();if(!fr.warn){fr.warn=1;toast('Traduction indisponible pour le moment (limite du jour atteinte) : réessai plus tard',4000)}}}
