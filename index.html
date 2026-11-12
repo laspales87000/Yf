@@ -317,7 +317,7 @@ const DBX_KEY='vn7n5oxqshf5l9q',GDR_ID='',CLN={gh:'GitHub',dbx:'Dropbox',gdr:'Go
 const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),rnd=n=>b64u(crypto.getRandomValues(new Uint8Array(n)));
 /* En changeant de service principal, l'ancien peut devenir la copie de secours */
 function askKeep(p){const g=S.gh;if(!(g&&g.t)||CP()==p)return 0;const k=S.bk2&&S.bk2.t?S.bk2:null;
- return confirm('Garder '+CLN[CP()]+' comme copie de secours ?\nTes sauvegardes de la semaine continueront d’y être envoyées, sans rien ressaisir.'+(k&&k.p!=CP()?'\n(Cela remplace la copie actuelle sur '+CLN[k.p]+'.)':''))?1:0}
+ return confirm('Garder '+CLN[CP()]+' comme copie de secours de la sauvegarde ?\nTes sauvegardes de la semaine continueront d’y être envoyées, sans rien ressaisir.'+(k&&k.p!=CP()?'\n(Cela remplace la copie actuelle sur '+CLN[k.p]+'.)':''))?1:0}
 function keepOld(){const g=S.gh;if(!(g&&g.t))return;S.bk2={...g,p:CP(),bkw:S.bkw,lastbk:g.lastbk,err:0,reco:0,dirty:0}}
 async function cConnect(p,role){const key=p=='dbx'?DBX_KEY:GDR_ID;if(!key){view.menu='cset'+p;renderMenu();return}
  if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
@@ -374,11 +374,11 @@ async function crestore(){try{const N=(await cList()).filter(isBk).sort().revers
 async function withA(A,fn){if(gbusy)throw Error('busy');gbusy=1;const o=CA;CA=A;try{return await fn()}finally{CA=o;gbusy=0;renderCloud()}}
 async function bk2Backup(){const k=S.bk2;if(!k||!k.t)return;try{await withA(k,gbackupCore);k.bkw=wk();k.lastbk=Date.now();k.err=0;k.reco=0;save()}
  catch(e){k.err=1;if(e.message=='reco')k.reco=1;if(e.message=='jeton')k.t='';save();throw e}}
-async function bk2Now(){toast('Copie de secours…');try{await bk2Backup();toast('Copie de secours faite ✓')}catch(e){toast(e.message=='busy'?'Synchronisation en cours, réessaie dans un instant':e.message=='reco'?'Reconnecte '+CLN[S.bk2.p]+' dans le menu du nuage':'Copie de secours impossible',4000)}render()}
+async function bk2Now(){toast('Copie de secours de la sauvegarde…');try{await bk2Backup();toast('Copie de secours de la sauvegarde faite ✓')}catch(e){toast(e.message=='busy'?'Synchronisation en cours, réessaie dans un instant':e.message=='reco'?'Reconnecte '+CLN[S.bk2.p]+' dans le menu du nuage':'Copie de secours de la sauvegarde impossible',4000)}render()}
 async function bk2Restore(){if(!S.bk2||!S.bk2.t)return;try{await withA(S.bk2,grestore)}catch(e){toast('Restauration impossible')}}
 const bk2Html=()=>{const k=S.bk2,on=S.gh&&S.gh.t,p=CP();
- if(k&&k.t)return`<div class="cp"><b>🛟 Copie de secours : ${CLN[k.p]}</b><p>${k.reco?'⚠ Reconnexion nécessaire<br>':k.err?'⚠ Dernière copie échouée<br>':''}Dernière copie : ${k.lastbk?fmtT(k.lastbk):'aucune'}</p></div>${k.reco&&k.p!='gh'?`<button data-act="bk2c" data-p="${k.p}">${ICO[k.p]} Reconnecter ${CLN[k.p]}</button>`:''}<button data-act="bk2now">Faire une copie maintenant</button><button data-act="bk2rest">Restaurer depuis la copie de secours…</button><button data-act="bk2off">Retirer la copie de secours</button>`;
- return`<div class="cp"><b>🛟 Copie de secours</b><p style="font-size:12px">Chaque semaine, ta sauvegarde est aussi envoyée sur un 2e service. Si le premier tombe en panne, tes données sont ailleurs.</p></div>`+['dbx','gdr','gh'].filter(x=>!on||x!=p).map(x=>`<button data-act="bk2c" data-p="${x}">${ICO[x]} Copie sur ${CLN[x]}</button>`).join('')};
+ if(k&&k.t)return`<div class="cp"><b>🛟 Copie de secours de la sauvegarde : ${CLN[k.p]}</b><p>${k.reco?'⚠ Reconnexion nécessaire<br>':k.err?'⚠ Dernière copie échouée<br>':''}Dernière copie : ${k.lastbk?fmtT(k.lastbk):'aucune'}</p></div>${k.reco&&k.p!='gh'?`<button data-act="bk2c" data-p="${k.p}">${ICO[k.p]} Reconnecter ${CLN[k.p]}</button>`:''}<button data-act="bk2now">Faire une copie maintenant</button><button data-act="bk2rest">Restaurer depuis la copie de secours de la sauvegarde…</button><button data-act="bk2off">Retirer la copie de secours de la sauvegarde</button>`;
+ return`<div class="cp"><b>🛟 Copie de secours de la sauvegarde</b><p style="font-size:12px">Chaque semaine, ta sauvegarde est aussi envoyée sur un 2e service. Si le premier tombe en panne, tes données sont ailleurs.</p></div>`+['dbx','gdr','gh'].filter(x=>!on||x!=p).map(x=>`<button data-act="bk2c" data-p="${x}">${ICO[x]} Copie sur ${CLN[x]}</button>`).join('')};
 const csetHtml=p=>`<div class="cp"><b>${CLN[p]} : réglage à faire une seule fois</b><p>Pour se connecter à ${CLN[p]}, l’application doit d’abord être enregistrée chez ${CLN[p]} par la personne qui gère l’application.</p><p>Quand ce sera fait, ce bouton te mènera directement à la page de connexion ${CLN[p]}.</p></div><button data-act="menu" data-m="cloud">← Retour</button>`;
 async function gsync(quiet){
  if(gbusy||!netOk(1))return;if(S.gh&&S.gh.t&&CP()!='gh')return csync(quiet);
@@ -1177,14 +1177,14 @@ document.addEventListener('click',async ev=>{
  else if(a=='selx')view.sel=null;
  else if(a=='gsync')return gsync().then(()=>{if(Object.values(S.shows).some(s=>!s.upd&&!s.nf))update()});
  else if(a=='cpick')return cConnect(d.p);
- else if(a=='bk2c'){if(d.p!='gh')return cConnect(d.p,'bk2');const t=prompt('Colle un jeton GitHub (jeton classique avec le droit « gist ») pour la copie de secours.');if(!t||!t.trim())return;S.bk2={p:'gh',t:t.trim(),g:''};save();return bk2Now()}
+ else if(a=='bk2c'){if(d.p!='gh')return cConnect(d.p,'bk2');const t=prompt('Colle un jeton GitHub (jeton classique avec le droit « gist ») pour la copie de secours de la sauvegarde.');if(!t||!t.trim())return;S.bk2={p:'gh',t:t.trim(),g:''};save();return bk2Now()}
  else if(a=='bk2now')return bk2Now();
  else if(a=='bknow'){if(gbusy)return toast('Synchronisation en cours, réessaie dans un instant');toast('Sauvegarde…');try{await gsync(1);await gbackup();toast('Sauvegarde '+CLN[CP()]+' faite ✓')}catch(e){toast(e.message=='reco'?'Reconnecte '+CLN[CP()]+' dans le menu du nuage':'Sauvegarde impossible',4000)}render();return}
  else if(a=='bk2rest')return bk2Restore();
- else if(a=='bk2off'){if(!confirm('Retirer la copie de secours ? Les copies déjà envoyées restent sur ce service.'))return;S.bk2=null;toast('Copie de secours retirée')}
+ else if(a=='bk2off'){if(!confirm('Retirer la copie de secours de la sauvegarde ? Les copies déjà envoyées restent sur ce service.'))return;S.bk2=null;toast('Copie de secours de la sauvegarde retirée')}
  else if(a=='gout'){if(!confirm('Arrêter la synchronisation sur cet appareil ? Tes données restent sur ce téléphone.'))return;S.gh=null;toast('Synchronisation arrêtée')}
  else if(a=='gchg'){const sw=S.gh&&S.gh.t&&CP()!='gh';if(sw&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par GitHub ? Tes données restent sur cet appareil.'))return;const old=S.bk2&&S.bk2.p=='gh'&&S.bk2.t?S.bk2:null;
-  let t=sw&&old&&confirm('Reprendre le jeton GitHub déjà enregistré pour la copie de secours ?')?old.t:prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;const keep=sw&&askKeep('gh');const prevB=old&&old.t==t?{g:old.g,b:old.b}:{};if(keep)keepOld();else if(old&&old.t==t)S.bk2=null;S.gh={p:'gh',t:t.trim(),g:'',...prevB};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
+  let t=sw&&old&&confirm('Reprendre le jeton GitHub déjà enregistré pour la copie de secours de la sauvegarde ?')?old.t:prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;const keep=sw&&askKeep('gh');const prevB=old&&old.t==t?{g:old.g,b:old.b}:{};if(keep)keepOld();else if(old&&old.t==t)S.bk2=null;S.gh={p:'gh',t:t.trim(),g:'',...prevB};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
  else if(a=='lang')S.lang=d.v;
  else if(a=='tagdel'){const t=view.tag;if(!confirm('Supprimer le tag « '+tn(t)+' » de toutes les séries ?'))return;logEv(null,'Tag « '+tn(t)+' » supprimé partout');
   COLL(MODE()).forEach(s=>{if((s.tags||[]).includes(t)){s.tags=s.tags.filter(x=>x!==t);s.mod=Date.now()}});view.tag='';
