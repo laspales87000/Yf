@@ -859,7 +859,9 @@ function logAct(a,d,sh){const g=lgSeen;lgSeen=null;if(!sh)return;const f=()=>sh.
  else if(a=='del')logEv(sh,sh.kind=='m'?'Film supprimé':sh.kind=='b'?'Supprimé':'Série supprimée')}
 const histHtml=()=>{const L=S.log||[];return`<div class="cp"><b>Historique des modifications</b></div>`+(L.length?L.map(e=>`<div class="hi" ${e.id?(IT(e.id)?`data-act="open" data-id="${esc(e.id)}"`:'data-act="hdel"'):''}>${e.n?`<b>${esc(e.n)}</b>`:''}<span>${esc(e.x)}</span><small>${fmtT(e.t)}</small></div>`).join(''):'<div class="cp"><p>Aucune modification</p></div>')};
 function fixUni(){for(const sh of Object.values(S.shows))if(sh.uni){if(sh.uni.s)sh.unis=[...new Set([...uMan(sh),sh.uni.s])];sh.uniOff=true;delete sh.uni}}
-function fixCloud(){fixUni();if(S.gh&&!S.gh.p)S.gh.p='gh';if(S.bk2&&!S.bk2.p)S.bk2.p='gh';if(S.gh&&!CLN[S.gh.p])S.gh=null;if(S.bk2&&!CLN[S.bk2.p])S.bk2=null;if(S.gh&&S.gh.t&&S.bk2&&S.bk2.p==S.gh.p)S.bk2=null;if(S.ghMem&&(typeof S.ghMem!='object'||typeof S.ghMem.t!='string'))S.ghMem=null}
+function fixCloud(){fixUni();if(S.gh&&!S.gh.p)S.gh.p='gh';if(S.bk2&&!S.bk2.p)S.bk2.p='gh';if(S.gh&&!CLN[S.gh.p])S.gh=null;if(S.bk2&&!CLN[S.bk2.p])S.bk2=null;const isGhT=t=>/^(ghp_|github_pat_|gho_)/.test(String(t||''));
+ if(S.bk2&&S.bk2.p!='gh'&&isGhT(S.bk2.t)){S.bk2={p:'gh',t:S.bk2.t,g:S.bk2.g||'',b:S.bk2.b}}
+ if(S.gh&&S.gh.t&&S.bk2&&S.bk2.p==S.gh.p){if(S.bk2.p=='gh'&&S.bk2.t!=S.gh.t)S.ghMem={t:S.bk2.t,g:S.bk2.g||'',b:S.bk2.b};S.bk2=null}if(S.ghMem&&(typeof S.ghMem!='object'||typeof S.ghMem.t!='string'))S.ghMem=null}
 function migratePin(){if(S.mp)return;const R={};for(const p of(S.raw||[]))for(const x of p.Shows||[])R[x.SeriesId]=x;
  for(const s of Object.values(S.shows)){const x=R[s.id];s.pin=!!s.fav;s.fav=x?!!x.Liked:false}S.mp=1}
 /* Films (TMDB) */
