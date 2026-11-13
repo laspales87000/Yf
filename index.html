@@ -959,7 +959,7 @@ function renderMode(){catOrder();document.querySelectorAll('.ttl,.cat').forEach(
 const OLU='https://openlibrary.org',BKRES={};
 /* Clé Google Livres personnelle (facultative) : gardée seulement sur cet appareil, jamais synchronisée ni mise dans les sauvegardes */
 const okGbKey=k=>/^AIza[0-9A-Za-z_-]{35}$/.test(String(k||'')),GBK=(c='&')=>okGbKey(S.gbKey)?c+'key='+encodeURIComponent(S.gbKey):'';
-let gbKeyWarn=0;const gbKeyBad=st=>{if(st==400&&S.gbKey&&!gbKeyWarn){gbKeyWarn=1;toast('Ta clé Google Livres est refusée : vérifie-la dans ⚙ Paramètres',5000)}};
+let gbKeyWarn=0;let gbLast=0;const gbKeyBad=st=>{gbLast=st;if((st==400||st==403)&&okGbKey(S.gbKey)&&!gbKeyWarn){gbKeyWarn=1;toast('Ta clé Google Livres est refusée : vérifie-la dans ⚙ Paramètres',5000)}};
 const strip=s=>String(s||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
 const BGEN=[[/science fiction/,'science-fiction'],[/fantasy/,'fantasy'],[/histor/,'history'],[/mystery|detective/,'mystery'],[/thriller|suspense/,'thriller'],[/crime/,'crime'],[/romance/,'romance'],[/horror/,'horror'],[/humor|comic fiction/,'comedy'],[/war|military/,'war'],[/adventure/,'adventure'],[/juvenile|children/,'children'],[/biograph/,'biography'],[/erotic/,'erotic'],[/music/,'music'],[/drama/,'drama'],[/family/,'family']];
 const olDoc=d=>({gid:(d.key||'').replace('/works/',''),src:'ol',lang:(d.language||[]).includes('fre')?'fr':((d.language||[])[0]||''),t:d.title||'',au:d.author_name||[],y:d.first_publish_year||'',po:d.cover_i?'https://covers.openlibrary.org/b/id/'+d.cover_i+'-M.jpg':'',pages:d.number_of_pages_median||0,pub:(d.publisher||[])[0]||'',gn:(d.subject||[]).slice(0,8),isbn:(d.isbn||[])[0]||''});
@@ -1382,22 +1382,22 @@ async function impFind(row){let L=[],rate=0;const sur=row.a.length?row.a[0].spli
  row.ex=row.c.length?!!impEx(row.c[0]):false;row.on=row.c.length>0&&row.ok&&!row.ex}
 /* Import de fichiers PDF / EPUB : on lit seulement les 5 premières puis les 5 dernières pages pour trouver l'ISBN.
    Le fichier reste sur le téléphone et n'est pas gardé. PDF.js est rangé dans vendor/pdfjs (ouvert sans « eval »). */
-let PDFJS=null;
-async function pdfLib(){if(!PDFJS){const L=await import('./vendor/pdfjs/pdf.min.mjs');L.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.min.mjs',location.href).href;PDFJS=L}return PDFJS}
+let PDFJS=null,PDFW=null;
+async function pdfLib(){if(!PDFJS){const L=await import('./vendor/pdfjs/pdf.min.mjs');L.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.min.mjs',location.href).href;PDFJS=L}if(!PDFW||PDFW.destroyed)PDFW=new PDFJS.PDFWorker();return PDFJS}
 function isbnTxt(t){t=String(t||'');const lab=/isbn(?:[\s-]*1[03])?[^0-9]{0,15}((?:97[89][\s-]{0,2})?(?:\d[\s-]{0,2}){8}\d[\s-]{0,2}[\dXx])/gi;let m;
  while((m=lab.exec(t))){const d=m[1].replace(/[\s-]/g,'').toUpperCase();if(isbnChk(d))return isbnTo13(d)}
  const a=isbnFind(t);return a?a.d:''}
 const pgList=n=>{const P=[];for(let i=1;i<=Math.min(5,n);i++)P.push(i);for(let i=Math.max(n-4,6);i<=n;i++)P.push(i);return P};
-async function pdfIsbn(file){const L=await pdfLib(),doc=await L.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false,enableXfa:false,disableFontFace:true,stopAtErrors:false,verbosity:0}).promise;
+async function pdfIsbn(file){const L=await pdfLib(),doc=await L.getDocument({data:new Uint8Array(await file.arrayBuffer()),worker:PDFW,isEvalSupported:false,enableXfa:false,disableFontFace:true,stopAtErrors:false,verbosity:0}).promise;
  let txt=0;try{for(const i of pgList(doc.numPages)){const pg=await doc.getPage(i),tc=await pg.getTextContent(),it=tc.items.map(x=>x.str||'');pg.cleanup();
    const t1=it.join(' '),t2=it.join('');if(t1.trim())txt=1;const ib=isbnTxt(t1)||isbnTxt(t2);if(ib)return{isbn:ib,how:'page '+i}}
   return{isbn:'',how:txt?'':'scan'}}finally{doc.destroy()}}
 /* EPUB = un fichier zip : on lit sa fiche (titre, auteur, ISBN), puis les premières et dernières pages si besoin */
 async function zipOpen(buf){const v=new DataView(buf),u8=new Uint8Array(buf);let e=-1;for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-66000);i--)if(v.getUint32(i,true)==0x06054b50){e=i;break}if(e<0)throw Error('zip');
  const n=v.getUint16(e+10,true);let o=v.getUint32(e+16,true);const E={},dec=new TextDecoder();
- for(let k=0;k<n&&o+46<=buf.byteLength;k++){if(v.getUint32(o,true)!=0x02014b50)break;const m=v.getUint16(o+10,true),cs=v.getUint32(o+20,true),nl=v.getUint16(o+28,true),xl=v.getUint16(o+30,true),cl=v.getUint16(o+32,true),lo=v.getUint32(o+42,true);
-  E[dec.decode(u8.subarray(o+46,o+46+nl))]={m,cs,lo};o+=46+nl+xl+cl}
- return{names:Object.keys(E),async text(name){const f=E[name];if(!f)return'';const lo=f.lo;if(v.getUint32(lo,true)!=0x04034b50)return'';const st=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true),d=u8.subarray(st,st+f.cs);
+ for(let k=0;k<n&&o+46<=buf.byteLength;k++){if(v.getUint32(o,true)!=0x02014b50)break;const m=v.getUint16(o+10,true),cs=v.getUint32(o+20,true),us=v.getUint32(o+24,true),nl=v.getUint16(o+28,true),xl=v.getUint16(o+30,true),cl=v.getUint16(o+32,true),lo=v.getUint32(o+42,true);
+  E[dec.decode(u8.subarray(o+46,o+46+nl))]={m,cs,us,lo};o+=46+nl+xl+cl}
+ return{names:Object.keys(E),async text(name){const f=E[name];if(!f||f.cs>25e6||f.us>25e6)return'';const lo=f.lo;if(v.getUint32(lo,true)!=0x04034b50)return'';const st=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true),d=u8.subarray(st,st+f.cs);
   if(f.m==0)return dec.decode(d);if(f.m!=8)return'';return await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}}}
 async function epubInfo(file){const z=await zipOpen(await file.arrayBuffer()),X=s=>new DOMParser().parseFromString(s,'application/xml');
  const c=X(await z.text('META-INF/container.xml')),rp=(c.querySelector('rootfile')||{getAttribute:()=>''}).getAttribute('full-path')||z.names.find(n=>/\.opf$/i.test(n))||'';
@@ -1405,7 +1405,7 @@ async function epubInfo(file){const z=await zipOpen(await file.arrayBuffer()),X=
  const t=q('title')[0]||'',a=q('creator');let isbn='';for(const id of q('identifier')){isbn=isbnTxt(id.replace(/^urn:isbn:/i,'ISBN '));if(isbn)break}
  if(isbn)return{isbn,t,a,how:'fiche du fichier'};
  const base=rp.includes('/')?rp.slice(0,rp.lastIndexOf('/')+1):'',man={};for(const it of opf.getElementsByTagNameNS('*','item'))man[it.getAttribute('id')]=it.getAttribute('href');
- const sp=[...opf.getElementsByTagNameNS('*','itemref')].map(x=>man[x.getAttribute('idref')]).filter(Boolean).map(h=>{try{return decodeURIComponent(base+h)}catch(e){return base+h}});
+ const sp=[...opf.getElementsByTagNameNS('*','itemref')].map(x=>man[x.getAttribute('idref')]).filter(Boolean).map(h=>{let p=base+h.split('#')[0];try{p=decodeURIComponent(p)}catch(e){}const o=[];for(const x of p.split('/')){if(x=='..')o.pop();else if(x&&x!='.')o.push(x)}return o.join('/')});
  for(const i of pgList(sp.length)){const h=await z.text(sp[i-1]),tx=h.replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/g,' ');const ib=isbnTxt(tx);if(ib)return{isbn:ib,t,a,how:'page '+i}}
  return{isbn:'',t,a,how:''}}
 async function impFiles(files){const V=view.imp;if(!V)return;const F=[...files].filter(f=>/\.(pdf|epub)$/i.test(f.name)||/pdf|epub/.test(f.type)).slice(0,2000);if(!F.length)return toast('Aucun fichier PDF ou EPUB ici');
@@ -1430,7 +1430,7 @@ async function impRun(){const V=view.imp,R=V.rows;V.run=1;V.pz=0;R.forEach(r=>{i
    try{await impFind(r);V.done++}catch(e){r.c=null;r.later=1;if(e.message!='rate')console.warn(e)}finally{r.busy=0}
    if(view.imp===V&&!$('#impT'))impPaint()}};
  await Promise.all([work(),work()]);V.run=0;V.pz=0;const G=new Set();for(const r of R){const d=r.c&&r.c[r.k];r.dup=0;if(!d)continue;if(G.has(d.gid)){r.dup=1;r.on=false}else G.add(d.gid)}if(view.imp===V)render()}
-let impPT=0;function impPaint(){clearTimeout(impPT);impPT=setTimeout(()=>{if(view.imp)render()},250)}
+let impPT=0;function impPaint(){if(impPT)return;const n=view.imp&&view.imp.rows?view.imp.rows.length:0;impPT=setTimeout(()=>{impPT=0;if(view.imp)render()},n>300?1500:n>80?700:250)}
 function impHtml(){const V=view.imp,FB=FMT.map(([k,i,l])=>`<button class="chip ${V.f.includes(k)?'on':''}" data-act="impf" data-v="${k}">${i} ${l}</button>`).join('');
  if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer des livres</h2>
 <p><b>1. Format de ces livres</b></p><div class="fmts">${FB}</div>
@@ -1443,7 +1443,7 @@ ${V.seen?`<p class="shin">Date de lecture (facultatif) : <input type="date" id="
  const R=V.rows,N=R.filter(r=>r.on).length,F=R.filter(r=>r.c&&r.c.length&&r.ok&&!r.ex).length,U=R.filter(r=>r.c&&r.c.length&&!r.ok&&!r.ex).length,X=R.filter(r=>r.c&&!r.c.length).length,E=R.filter(r=>r.ex).length;
  return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Vérifie avant d’ajouter</h2>
 <p>${V.skip?`<small class="mu">✔️ ${V.skip} livre${V.skip>1?'s':''} déjà dans ta bibliothèque : pas recherché${V.skip>1?'s':''} sur Internet.</small><br>`:''}${V.reading?`📄 Lecture des fichiers… ${V.read} / ${R.length}`:V.run?`🔎 Recherche… ${V.done} / ${R.length}${Date.now()<gbOff?' (Google Livres indisponible : recherche avec Open Library)':''}`:`✅ ${F} trouvé${F>1?'s':''} · ❓ ${U} à vérifier · ❌ ${X} pas trouvé${X>1?'s':''}${E?' · '+E+' déjà dans ta liste':''}`}</p>
-${!V.run&&R.some(r=>!r.c)?`<div class="loan">⏸ Google Livres refuse les recherches pour le moment (souvent à cause d’un VPN, ou de sa limite du jour). ${R.filter(r=>!r.c).length} livre(s) n’ont pas pu être trouvés sans lui. Désactive ton VPN puis touche « Reprendre », ou réessaie plus tard. Tu peux déjà ajouter ceux qui sont trouvés.<button data-act="impresume">🔁 Reprendre la recherche</button></div>`:''}
+${!V.run&&R.some(r=>!r.c)?`<div class="loan">⏸ ${okGbKey(S.gbKey)&&(gbLast==400||gbLast==403)?'Google Livres refuse ta clé : vérifie-la dans ⚙ Paramètres → 🔑 Clé Google Livres (bouton « Tester »).':'Google Livres refuse les recherches pour le moment (application qui allume le logo VPN, adresse Internet très utilisée, ou limite du jour).'} ${R.filter(r=>!r.c).length} livre(s) n’ont pas pu être trouvés sans lui. Touche « Reprendre » plus tard, ou ajoute ta clé Google Livres dans ⚙ Paramètres. Tu peux déjà ajouter ceux qui sont trouvés.<button data-act="impresume">🔁 Reprendre la recherche</button></div>`:''}
 <p class="mu" style="font-size:13px">Seront ajoutés : ${V.f.map(k=>FMT.find(f=>f[0]==k).slice(1).join(' ')).join(' + ')} · ${V.seen?'déjà lus / écoutés'+(V.rd?' le '+fd(V.rd):''):'à lire'}. Décoche ceux à ne pas ajouter.</p>
 <div class="imps">${R.map((r,i)=>{const d=r.c&&r.c[r.k],st=r.rd?'📄 Lecture…':!r.c?(V.run?'⏳':'⏸ Pas encore cherché'):r.ex?(r.lib?'✔️ Déjà dans ta bibliothèque (pas recherché)':'✔️ Déjà dans ta liste'):r.dup?'↩️ En double dans ta sélection':!r.c.length?'❌ Pas trouvé':r.ok?'':'❓ À vérifier';
  return`<div class="imr ${r.on?'on':''}"><input type="checkbox" class="impC" data-i="${i}" ${r.on?'checked':''} ${!d||r.ex?'disabled':''} aria-label="Ajouter"><div class="poster sm">${d&&d.po?`<img loading="lazy" src="${esc(d.po)}" alt="">`:''}</div><div class="imt">${d?`<b>${esc(d.t)}</b><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' · '))}</small>${d.fr&&r.orig?`<small class="ims">🇫🇷 Édition française (original : ${esc(r.orig)})</small>`:''}`:`<b>${esc(r.t||(r.isbn?'ISBN '+r.isbn:r.raw))}</b>`}${st?`<small class="ims">${st}</small>`:''}<small class="mu">${r.fname?`📄 ${esc(r.fname)}${r.how?' · '+esc(r.how):''}`:`Ta ligne : ${esc(r.t||r.raw)}${r.t&&r.a.length?' – '+esc(r.a.join(', ')):''}`}</small>
@@ -1453,7 +1453,8 @@ async function impAdd(){const V=view.imp;if(!V||V.run)return;const RR=V.rows.fil
  if(!confirm('Ajouter '+L.length+' livre'+(L.length>1?'s':'')+' à ta bibliothèque ?'))return;const add=[];
  for(const[j,d]of L.entries()){const id='b'+d.gid;if(BK()[id])continue;const b=bookFromDoc(d,0);b.ik=impKeys(RR[j]).slice(0,3);b.fmt=FMT.map(f=>f[0]).filter(k=>V.f.includes(k));if(V.seen){b.seen=1;b.arch=1;if(okD(V.rd))b.rd=V.rd}b.mod=Date.now();BK()[id]=b;add.push(b)}
  logEv(null,'Import d’une liste : '+add.length+' livres');S.impF=V.f;view.imp=null;if(S.gh)S.gh.dirty=1;await saveNow();schedSync();S.mode='b';view.f=V.seen?'arch':defF();view.open=null;render(1);toast(add.length+' livre'+(add.length>1?'s':'')+' ajouté'+(add.length>1?'s':''),4000);
- for(const b of add){if(!BK()[b.id])continue;try{await fetchBook(b,1)}catch(e){}await sleep(250)}save();render()}
+ let n=0;for(const b of add){if(!BK()[b.id])continue;if(b.ov||(b.src=='gb'&&Date.now()<gbOff)||(b.src=='ol'&&!/^OL\d+W$/.test(b.gid))){bkTags(b);n++;continue}try{await fetchBook(b,1)}catch(e){bkTags(b)}await sleep(250)}save();render()}
+function bkTags(b){const t=new Set(b.tags||[]),s=(b.gn||[]).join(' ').toLowerCase();for(const[re,k]of BGEN)if(re.test(s))t.add('g:'+k);b.tags=[...t]}
 /* Séries : le résumé dans la langue de l'appli vient de TMDB quand il existe (meilleur qu'une traduction) */
 const sumBusy=new Set();
 async function sumFr(sh){if(!FR()||sumBusy.has(sh.id)||(sh.src=='tmdb'&&sh.sum))return;const k='sumT'+LS(),f='sumf'+LS();
@@ -1489,7 +1490,7 @@ async function upcTitle(c){const T=[async()=>{const r=await fetch('https://api.u
  async()=>{const r=await fetch('https://world.openproductsfacts.org/api/v2/product/'+c+'.json?fields=product_name');return r.ok?((await r.json()).product||{}).product_name:''}];
  for(const f of T){try{const t=cleanT(await f());if(t)return t}catch(e){}}return''}
 async function bkIsbn(c){const F='&fields=key,title,author_name,first_publish_year,cover_i,subject,publisher,number_of_pages_median,isbn';
- const R=await Promise.allSettled([Date.now()<gbOff?Promise.reject(Error('429')):fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:'+c+GBK()).then(r=>{if(r.ok)return r.json();gbRef(r.status);return Promise.reject(Error('GB '+r.status))}).then(j=>(j.items||[]).map(gbDoc)),
+ const R=await Promise.allSettled([Date.now()<gbOff?Promise.reject(Error('429')):fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:'+c+GBK()).then(r=>{if(r.ok)return r.json();gbRef(r.status);gbKeyBad(r.status);return Promise.reject(Error('GB '+r.status))}).then(j=>(j.items||[]).map(gbDoc)),
   fetch(OLU+'/search.json?isbn='+c+F).then(r=>r.ok?r.json():Promise.reject(Error('OL '+r.status))).then(j=>(j.docs||[]).map(olDoc))]);
  const L=[],seen=new Set();let err;for(const x of R){if(x.status=='rejected'){err=err||x.reason;continue}for(const d of x.value){const k=norm(d.t)+'|'+norm((d.au||[])[0]||'');if(!d.t||seen.has(k))continue;seen.add(k);d.isbn=c;if(!d.po)d.po='https://covers.openlibrary.org/b/isbn/'+c+'-M.jpg';L.push(d)}}
  if(!L.length){try{const d=await olIsbn(c);if(d){L.push(d)}}catch(x){}}
@@ -1670,7 +1671,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='impf'){const V=view.imp;if(!V)return;const i=V.f.indexOf(d.v);if(i>=0){if(V.f.length==1)return toast('Garde au moins un format');V.f.splice(i,1)}else V.f.push(d.v)}
  else if(a=='impst'){if(view.imp)view.imp.seen=d.v=='1'?1:0}
  else if(a=='impgo'){const V=view.imp;if(!V)return;V.rows=impParse(V.txt);V.skip=0;if(!V.rows.length)return toast('Aucun livre trouvé dans le texte');V.st='rev';V.stop=0;return impRun()}
- else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur, ou taper un ISBN) :',r.t?r.t+(r.a.length?' '+r.a[0]:''):r.raw);if(!q||!q.trim())return;{const o=impLine(q.trim().slice(0,300))||{t:q.trim().slice(0,200),a:[],isbn:''};r.t=o.t;r.a=o.a;r.isbn=o.isbn}r.c=null;render();await impFind(r);return render()}
+ else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur, ou taper un ISBN) :',r.t?r.t+(r.a.length?' '+r.a[0]:''):r.raw);if(!q||!q.trim())return;{const o=impLine(q.trim().slice(0,300))||{t:q.trim().slice(0,200),a:[],isbn:''};r.t=o.t;r.a=o.a;r.isbn=o.isbn}r.c=null;r.later=0;render();try{await impFind(r)}catch(e){r.later=1;toast(e.message=='rate'?'Google Livres refuse pour le moment : réessaie plus tard':'Recherche impossible')}return render()}
  else if(a=='impadd')return impAdd();
  else if(a=='impresume'){const V=view.imp;if(!V||V.run)return;gbOff=0;return impRun()}
  else if(a=='impdir'){const f=$('#impDir');if(f){f.value='';f.click()}return}
