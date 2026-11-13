@@ -1305,11 +1305,17 @@ async function shrSendImg(){const bl=view.shr&&view.shr.blob;if(!bl)return;const
  const l=document.createElement('a');l.href=view.shr.img;l.download='mes-lectures.png';l.click();toast('Image enregistrée')}
 /* Import d'une liste : nettoyage d'une ligne « Titre – Auteur » (souvent un nom de fichier) */
 const NCi=s=>norm(s);
-function impLine(line){let s=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' ').trim();if(!s)return null;
+/* ISBN : 13 ou 10 chiffres, avec tirets ou espaces ; on vérifie la clé pour ne pas confondre avec d'autres nombres */
+function isbnChk(d){if(d.length==13)return /^97[89]\d{10}$/.test(d)&&[...d].reduce((s,c,i)=>s+(+c)*(i%2?3:1),0)%10==0;
+ if(d.length==10&&/^\d{9}[\dX]$/.test(d))return[...d].reduce((s,c,i)=>s+(c=='X'?10:+c)*(10-i),0)%11==0;return false}
+const isbnTo13=d=>{if(d.length==13)return d;const b='978'+d.slice(0,9);return b+((10-[...b].reduce((s,c,i)=>s+(+c)*(i%2?3:1),0)%10)%10)};
+function isbnFind(s){const re=/(?<![0-9A-Za-z])(?:97[89][\s-]?)?(?:\d[\s-]?){8}\d[\s-]?[\dXx](?![0-9A-Za-z])/g;let m;while((m=re.exec(s))){const d=m[0].replace(/[\s-]/g,'').toUpperCase();if(isbnChk(d))return{d:isbnTo13(d),m:m[0]}}return null}
+function impLine(line){const s0=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();let s=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' ').trim();if(!s)return null;
  s=s.replace(/^(?:[-•*·]|\d{1,3}[.)])\s+/,'');
+ const ib=isbnFind(s);if(ib){const rest=s.replace(ib.m,' ').replace(/\bisbn(?:[\s-]*1[03])?\s*:?/gi,' ').replace(/[\s\-–—:;,|()]+/g,' ').trim();if(!rest||/^(voir|n°|no)$/i.test(rest))return{raw:s0,t:'',a:[],isbn:ib.d};s=s.replace(ib.m,' ').replace(/\bisbn(?:[\s-]*1[03])?\s*:?/gi,' ').replace(/\s+[–—]\s*$/,'').replace(/\s{2,}/g,' ').trim()}
  const m=s.match(/^(.*)\s[–—]\s(.*)$/);if(!m&&(/:\s*$/.test(s)||/^(voici|here)/i.test(s)))return null;
  let t=m?m[1]:s,a=m?m[2]:'';
- const isbn=(t.match(/isbn(?:13)?[\s_-]*(97[89]\d{10})(?!\d)/i)||[])[1]||'';
+ const isbn=ib?ib.d:(t.match(/isbn(?:13)?[\s_-]*(97[89]\d{10})(?!\d)/i)||[])[1]||'';
  a=a.replace(/\([^)]*\)/g,' ').replace(/\bet al\.?(?=\s|$)/gi,'').replace(/auteur non sp[ée]cifi[ée]|v[áa]rios|divers|inconnu|unknown/gi,'').replace(/\s+/g,' ').trim().replace(/[,;]$/,'');
  const aw=new Set(NCi(m?m[2]:'').split(' ').filter(w=>w.length>=3&&!['par','presente','et','and','des','les'].includes(w)));
  t=t.split(/\s--\s|___|_-_|\s-\s{2,}|\s{2,}-\s/)[0];
@@ -1327,7 +1333,7 @@ function impLine(line){let s=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'
  t=W.join(' ').replace(/[\s\-–_.,:]+$/,'').trim();
  if(t.length>3&&t==t.toUpperCase()&&/[A-Z]/.test(t))t=t[0]+t.slice(1).toLowerCase();
  const A=a.split(/\s*(?:,|;|&|\bet\b|\band\b)\s*/).map(x=>x.trim()).filter(Boolean);
- return t?{raw:s,t,a:A,isbn}:null}
+ return t||isbn?{raw:s0,t,a:A,isbn}:null}
 const impParse=txt=>String(txt||'').split(/\r?\n/).map(impLine).filter(Boolean).slice(0,500);
 async function gbQ(q){for(let i=0;i<3;i++){const r=await fetch('https://www.googleapis.com/books/v1/volumes?maxResults=8&printType=books&q='+encodeURIComponent(q));if(r.status==429){await sleep(2000*(i+1));continue}if(!r.ok)throw Error('GB '+r.status);const j=await r.json();return(j.items||[]).map(gbDoc)}throw Error('429')}
 async function olQ(t,a){const r=await fetch(OLU+'/search.json?limit=8&title='+encodeURIComponent(t)+(a?'&author='+encodeURIComponent(a):'')+'&fields=key,title,author_name,first_publish_year,cover_i,subject,publisher,number_of_pages_median,isbn');if(!r.ok)throw Error('OL '+r.status);return((await r.json()).docs||[]).map(olDoc)}
@@ -1336,9 +1342,9 @@ function impScore(d,row){const T=new Set(norm(d.t).split(' ')),W=norm(row.t).spl
 const impEx=d=>Object.values(BK()).find(b=>b.gid==d.gid||(norm(b.name)==norm(d.t)&&norm(((b.ppl||[])[0]||{}).n)==norm((d.au||[])[0])));
 async function impFind(row){let L=[];const sur=row.a.length?row.a[0].split(' ').pop():'';row.err=0;
  if(row.isbn){try{L=await bkIsbn(row.isbn)}catch(e){}}
- if(!L.length){try{L=await gbQ(row.t+(sur?' inauthor:'+sur:''))}catch(e){row.err=1}}
- if(!L.length&&sur){try{L=await gbQ(row.t)}catch(e){row.err=1}}
- if(!L.length){try{L=await olQ(row.t,row.a[0]||'')}catch(e){row.err=1}}
+ if(!L.length&&row.t){try{L=await gbQ(row.t+(sur?' inauthor:'+sur:''))}catch(e){row.err=1}}
+ if(!L.length&&row.t&&sur){try{L=await gbQ(row.t)}catch(e){row.err=1}}
+ if(!L.length&&row.t){try{L=await olQ(row.t,row.a[0]||'')}catch(e){row.err=1}}
  L.forEach(d=>BKRES[d.gid]=d);L=L.map(d=>({d,s:impScore(d,row)})).sort((a,b)=>b.s-a.s);
  row.c=L.slice(0,6).map(x=>x.d);row.sc=L.length?L[0].s:0;row.k=0;row.ok=row.sc>=0.75;row.ex=row.c.length?!!impEx(row.c[0]):false;row.on=row.c.length>0&&row.ok&&!row.ex}
 async function impRun(){const V=view.imp;V.run=1;V.done=0;render(1);let i=0;const R=V.rows;
@@ -1346,8 +1352,8 @@ async function impRun(){const V=view.imp;V.run=1;V.done=0;render(1);let i=0;cons
  await Promise.all([work(),work()]);V.run=0;if(view.imp===V)render()}
 let impPT=0;function impPaint(){clearTimeout(impPT);impPT=setTimeout(()=>{if(view.imp)render()},250)}
 function impHtml(){const V=view.imp,FB=FMT.map(([k,i,l])=>`<button class="chip ${V.f.includes(k)?'on':''}" data-act="impf" data-v="${k}">${i} ${l}</button>`).join('');
- if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer une liste de livres</h2><p class="mu">Colle une liste, un livre par ligne, par exemple « Titre – Auteur ». Les noms de fichiers (PDF…) sont nettoyés automatiquement. Tu vérifies tout avant l’ajout.</p>
-<textarea id="impT" rows="9" placeholder="Le Petit Prince – Antoine de Saint-Exupéry">${esc(V.txt)}</textarea>
+ if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer une liste de livres</h2><p class="mu">Colle une liste, un livre par ligne : « Titre – Auteur », ou simplement un numéro ISBN. Les noms de fichiers (PDF…) sont nettoyés automatiquement. Tu vérifies tout avant l’ajout.</p>
+<textarea id="impT" rows="9" placeholder="Le Petit Prince – Antoine de Saint-Exupéry&#10;9782070612758">${esc(V.txt)}</textarea>
 <p><b>Format de ces livres</b></p><div class="fmts">${FB}</div>
 <p><b>État</b></p><div class="srt"><button class="${V.seen?'on':''}" data-act="impst" data-v="1">✓ Déjà lus / écoutés</button><button class="${V.seen?'':'on'}" data-act="impst" data-v="0">À lire</button></div>
 ${V.seen?`<p class="shin">Date de lecture (facultatif) : <input type="date" id="impD" value="${esc(V.rd||'')}" max="${dLoc()}"></p>`:''}
@@ -1357,7 +1363,7 @@ ${V.seen?`<p class="shin">Date de lecture (facultatif) : <input type="date" id="
 <p>${V.run?`🔎 Recherche… ${V.done} / ${R.length}`:`✅ ${F} trouvé${F>1?'s':''} · ❓ ${U} à vérifier · ❌ ${X} pas trouvé${X>1?'s':''}${E?' · '+E+' déjà dans ta liste':''}`}</p>
 <p class="mu" style="font-size:13px">Seront ajoutés : ${V.f.map(k=>FMT.find(f=>f[0]==k).slice(1).join(' ')).join(' + ')} · ${V.seen?'déjà lus / écoutés'+(V.rd?' le '+fd(V.rd):''):'à lire'}. Décoche ceux à ne pas ajouter.</p>
 <div class="imps">${R.map((r,i)=>{const d=r.c&&r.c[r.k],st=!r.c?'⏳':r.ex?'✔️ Déjà dans ta liste':!r.c.length?'❌ Pas trouvé':r.ok?'':'❓ À vérifier';
- return`<div class="imr ${r.on?'on':''}"><input type="checkbox" class="impC" data-i="${i}" ${r.on?'checked':''} ${!d||r.ex?'disabled':''} aria-label="Ajouter"><div class="poster sm">${d&&d.po?`<img loading="lazy" src="${esc(d.po)}" alt="">`:''}</div><div class="imt">${d?`<b>${esc(d.t)}</b><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' · '))}</small>`:`<b>${esc(r.t)}</b>`}${st?`<small class="ims">${st}</small>`:''}<small class="mu">Ta ligne : ${esc(r.t)}${r.a.length?' – '+esc(r.a.join(', ')):''}</small>
+ return`<div class="imr ${r.on?'on':''}"><input type="checkbox" class="impC" data-i="${i}" ${r.on?'checked':''} ${!d||r.ex?'disabled':''} aria-label="Ajouter"><div class="poster sm">${d&&d.po?`<img loading="lazy" src="${esc(d.po)}" alt="">`:''}</div><div class="imt">${d?`<b>${esc(d.t)}</b><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' · '))}</small>`:`<b>${esc(r.t||'ISBN '+r.isbn)}</b>`}${st?`<small class="ims">${st}</small>`:''}<small class="mu">Ta ligne : ${esc(r.t||r.raw)}${r.t&&r.a.length?' – '+esc(r.a.join(', ')):''}</small>
 ${r.c&&r.c.length>1&&!r.ex?`<select class="impS" data-i="${i}">${r.c.map((c,j)=>`<option value="${j}" ${j==r.k?'selected':''}>${esc(c.t+(c.au&&c.au[0]?' – '+c.au[0]:'')+(c.y?' ('+c.y+')':''))}</option>`).join('')}</select>`:''}${r.c&&!V.run?`<button class="lnk2" data-act="impfix" data-i="${i}">✏️ Corriger la recherche</button>`:''}</div></div>`}).join('')}</div>
 <div class="selbar"><span>${N} coché${N>1?'s':''}</span><button class="pri" data-act="impadd" ${V.run||!N?'disabled':''}>Ajouter ${N} livre${N>1?'s':''}</button></div></div>`}
 async function impAdd(){const V=view.imp;if(!V||V.run)return;const L=V.rows.filter(r=>r.on&&r.c&&r.c[r.k]).map(r=>r.c[r.k]);if(!L.length)return;
@@ -1572,7 +1578,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='impf'){const V=view.imp;if(!V)return;const i=V.f.indexOf(d.v);if(i>=0){if(V.f.length==1)return toast('Garde au moins un format');V.f.splice(i,1)}else V.f.push(d.v)}
  else if(a=='impst'){if(view.imp)view.imp.seen=d.v=='1'?1:0}
  else if(a=='impgo'){const V=view.imp;if(!V)return;V.rows=impParse(V.txt);if(!V.rows.length)return toast('Aucun livre trouvé dans le texte');V.st='rev';V.stop=0;return impRun()}
- else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur) :',r.t+(r.a.length?' '+r.a[0]:''));if(!q||!q.trim())return;r.t=q.trim().slice(0,200);r.a=[];r.isbn='';r.c=null;render();await impFind(r);return render()}
+ else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur, ou taper un ISBN) :',r.t?r.t+(r.a.length?' '+r.a[0]:''):r.raw);if(!q||!q.trim())return;{const o=impLine(q.trim().slice(0,300))||{t:q.trim().slice(0,200),a:[],isbn:''};r.t=o.t;r.a=o.a;r.isbn=o.isbn}r.c=null;render();await impFind(r);return render()}
  else if(a=='impadd')return impAdd();
  else if(a=='bfmt'){if(!sh)return;const f=fmtOf(sh).slice(),i=f.indexOf(d.v);if(i>=0)f.splice(i,1);else f.push(d.v);if(!f.length)return toast('Garde au moins un format');sh.fmt=FMT.map(x=>x[0]).filter(k=>f.includes(k));if(!sh.fmt.includes('a'))delete sh.pm}
  else if(a=='bpm'){if(!sh)return;sh.pm=d.v=='h'?'h':'p'}
