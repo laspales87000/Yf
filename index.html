@@ -301,7 +301,7 @@ function rdSet(b){if(!b||b.kind!='b')return;if(b.seen)b.rd=dLoc();else delete b.
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
 function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','ghsteps','serpick','serlist','unipick','uniadd'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','ghsteps','serpick','serlist','unipick','uniadd'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="impopen">📋 Importer une liste de livres</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="impopen">📋 Importer des livres (liste, PDF, EPUB)</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -1347,23 +1347,62 @@ async function impFind(row){let L=[];const sur=row.a.length?row.a[0].split(' ').
  if(!L.length&&row.t){try{L=await olQ(row.t,row.a[0]||'')}catch(e){row.err=1}}
  L.forEach(d=>BKRES[d.gid]=d);L=L.map(d=>({d,s:impScore(d,row)})).sort((a,b)=>b.s-a.s);
  row.c=L.slice(0,6).map(x=>x.d);row.sc=L.length?L[0].s:0;row.k=0;row.ok=row.sc>=0.75;row.ex=row.c.length?!!impEx(row.c[0]):false;row.on=row.c.length>0&&row.ok&&!row.ex}
+/* Import de fichiers PDF / EPUB : on lit seulement les 5 premières puis les 5 dernières pages pour trouver l'ISBN.
+   Le fichier reste sur le téléphone et n'est pas gardé. PDF.js est rangé dans vendor/pdfjs (ouvert sans « eval »). */
+let PDFJS=null;
+async function pdfLib(){if(!PDFJS){const L=await import('./vendor/pdfjs/pdf.min.mjs');L.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.min.mjs',location.href).href;PDFJS=L}return PDFJS}
+function isbnTxt(t){t=String(t||'');const lab=/isbn(?:[\s-]*1[03])?[^0-9]{0,15}((?:97[89][\s-]{0,2})?(?:\d[\s-]{0,2}){8}\d[\s-]{0,2}[\dXx])/gi;let m;
+ while((m=lab.exec(t))){const d=m[1].replace(/[\s-]/g,'').toUpperCase();if(isbnChk(d))return isbnTo13(d)}
+ const a=isbnFind(t);return a?a.d:''}
+const pgList=n=>{const P=[];for(let i=1;i<=Math.min(5,n);i++)P.push(i);for(let i=Math.max(n-4,6);i<=n;i++)P.push(i);return P};
+async function pdfIsbn(file){const L=await pdfLib(),doc=await L.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false,enableXfa:false,disableFontFace:true,stopAtErrors:false,verbosity:0}).promise;
+ let txt=0;try{for(const i of pgList(doc.numPages)){const pg=await doc.getPage(i),tc=await pg.getTextContent(),it=tc.items.map(x=>x.str||'');pg.cleanup();
+   const t1=it.join(' '),t2=it.join('');if(t1.trim())txt=1;const ib=isbnTxt(t1)||isbnTxt(t2);if(ib)return{isbn:ib,how:'page '+i}}
+  return{isbn:'',how:txt?'':'scan'}}finally{doc.destroy()}}
+/* EPUB = un fichier zip : on lit sa fiche (titre, auteur, ISBN), puis les premières et dernières pages si besoin */
+async function zipOpen(buf){const v=new DataView(buf),u8=new Uint8Array(buf);let e=-1;for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-66000);i--)if(v.getUint32(i,true)==0x06054b50){e=i;break}if(e<0)throw Error('zip');
+ const n=v.getUint16(e+10,true);let o=v.getUint32(e+16,true);const E={},dec=new TextDecoder();
+ for(let k=0;k<n&&o+46<=buf.byteLength;k++){if(v.getUint32(o,true)!=0x02014b50)break;const m=v.getUint16(o+10,true),cs=v.getUint32(o+20,true),nl=v.getUint16(o+28,true),xl=v.getUint16(o+30,true),cl=v.getUint16(o+32,true),lo=v.getUint32(o+42,true);
+  E[dec.decode(u8.subarray(o+46,o+46+nl))]={m,cs,lo};o+=46+nl+xl+cl}
+ return{names:Object.keys(E),async text(name){const f=E[name];if(!f)return'';const lo=f.lo;if(v.getUint32(lo,true)!=0x04034b50)return'';const st=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true),d=u8.subarray(st,st+f.cs);
+  if(f.m==0)return dec.decode(d);if(f.m!=8)return'';return await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}}}
+async function epubInfo(file){const z=await zipOpen(await file.arrayBuffer()),X=s=>new DOMParser().parseFromString(s,'application/xml');
+ const c=X(await z.text('META-INF/container.xml')),rp=(c.querySelector('rootfile')||{getAttribute:()=>''}).getAttribute('full-path')||z.names.find(n=>/\.opf$/i.test(n))||'';
+ const opf=X(await z.text(rp)),q=t=>[...opf.getElementsByTagNameNS('*',t)].map(x=>(x.textContent||'').trim()).filter(Boolean);
+ const t=q('title')[0]||'',a=q('creator');let isbn='';for(const id of q('identifier')){isbn=isbnTxt(id.replace(/^urn:isbn:/i,'ISBN '));if(isbn)break}
+ if(isbn)return{isbn,t,a,how:'fiche du fichier'};
+ const base=rp.includes('/')?rp.slice(0,rp.lastIndexOf('/')+1):'',man={};for(const it of opf.getElementsByTagNameNS('*','item'))man[it.getAttribute('id')]=it.getAttribute('href');
+ const sp=[...opf.getElementsByTagNameNS('*','itemref')].map(x=>man[x.getAttribute('idref')]).filter(Boolean).map(h=>{try{return decodeURIComponent(base+h)}catch(e){return base+h}});
+ for(const i of pgList(sp.length)){const h=await z.text(sp[i-1]),tx=h.replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/g,' ');const ib=isbnTxt(tx);if(ib)return{isbn:ib,t,a,how:'page '+i}}
+ return{isbn:'',t,a,how:''}}
+async function impFiles(files){const V=view.imp;if(!V)return;const F=[...files].filter(f=>/\.(pdf|epub)$/i.test(f.name)||/pdf|epub/.test(f.type)).slice(0,300);if(!F.length)return toast('Choisis des fichiers PDF ou EPUB');
+ V.st='rev';V.stop=0;V.rows=F.map(f=>({raw:f.name,fname:f.name,t:'',a:[],isbn:'',c:null,rd:1}));V.read=0;V.reading=1;V.run=1;V.done=0;render(1);
+ for(let k=0;k<F.length&&view.imp===V&&!V.stop;k++){const f=F[k],r=V.rows[k];let o={isbn:'',how:''};
+  try{o=/\.epub$/i.test(f.name)||/epub/.test(f.type)?await epubInfo(f):await pdfIsbn(f)}catch(e){o={isbn:'',how:'err'}}
+  const nm0=f.name.replace(/\.(pdf|epub)$/i,''),fl=impLine(nm0)||{t:nm0,a:[],isbn:''};
+  r.isbn=o.isbn||fl.isbn||'';r.t=o.t||fl.t;r.a=o.a&&o.a.length?o.a:fl.a;
+  r.how=o.isbn?'ISBN trouvé ('+o.how+')':fl.isbn?'ISBN trouvé (nom du fichier)':o.how=='scan'?'PDF scanné : recherche avec le nom du fichier':o.how=='err'?'Fichier illisible : recherche avec le nom du fichier':o.t?'Pas d’ISBN : recherche avec le titre du fichier':'Pas d’ISBN : recherche avec le nom du fichier';
+  r.rd=0;V.read++;impPaint();await sleep(0)}
+ V.reading=0;if(view.imp===V&&!V.stop)return impRun()}
 async function impRun(){const V=view.imp;V.run=1;V.done=0;render(1);let i=0;const R=V.rows;
  const work=async()=>{while(i<R.length&&view.imp===V&&!V.stop){const r=R[i++];await impFind(r);V.done++;if(view.imp===V&&!$('#impT'))impPaint()}};
- await Promise.all([work(),work()]);V.run=0;if(view.imp===V)render()}
+ await Promise.all([work(),work()]);V.run=0;const G=new Set();for(const r of R){const d=r.c&&r.c[r.k];r.dup=0;if(!d)continue;if(G.has(d.gid)){r.dup=1;r.on=false}else G.add(d.gid)}if(view.imp===V)render()}
 let impPT=0;function impPaint(){clearTimeout(impPT);impPT=setTimeout(()=>{if(view.imp)render()},250)}
 function impHtml(){const V=view.imp,FB=FMT.map(([k,i,l])=>`<button class="chip ${V.f.includes(k)?'on':''}" data-act="impf" data-v="${k}">${i} ${l}</button>`).join('');
- if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer une liste de livres</h2><p class="mu">Colle une liste, un livre par ligne : « Titre – Auteur », ou simplement un numéro ISBN. Les noms de fichiers (PDF…) sont nettoyés automatiquement. Tu vérifies tout avant l’ajout.</p>
-<textarea id="impT" rows="9" placeholder="Le Petit Prince – Antoine de Saint-Exupéry&#10;9782070612758">${esc(V.txt)}</textarea>
-<p><b>Format de ces livres</b></p><div class="fmts">${FB}</div>
-<p><b>État</b></p><div class="srt"><button class="${V.seen?'on':''}" data-act="impst" data-v="1">✓ Déjà lus / écoutés</button><button class="${V.seen?'':'on'}" data-act="impst" data-v="0">À lire</button></div>
+ if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer des livres</h2>
+<p><b>1. Format de ces livres</b></p><div class="fmts">${FB}</div>
+<p><b>2. État</b></p><div class="srt"><button class="${V.seen?'on':''}" data-act="impst" data-v="1">✓ Déjà lus / écoutés</button><button class="${V.seen?'':'on'}" data-act="impst" data-v="0">À lire</button></div>
 ${V.seen?`<p class="shin">Date de lecture (facultatif) : <input type="date" id="impD" value="${esc(V.rd||'')}" max="${dLoc()}"></p>`:''}
-<div class="act"><button class="pri" data-act="impgo" id="impN" ${n?'':'disabled'}>🔎 Chercher ${n} livre${n>1?'s':''}</button></div></div>`}
+<p><b>3. Choisis tes fichiers…</b></p><div class="act"><button class="pri" data-act="impfile">📄 Choisir des PDF ou EPUB</button><input type="file" id="impFile" accept=".pdf,.epub,application/pdf,application/epub+zip" multiple hidden></div><p class="mu" style="font-size:13px">L’appli lit seulement les 5 premières et les 5 dernières pages pour y trouver l’ISBN. Les fichiers restent sur ton téléphone et ne sont pas gardés.</p>
+<p><b>… ou colle une liste</b></p><p class="mu" style="font-size:13px">Un livre par ligne : « Titre – Auteur », ou simplement un numéro ISBN. Les noms de fichiers sont nettoyés automatiquement.</p>
+<textarea id="impT" rows="8" placeholder="Le Petit Prince – Antoine de Saint-Exupéry&#10;9782070612758">${esc(V.txt)}</textarea>
+<div class="act"><button class="pri" data-act="impgo" id="impN" ${n?'':'disabled'}>🔎 Chercher ${n} livre${n>1?'s':''}</button></div><p class="mu" style="font-size:13px">Tu vérifies tout avant l’ajout.</p></div>`}
  const R=V.rows,N=R.filter(r=>r.on).length,F=R.filter(r=>r.c&&r.c.length&&r.ok&&!r.ex).length,U=R.filter(r=>r.c&&r.c.length&&!r.ok&&!r.ex).length,X=R.filter(r=>r.c&&!r.c.length).length,E=R.filter(r=>r.ex).length;
  return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Vérifie avant d’ajouter</h2>
-<p>${V.run?`🔎 Recherche… ${V.done} / ${R.length}`:`✅ ${F} trouvé${F>1?'s':''} · ❓ ${U} à vérifier · ❌ ${X} pas trouvé${X>1?'s':''}${E?' · '+E+' déjà dans ta liste':''}`}</p>
+<p>${V.reading?`📄 Lecture des fichiers… ${V.read} / ${R.length}`:V.run?`🔎 Recherche… ${V.done} / ${R.length}`:`✅ ${F} trouvé${F>1?'s':''} · ❓ ${U} à vérifier · ❌ ${X} pas trouvé${X>1?'s':''}${E?' · '+E+' déjà dans ta liste':''}`}</p>
 <p class="mu" style="font-size:13px">Seront ajoutés : ${V.f.map(k=>FMT.find(f=>f[0]==k).slice(1).join(' ')).join(' + ')} · ${V.seen?'déjà lus / écoutés'+(V.rd?' le '+fd(V.rd):''):'à lire'}. Décoche ceux à ne pas ajouter.</p>
-<div class="imps">${R.map((r,i)=>{const d=r.c&&r.c[r.k],st=!r.c?'⏳':r.ex?'✔️ Déjà dans ta liste':!r.c.length?'❌ Pas trouvé':r.ok?'':'❓ À vérifier';
- return`<div class="imr ${r.on?'on':''}"><input type="checkbox" class="impC" data-i="${i}" ${r.on?'checked':''} ${!d||r.ex?'disabled':''} aria-label="Ajouter"><div class="poster sm">${d&&d.po?`<img loading="lazy" src="${esc(d.po)}" alt="">`:''}</div><div class="imt">${d?`<b>${esc(d.t)}</b><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' · '))}</small>`:`<b>${esc(r.t||'ISBN '+r.isbn)}</b>`}${st?`<small class="ims">${st}</small>`:''}<small class="mu">Ta ligne : ${esc(r.t||r.raw)}${r.t&&r.a.length?' – '+esc(r.a.join(', ')):''}</small>
+<div class="imps">${R.map((r,i)=>{const d=r.c&&r.c[r.k],st=r.rd?'📄 Lecture…':!r.c?'⏳':r.ex?'✔️ Déjà dans ta liste':r.dup?'↩️ En double dans ta sélection':!r.c.length?'❌ Pas trouvé':r.ok?'':'❓ À vérifier';
+ return`<div class="imr ${r.on?'on':''}"><input type="checkbox" class="impC" data-i="${i}" ${r.on?'checked':''} ${!d||r.ex?'disabled':''} aria-label="Ajouter"><div class="poster sm">${d&&d.po?`<img loading="lazy" src="${esc(d.po)}" alt="">`:''}</div><div class="imt">${d?`<b>${esc(d.t)}</b><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' · '))}</small>`:`<b>${esc(r.t||(r.isbn?'ISBN '+r.isbn:r.raw))}</b>`}${st?`<small class="ims">${st}</small>`:''}<small class="mu">${r.fname?`📄 ${esc(r.fname)}${r.how?' · '+esc(r.how):''}`:`Ta ligne : ${esc(r.t||r.raw)}${r.t&&r.a.length?' – '+esc(r.a.join(', ')):''}`}</small>
 ${r.c&&r.c.length>1&&!r.ex?`<select class="impS" data-i="${i}">${r.c.map((c,j)=>`<option value="${j}" ${j==r.k?'selected':''}>${esc(c.t+(c.au&&c.au[0]?' – '+c.au[0]:'')+(c.y?' ('+c.y+')':''))}</option>`).join('')}</select>`:''}${r.c&&!V.run?`<button class="lnk2" data-act="impfix" data-i="${i}">✏️ Corriger la recherche</button>`:''}</div></div>`}).join('')}</div>
 <div class="selbar"><span>${N} coché${N>1?'s':''}</span><button class="pri" data-act="impadd" ${V.run||!N?'disabled':''}>Ajouter ${N} livre${N>1?'s':''}</button></div></div>`}
 async function impAdd(){const V=view.imp;if(!V||V.run)return;const L=V.rows.filter(r=>r.on&&r.c&&r.c[r.k]).map(r=>r.c[r.k]);if(!L.length)return;
@@ -1580,6 +1619,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='impgo'){const V=view.imp;if(!V)return;V.rows=impParse(V.txt);if(!V.rows.length)return toast('Aucun livre trouvé dans le texte');V.st='rev';V.stop=0;return impRun()}
  else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur, ou taper un ISBN) :',r.t?r.t+(r.a.length?' '+r.a[0]:''):r.raw);if(!q||!q.trim())return;{const o=impLine(q.trim().slice(0,300))||{t:q.trim().slice(0,200),a:[],isbn:''};r.t=o.t;r.a=o.a;r.isbn=o.isbn}r.c=null;render();await impFind(r);return render()}
  else if(a=='impadd')return impAdd();
+ else if(a=='impfile'){const f=$('#impFile');if(f){f.value='';f.click()}return}
  else if(a=='bfmt'){if(!sh)return;const f=fmtOf(sh).slice(),i=f.indexOf(d.v);if(i>=0)f.splice(i,1);else f.push(d.v);if(!f.length)return toast('Garde au moins un format');sh.fmt=FMT.map(x=>x[0]).filter(k=>f.includes(k));if(!sh.fmt.includes('a'))delete sh.pm}
  else if(a=='bpm'){if(!sh)return;sh.pm=d.v=='h'?'h':'p'}
  else if(a=='rds'){S.rdS=d.v=='az'?'az':''}
@@ -1705,6 +1745,7 @@ document.addEventListener('input',ev=>{const t=ev.target;if(t.id!='impT'||!view.
 document.addEventListener('change',ev=>{const t=ev.target;
  if(view.imp&&t.classList.contains('impC')){const r=view.imp.rows[+t.dataset.i];if(r){r.on=t.checked;render()}return}
  if(view.imp&&t.classList.contains('impS')){const r=view.imp.rows[+t.dataset.i];if(r){r.k=+t.value||0;r.ex=!!impEx(r.c[r.k]);r.on=!r.ex;render()}return}
+ if(view.imp&&t.id=='impFile'){if(t.files&&t.files.length)impFiles(t.files);return}
  if(view.imp&&t.id=='impD'){view.imp.rd=okD(t.value)?t.value:'';return}
  if(t.id=='rdin'){const b=IT(t.dataset.id);if(!b)return;if(okD(t.value)&&t.value<=dLoc())b.rd=t.value;else delete b.rd;b.mod=Date.now();save();schedSync();render();toast(b.rd?'Date de lecture : '+dd(b.rd):'Date de lecture effacée');return}
  if(view.shr&&['shm','sha','shb'].includes(t.id)){view.shr[t.id.slice(2)]=t.value;view.shr.img=null;render()}});
