@@ -199,7 +199,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 .stile.pick{outline:3px solid var(--bl);outline-offset:2px;border-radius:8px}.stile.pick::after{content:"✓";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:var(--bl);color:#fff;font-weight:900;display:grid;place-items:center;font-size:14px}.stile.pick .sinf{display:none}
 .selbar{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 8px 0;padding:10px 14px;background:var(--sf);box-shadow:0 -2px 8px #0004;border-radius:10px 10px 0 0}
 #menu [data-act=ser]{position:relative;overflow:visible}#menu [data-act=ser].swr::before,#menu [data-act=ser].swl::after{position:absolute;top:50%;transform:translateY(-50%) scale(.8);font-size:22px;opacity:.5;transition:transform .15s,opacity .15s}
-#menu [data-act=ser].swr::before{content:"🗑";left:-40px}#menu [data-act=ser].swl::after{content:"♥";right:-36px;color:#e91e63}#menu [data-act=ser].swgo::before,#menu [data-act=ser].swgo::after{opacity:1;transform:translateY(-50%) scale(1.2)}
+#menu [data-act=ser].swr::before{content:"♥";left:-36px;color:#e91e63}#menu [data-act=ser].swl::after{content:"🗑";right:-40px}#menu [data-act=ser].swgo::before,#menu [data-act=ser].swgo::after{opacity:1;transform:translateY(-50%) scale(1.2)}
 #menu .svch{display:inline-flex!important;width:auto!important;padding:3px 10px!important;margin-left:6px;border-radius:99px;background:var(--s2)!important;color:var(--tx);font-size:13px;vertical-align:1px}
 .rdl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;font-size:15px}.rdl input,.shin input{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx)}
 .rdb,.srt.wr{flex-wrap:wrap;margin:8px 0}.shin{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -1042,7 +1042,7 @@ function uniPickHtml(){const sh=S.shows[view.spid];if(!sh)return'';const L=uniLi
  return`<div class="cp"><b>Univers de « ${esc(nm(sh))} »</b><p style="font-size:12px">Coche un ou plusieurs univers.</p></div>${L.map(x=>{const on=cur.includes(norm(x.s));return`<button class="chk ${on?'on':''}" data-act="unitog" data-s="${esc(x.s)}"><span class="cbx">${on?'✓':''}</span>${esc(x.s)}</button>`}).join('')}<button data-act="unitog" data-new="1">➕ Nouvel univers…</button><button data-act="menu" data-m="">✓ Terminé</button>`}
 /* Épingler une série / saga / un univers en haut de la liste (appui long 1 s) */
 const spk=n=>MODE()+':'+norm(n),spG=n=>(S.serPin||{})[spk(n)]||{},spDel=n=>!!spG(n).del,spOn=n=>!!spG(n).on,pinS=(L,f)=>[...L].sort((a,b)=>(spOn(f(b))?1:0)-(spOn(f(a))?1:0)),spL=n=>(spG(n).fav?'<span class="sfav">♥</span> ':'')+(spOn(n)?'📌 ':'')+esc(n),spC=n=>'';
-const SPH='<div class="cp"><p style="font-size:12px">Reste appuyé 1 seconde sur un nom pour l’épingler en haut. Glisse-le vers la gauche pour le mettre en favori ♥ (le même geste l’enlève), vers la droite pour le supprimer 🗑.</p></div>';
+const SPH='<div class="cp"><p style="font-size:12px">Reste appuyé 1 seconde sur un nom pour l’épingler en haut. Glisse-le vers la droite pour le mettre en favori ♥ (le même geste l’enlève), vers la gauche pour le supprimer 🗑.</p></div>';
 function serEntries(){const md=MODE();if(md=='s')return uniList().map(x=>({s:x.s,a:'data-kind="tv"'}));
  if(md=='m'){const M={};for(const m of Object.values(MV()))if(m.col&&m.col.id)M[m.col.id]=m.col.n;return Object.entries(M).map(([id,n])=>({s:n,a:`data-cid="${esc(id)}"`}))}
  const bd=md=='c',M={};for(const b of Object.values(BK())){if(!!b.bd!=bd)continue;const o=serOf(b);if(o){const k=norm(o.s);M[k]=M[k]||o.s}}return Object.values(M).map(n=>({s:n,a:`data-bd="${bd?1:0}"`}))}
@@ -1537,10 +1537,10 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
 let lp=0,lpT,px=0,py=0;
 let spW=null;document.addEventListener('pointerdown',ev=>{const b=ev.target.closest('#menu [data-act=ser]');spW=b?{b,x:ev.clientX,y:ev.clientY,dx:0,on:0}:null},true);
 document.addEventListener('pointermove',ev=>{const w=spW;if(!w)return;const dx=ev.clientX-w.x,dy=ev.clientY-w.y;if(!w.on){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){spW=null;return}if(Math.abs(dx)<12)return;w.on=1;clearTimeout(spT)}
- w.dx=dx;w.b.style.transition='none';w.b.style.transform=`translateX(${Math.max(-120,Math.min(120,dx))}px)`;w.b.style.background=dx<0?'#e91e6333':'#e5393555';w.b.classList.toggle('swr',dx>0);w.b.classList.toggle('swl',dx<0);w.b.classList.toggle('swgo',Math.abs(dx)>=60)});
+ w.dx=dx;w.b.style.transition='none';w.b.style.transform=`translateX(${Math.max(-120,Math.min(120,dx))}px)`;w.b.style.background=dx>0?'#e91e6333':'#e5393555';w.b.classList.toggle('swr',dx>0);w.b.classList.toggle('swl',dx<0);w.b.classList.toggle('swgo',Math.abs(dx)>=60)});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{const w=spW;spW=null;if(!w||!w.on)return;const cancel=t=='pointercancel';lp=1;setTimeout(()=>lp=0,500);w.b.style.transition='transform .2s';w.b.style.transform='';w.b.style.background='';w.b.classList.remove('swr','swl','swgo');
  if(cancel||Math.abs(w.dx)<60)return;const n=w.b.dataset.s,k=spk(n),o={...spG(n)};S.serPin=S.serPin||{};
- if(w.dx<0){o.fav=!o.fav;o.t=Date.now();S.serPin[k]=o;if(S.gh)S.gh.dirty=1;save();schedSync();setTimeout(renderMenu,200);toast(o.fav?'♥ Favori':'Retiré des favoris');return}
+ if(w.dx>0){o.fav=!o.fav;o.t=Date.now();S.serPin[k]=o;if(S.gh)S.gh.dirty=1;save();schedSync();setTimeout(renderMenu,200);toast(o.fav?'♥ Favori':'Retiré des favoris');return}
  const old={...o},uu=[...(S.uniUser||[])],un=Object.fromEntries(Object.values(S.shows).filter(x=>uMan(x).length).map(x=>[x.id,[...uMan(x)]]));
  o.del=1;o.on=0;o.t=Date.now();S.serPin[k]=o;if(MODE()=='s'){const kk=norm(n);S.uniUser=(S.uniUser||[]).filter(x=>norm(x)!=kk);for(const x of Object.values(S.shows))if(uMan(x).some(m=>norm(m)==kk)){x.unis=uMan(x).filter(m=>norm(m)!=kk);x.mod=Date.now()}}
  if(S.gh)S.gh.dirty=1;save();schedSync();w.b.style.transition='transform .2s,opacity .2s';w.b.style.transform='translateX(-110%)';w.b.style.opacity='0';setTimeout(renderMenu,220);
