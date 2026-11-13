@@ -374,7 +374,7 @@ async function cReturn(){const q=new URLSearchParams(location.search),h=new URLS
    if(!r.ok)throw 0;const j=await r.json();A={p:'dbx',t:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||14400)*1000,g:''}}
   else throw 0
   if(o.role=='bk2'){const old=S.bk2;S.bk2=Object.assign(A,old&&old.p==A.p?{b:old.b,fid:old.fid,lastbk:old.lastbk}:{});save();await bk2Now();return}
-  if(o.keep)keepOld();S.gh=A;save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
+  if(o.keep)keepOld();else if(S.bk2&&S.bk2.p==A.p)S.bk2=null;ghMem(S.gh);S.gh=A;save();toast(CLN[o.p]+' connecté : synchronisation…');await gsync()}catch(e){toast('Connexion à '+CLN[o.p]+' impossible',4000)}}
 async function cTok(){const g=AC();if(g.exp&&g.exp>Date.now()+60e3)return g.t;
  if(g.p=='dbx'&&g.rt){const r=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:g.rt,client_id:DBX_KEY})});
   if(r.ok){const j=await r.json();g.t=j.access_token;g.exp=Date.now()+(j.expires_in||14400)*1000;save();return g.t}if(r.status==400||r.status==401)throw Error('jeton');throw Error(r.status)}
@@ -389,7 +389,7 @@ async function cDel(name){const t=await cTok();await fetch('https://api.dropboxa
 async function csync(quiet){gbusy=1;renderCloud();
  try{const txt=await cGet('suivi-series.json');if(txt)gmerge(JSON.parse(txt));else for(const s of Object.values(S.shows))s.mod=s.mod||Date.now();
   await cPut('suivi-series.json',JSON.stringify(gpay()));S.gh.last=Date.now();S.gh.err=0;S.gh.dirty=0;S.gh.reco=0;save();render();if(!quiet)toast('Synchronisé ✓')}
- catch(e){if(e.message=='reco'){S.gh.reco=1;S.gh.err=1;if(!quiet)toast('Reconnecte '+CLN[CP()]+' dans le menu du nuage',4000)}else if(e.message=='jeton'){S.gh.t='';toast('Accès '+CLN[CP()]+' refusé : reconnecte-le',4000)}else{S.gh.err=1;if(!quiet)toast('Synchronisation impossible')}}
+ catch(e){if(e.message=='reco'){S.gh.reco=1;S.gh.err=1;if(!quiet)toast('Reconnecte '+CLN[CP()]+' dans le menu du nuage',4000)}else if(e.message=='jeton'){if(S.ghMem&&S.ghMem.t==S.gh.t)S.ghMem=null;S.gh.t='';toast('Accès '+CLN[CP()]+' refusé : reconnecte-le',4000)}else{S.gh.err=1;if(!quiet)toast('Synchronisation impossible')}}
  gbusy=0;renderCloud()}
 async function cbackupCore(){await cPut('sauvegarde-'+wk()+'.json',JSON.stringify(gpay()));const N=(await cList()).filter(isBk).sort().reverse().slice(12);for(const n of N)await cDel(n)}
 async function crestore(){try{const N=(await cList()).filter(isBk).sort().reverse();if(!N.length)return toast('Aucune sauvegarde trouvée');
@@ -399,15 +399,17 @@ async function crestore(){try{const N=(await cList()).filter(isBk).sort().revers
 /* Copie de secours : la sauvegarde de la semaine est aussi envoyée sur un 2e service */
 async function withA(A,fn){if(gbusy)throw Error('busy');gbusy=1;const o=CA;CA=A;try{return await fn()}finally{CA=o;gbusy=0;renderCloud()}}
 async function bk2Backup(){const k=S.bk2;if(!k||!k.t)return;try{await withA(k,gbackupCore);k.bkw=wk();k.lastbk=Date.now();k.err=0;k.reco=0;save()}
- catch(e){k.err=1;if(e.message=='reco')k.reco=1;if(e.message=='jeton')k.t='';save();throw e}}
+ catch(e){k.err=1;if(e.message=='reco')k.reco=1;if(e.message=='jeton'){if(S.ghMem&&S.ghMem.t==k.t)S.ghMem=null;k.t=''}save();throw e}}
 async function bk2Now(){toast('Copie de secours de la sauvegarde…');try{await bk2Backup();toast('Copie de secours de la sauvegarde faite ✓')}catch(e){toast(e.message=='busy'?'Synchronisation en cours, réessaie dans un instant':e.message=='reco'?'Reconnecte '+CLN[S.bk2.p]+' dans le menu du nuage':'Copie de secours de la sauvegarde impossible',4000)}render()}
 async function bk2Restore(){if(!S.bk2||!S.bk2.t)return;try{await withA(S.bk2,grestore)}catch(e){toast('Restauration impossible')}}
 /* Changer de service : si l'autre service est déjà connecté (copie de secours), on le dit et on passe dessus sans rien ressaisir */
-const rdyOf=q=>{const k=S.bk2;return k&&k.p==q&&k.t&&!k.reco?k:null};
+/* Le jeton GitHub est gardé de côté sur ce téléphone quand on quitte GitHub (jamais envoyé ailleurs, ni dans les sauvegardes) */
+const ghOn=()=>!!(S.gh&&S.gh.t&&CP()=='gh'),ghMem=x=>{if(x&&x.p=='gh'&&x.t)S.ghMem={t:x.t,g:x.g||'',b:x.b}};
+const rdyOf=q=>{const k=S.bk2;if(k&&k.p==q&&k.t&&!k.reco)return k;if(q=='gh'&&!ghOn()&&S.ghMem&&S.ghMem.t)return{p:'gh',...S.ghMem};return null};
 const swBtn=p=>{const q=p=='gh'?'dbx':'gh',r=rdyOf(q);return`<button class="svch" ${r?`data-act="${q=='gh'?'menu" data-m="ghhelp':'gswap'}"`:q=='dbx'?'data-act="cpick" data-p="dbx"':'data-act="menu" data-m="ghhelp"'}>🔁 Passer à ${ICO[q]} ${CLN[q]}${r?' <span class="rdy">✓ prêt</span>':''}</button>`};
-async function gSwap(){const o=S.bk2,q=o&&o.p;if(!rdyOf(q))return;
- if(!confirm('Passer la synchronisation sur '+CLN[q]+' ?\n'+CLN[q]+' est déjà connecté (copie de secours de la sauvegarde) : rien à ressaisir.\nTes données restent sur cet appareil.'))return;
- const keep=askKeep(q);await saveNow();if(keep)keepOld();else S.bk2=null;
+async function gSwap(q){q=q||(S.bk2&&S.bk2.p);const o=rdyOf(q);if(!o)return;
+ if(!confirm('Passer la synchronisation sur '+CLN[q]+' ?\n'+CLN[q]+' est déjà enregistré sur ce téléphone : rien à ressaisir.\nTes données restent sur cet appareil.'))return;
+ const keep=askKeep(q);await saveNow();ghMem(S.gh);if(keep)keepOld();else S.bk2=null;
  S.gh={p:q,t:o.t,rt:o.rt,exp:o.exp,g:q=='gh'?(o.g||''):'',b:o.b,fid:o.fid,lastbk:o.lastbk};save();view.menu=0;renderMenu();toast(CLN[q]+' : synchronisation…');return gsync()}
 const bk2Html=()=>{const k=S.bk2,on=S.gh&&S.gh.t,p=CP();
  if(k&&k.t)return`<div class="cp"><b>🛟 Copie de secours de la sauvegarde : ${CLN[k.p]}</b><p>${k.reco?'⚠ Reconnexion nécessaire<br>':k.err?'⚠ Dernière copie échouée<br>':''}Dernière copie : ${k.lastbk?fmtT(k.lastbk):'aucune'}</p></div>${k.reco&&k.p!='gh'?`<button data-act="bk2c" data-p="${k.p}">${ICO[k.p]} Reconnecter ${CLN[k.p]}</button>`:''}<button data-act="bk2now">Faire une copie maintenant</button><button data-act="bk2rest">Restaurer depuis la copie de secours de la sauvegarde…</button><button data-act="bk2off">Retirer la copie de secours de la sauvegarde</button>`;
@@ -425,7 +427,7 @@ async function gsync(quiet){
   if(S.gh.g)await gh('/gists/'+S.gh.g,{method:'PATCH',body:JSON.stringify({files})});
   else S.gh.g=(await gh('/gists',{method:'POST',body:JSON.stringify({description:'Suivi séries (synchro)',public:false,files})})).id;
   S.gh.last=Date.now();S.gh.err=0;S.gh.dirty=0;save();render();if(!quiet)toast('Synchronisé ✓')
- }catch(e){if(e.message=='jeton'){S.gh.t='';toast('Jeton refusé : vérifie le droit « gist »')}else{S.gh.err=1;if(!quiet)toast('Synchronisation impossible')}}
+ }catch(e){if(e.message=='jeton'){if(S.ghMem&&S.ghMem.t==S.gh.t)S.ghMem=null;S.gh.t='';toast('Jeton refusé : vérifie le droit « gist »')}else{S.gh.err=1;if(!quiet)toast('Synchronisation impossible')}}
  gbusy=0;renderCloud()}
 const CL='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z';
 const CLI={off:'<svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4c-1.48 0-2.85.43-4.01 1.17l1.46 1.46C10.21 6.23 11.08 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3 0 1.13-.64 2.11-1.56 2.62l1.45 1.45C23.16 18.16 24 16.68 24 15c0-2.64-2.05-4.78-4.65-4.96zM3 5.27l2.75 2.74C2.56 8.15 0 10.77 0 14c0 3.31 2.69 6 6 6h11.73l2 2L21 20.73 4.27 4 3 5.27zM7.73 10l8 8H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h1.73z"/></svg>',
@@ -445,7 +447,7 @@ function cloudHtml(){const g=S.gh,s=cst(),p=CP(),n=COLL('s').length+COLL('m').le
  if(s=='off')return`<div class="cp"><b>${CLT.off}</b><p>Tes données restent sur cet appareil uniquement.</p><p><b>Pour les retrouver sur tes autres appareils, choisis un service :</b></p></div>${pick}${bk2Html()}`;
  const t=g.reco?'⚠ Reconnexion nécessaire':s=='warn'?(g.err?'⚠ Dernière synchro échouée':'⚠ Modifications pas encore envoyées'):s=='busy'?CLT.busy:'✓ '+CLT.ok;
  return`<div class="cp cst"><span class="cstl">${ICO[p]}</span><div><b>${t}</b><p>Service : ${CLN[p]} ${swBtn(p)}<br>Dernière synchro : ${g.last?fmtT(g.last):'jamais'}<br>Sauvegarde : ${g.lastbk?fmtT(g.lastbk):'aucune'}<br>${n} éléments</p></div></div>${g.reco?`<button data-act="cpick" data-p="${p}">${ICO[p]} Reconnecter ${CLN[p]}</button>`:''}<button data-act="gsync">Synchroniser maintenant</button><button data-act="bknow">💾 Faire une sauvegarde maintenant</button><button data-act="grest">Restaurer une sauvegarde…</button>${p=='gh'?'<button data-act="gchg">🔁 Changer de compte GitHub</button>':''}<button data-act="gout">⏹ Arrêter la synchronisation</button><div class="cp"><p style="font-size:12px">Arrêter ou changer de service ne supprime rien : tes données restent sur cet appareil, et celles déjà envoyées restent sur l’ancien service.</p></div>${bk2Html()}`}
-const ghHelp=()=>{const r=rdyOf('gh')&&CP()!='gh';return`<div class="cp"><b>${ICO.gh} GitHub</b></div>${r?`<button data-act="gswap">${ICO.gh} Vous êtes déjà enregistré : connecter GitHub</button>`:''}<button data-act="gchg" ${r?'data-nw="1"':''}>📋 ${r?'Coller un nouveau jeton':'Coller mon jeton GitHub'}</button><button data-act="menu" data-m="ghsteps">❓ Pas encore inscrit sur GitHub ? Marche à suivre</button><button data-act="menu" data-m="cloud">← Retour</button>`},
+const ghHelp=()=>{const r=rdyOf('gh');return`<div class="cp"><b>${ICO.gh} GitHub</b></div>${r?`<button data-act="gswap" data-p="gh">${ICO.gh} Vous êtes déjà enregistré : connecter GitHub</button>`:''}<button data-act="gchg" ${r?'data-nw="1"':''}>📋 ${r?'Coller un nouveau jeton':'Coller mon jeton GitHub'}</button><button data-act="menu" data-m="ghsteps">❓ Pas encore inscrit sur GitHub ? Marche à suivre</button><button data-act="menu" data-m="cloud">← Retour</button>`},
 ghSteps=()=>`<div class="cp"><b>Créer un compte et un jeton GitHub</b><p>1. Crée un compte gratuit sur github.com.</p><p>2. Touche « Créer le jeton » (le droit « gist » est déjà coché).</p></div><a class="lnk" href="https://github.com/settings/tokens/new?scopes=gist&description=suivi-series" target="_blank" rel="noopener">Créer le jeton</a><div class="cp"><p>3. En bas de la page, touche « Generate token » et copie le jeton (ghp_…).</p><p>4. Reviens ici, touche « Coller mon jeton GitHub ».</p><p>Sur un autre appareil, utilise le même jeton.</p></div><button data-act="gchg" data-nw="1">📋 Coller mon jeton GitHub</button><button data-act="menu" data-m="ghhelp">← Retour</button>`;
 const GEN={comedy:'Humour',drama:'Drame','science-fiction':'Science-fiction','science fiction':'Science-fiction',action:'Action',adventure:'Aventure',animation:'Animation',anime:'Animation',crime:'Policier',documentary:'Documentaire',family:'Famille',fantasy:'Fantastique',horror:'Horreur',mystery:'Mystère',romance:'Romance',thriller:'Thriller',war:'Guerre',western:'Western',history:'Histoire',music:'Musique',medical:'Médical',legal:'Judiciaire',espionage:'Espionnage',supernatural:'Surnaturel',sports:'Sport',suspense:'Suspense',children:'Enfants'};
 const allTags=(k=MODE())=>[...new Set(COLL(k).flatMap(s=>s.tags||[]))].sort((a,b)=>tn(a).localeCompare(tn(b),LANG()));
@@ -857,7 +859,7 @@ function logAct(a,d,sh){const g=lgSeen;lgSeen=null;if(!sh)return;const f=()=>sh.
  else if(a=='del')logEv(sh,sh.kind=='m'?'Film supprimé':sh.kind=='b'?'Supprimé':'Série supprimée')}
 const histHtml=()=>{const L=S.log||[];return`<div class="cp"><b>Historique des modifications</b></div>`+(L.length?L.map(e=>`<div class="hi" ${e.id?(IT(e.id)?`data-act="open" data-id="${esc(e.id)}"`:'data-act="hdel"'):''}>${e.n?`<b>${esc(e.n)}</b>`:''}<span>${esc(e.x)}</span><small>${fmtT(e.t)}</small></div>`).join(''):'<div class="cp"><p>Aucune modification</p></div>')};
 function fixUni(){for(const sh of Object.values(S.shows))if(sh.uni){if(sh.uni.s)sh.unis=[...new Set([...uMan(sh),sh.uni.s])];sh.uniOff=true;delete sh.uni}}
-function fixCloud(){fixUni();if(S.gh&&!S.gh.p)S.gh.p='gh';if(S.bk2&&!S.bk2.p)S.bk2.p='gh';if(S.gh&&!CLN[S.gh.p])S.gh=null;if(S.bk2&&!CLN[S.bk2.p])S.bk2=null}
+function fixCloud(){fixUni();if(S.gh&&!S.gh.p)S.gh.p='gh';if(S.bk2&&!S.bk2.p)S.bk2.p='gh';if(S.gh&&!CLN[S.gh.p])S.gh=null;if(S.bk2&&!CLN[S.bk2.p])S.bk2=null;if(S.gh&&S.gh.t&&S.bk2&&S.bk2.p==S.gh.p)S.bk2=null;if(S.ghMem&&(typeof S.ghMem!='object'||typeof S.ghMem.t!='string'))S.ghMem=null}
 function migratePin(){if(S.mp)return;const R={};for(const p of(S.raw||[]))for(const x of p.Shows||[])R[x.SeriesId]=x;
  for(const s of Object.values(S.shows)){const x=R[s.id];s.pin=!!s.fav;s.fav=x?!!x.Liked:false}S.mp=1}
 /* Films (TMDB) */
@@ -1463,9 +1465,9 @@ document.addEventListener('click',async ev=>{
  else if(a=='loanback'){const b=IT(d.id);if(!b||!b.loan)return;logEv(b,'Rendu par '+b.loan.to);b.loan=null;b.mod=Date.now();save();schedSync();toast('Rendu ✓')}
  else if(a=='bknow'){if(gbusy)return toast('Synchronisation en cours, réessaie dans un instant');toast('Sauvegarde…');try{await gsync(1);await gbackup();toast('Sauvegarde '+CLN[CP()]+' faite ✓')}catch(e){toast(e.message=='reco'?'Reconnecte '+CLN[CP()]+' dans le menu du nuage':'Sauvegarde impossible',4000)}render();return}
  else if(a=='bk2rest')return bk2Restore();
- else if(a=='bk2off'){if(!confirm('Retirer la copie de secours de la sauvegarde ? Les copies déjà envoyées restent sur ce service.'))return;S.bk2=null;toast('Copie de secours de la sauvegarde retirée')}
- else if(a=='gout'){if(!confirm('Arrêter la synchronisation sur cet appareil ? Tes données restent sur ce téléphone.'))return;S.gh=null;toast('Synchronisation arrêtée')}
- else if(a=='gswap')return gSwap();
+ else if(a=='bk2off'){if(!confirm('Retirer la copie de secours de la sauvegarde ? Les copies déjà envoyées restent sur ce service.'))return;ghMem(S.bk2);S.bk2=null;toast('Copie de secours de la sauvegarde retirée')}
+ else if(a=='gout'){if(!confirm('Arrêter la synchronisation sur cet appareil ? Tes données restent sur ce téléphone.'))return;ghMem(S.gh);S.gh=null;toast('Synchronisation arrêtée')}
+ else if(a=='gswap')return gSwap(d.p);
  else if(a=='gchg'){const sw=S.gh&&S.gh.t&&CP()!='gh';if(sw&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par GitHub ? Tes données restent sur cet appareil.'))return;const old=S.bk2&&S.bk2.p=='gh'&&S.bk2.t?S.bk2:null;
   let t=sw&&old&&!d.nw&&confirm('Reprendre le jeton GitHub déjà enregistré pour la copie de secours de la sauvegarde ?')?old.t:prompt('Colle ton jeton GitHub (jeton classique avec le droit « gist »).');if(!t||!t.trim())return;const keep=sw&&askKeep('gh');const prevB=old&&old.t==t?{g:old.g,b:old.b}:{};if(keep)keepOld();else if(old&&old.t==t)S.bk2=null;S.gh={p:'gh',t:t.trim(),g:'',...prevB};save();view.menu=0;renderMenu();toast('Nouveau compte : synchronisation…');return gsync()}
  else if(a=='lang')S.lang=d.v;
