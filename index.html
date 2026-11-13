@@ -208,6 +208,9 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 #menu .svch .bico{width:16px;height:16px;vertical-align:-3px;margin:0 4px}#menu .svch .rdy{color:#2e7d32;font-weight:700;margin-left:4px}
 .fmts{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.fmts .chip.on{background:var(--ac);color:var(--on);font-weight:600}
 .hm{width:58px!important}.hml{display:block;margin-top:8px}.fmi{font-size:.8em;white-space:nowrap}
+#impT{width:100%;font:inherit;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx);box-sizing:border-box}
+.imr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--s2)}.imr:not(.on){opacity:.75}.imr input[type=checkbox]{width:22px;height:22px;margin-top:20px;flex:none;accent-color:var(--ac)}
+.imt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.imt small{display:block}.imt .ims{font-weight:600}.imt select{max-width:100%;font:inherit;font-size:13px;margin-top:4px;padding:4px;border-radius:6px;background:var(--sf);color:var(--tx);border:1px solid var(--s2)}.imt .lnk2{align-self:flex-start;font-size:13px}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -290,6 +293,7 @@ const fmtOf=b=>{const f=Array.isArray(b.fmt)?(b.bd?b.fmt.filter(x=>x=='p'||x=='n
 const FMTof=b=>b.bd?FMT.filter(f=>f[0]=='p'||f[0]=='n'):FMT;
 const fmtIc=b=>FMT.filter(f=>f[0]!='p'&&fmtOf(b).includes(f[0])).map(f=>f[1]).join('');
 const byH=b=>fmtOf(b).includes('a')&&(b.pm=='h'||(b.pm!='p'&&!fmtOf(b).some(x=>x=='p'||x=='n')));
+const heard=b=>b.kind=='b'&&fmtOf(b).some(x=>x=='a'||x=='i'),LU=b=>heard(b)?'Écouté':'Lu';
 const fmtH=m=>Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');
 const bkPc=b=>byH(b)?(b.dur&&b.ph?Math.min(100,Math.round(100*b.ph/b.dur)):0):(b.pages&&b.pg?Math.min(100,Math.round(100*b.pg/b.pages)):0);
 const okFmt=v=>Array.isArray(v)?[...new Set(v.filter(x=>typeof x=='string'&&x.length==1&&FMK.includes(x)))]:null;
@@ -297,7 +301,7 @@ function rdSet(b){if(!b||b.kind!='b')return;if(b.seen)b.rd=dLoc();else delete b.
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
 function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','ghsteps','serpick','serlist','unipick','uniadd'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','ghsteps','serpick','serlist','unipick','uniadd'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="impopen">📋 Importer une liste de livres</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -845,11 +849,11 @@ let hbusy=0;
 const nonDef=()=>!!(view.f!=defF()||view.tag||view.q),ovl=()=>!!(view.open||view.add||view.sel);
 const clearQ=()=>{view.q='';$('#q').value='';$('#hd').classList.remove('sq')};
 function resetList(){view.f=defF();view.tag='';clearQ()}
-function goBack(){let t=2;if(view.shr){if(view.shr.img)URL.revokeObjectURL(view.shr.img);view.shr=null;render(0);return 1}if(view.ssel){view.ssel=null;render(0);return 1}if(view.ser){view.ser=null;t=3}else if(view.pp){view.pp=null;if(view.open)t=3}else if(view.serBack&&view.open&&!view.sel&&!view.add){const b=view.serBack;view.serBack=null;view.ser=b.ser;view.open=b.open;render(0);const y=b.y;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));return 1}else if(view.sel)view.sel=null;else if(view.open||view.add){view.open=null;view.add=0}else if(nonDef()){resetList();render(1);return 1}else return 0;render(t);return 1}
+function goBack(){let t=2;if(view.imp){view.imp.stop=1;if(view.imp.st!='paste'){view.imp.st='paste';view.imp.rows=null;render(1);return 1}view.imp=null;render(0);return 1}if(view.shr){if(view.shr.img)URL.revokeObjectURL(view.shr.img);view.shr=null;render(0);return 1}if(view.ssel){view.ssel=null;render(0);return 1}if(view.ser){view.ser=null;t=3}else if(view.pp){view.pp=null;if(view.open)t=3}else if(view.serBack&&view.open&&!view.sel&&!view.add){const b=view.serBack;view.serBack=null;view.ser=b.ser;view.open=b.open;render(0);const y=b.y;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));return 1}else if(view.sel)view.sel=null;else if(view.open||view.add){view.open=null;view.add=0}else if(nonDef()){resetList();render(1);return 1}else return 0;render(t);return 1}
 function hsync(){if(hbusy)return;try{const want=lvls().length,have=(history.state&&history.state.n)||0;
  if(want>have){for(let i=have+1;i<=want;i++)history.pushState({n:i},'')}
  else if(want<have){hbusy=1;setTimeout(()=>hbusy=0,600);history.go(want-have)}}catch(e){hbusy=0}}
-const lvls=()=>[nonDef()?'l':'',(view.open||view.add||view.sel)?'o':'',view.serBack?'b':'',view.serBack&&view.serBack.open?'B':'',view.ser?'s':'',view.pp?'p':'',view.ssel?'x':'',view.shr?'h':''].filter(Boolean);
+const lvls=()=>[nonDef()?'l':'',(view.open||view.add||view.sel)?'o':'',view.serBack?'b':'',view.serBack&&view.serBack.open?'B':'',view.ser?'s':'',view.pp?'p':'',view.ssel?'x':'',view.shr?'h':'',view.imp?'i':'',view.imp&&view.imp.st!='paste'?'I':''].filter(Boolean);
 window.addEventListener('popstate',()=>{hbusy=0;const d=(history.state&&history.state.n)||0;if(lvls().length<=d)return;view.menu=0;let g=12;while(lvls().length>d&&g--)if(!goBack())break;renderMenu()});
 window.addEventListener('scroll',()=>{if(view.menu){view.menu=0;renderMenu()}},{passive:true});
 const inList=x=>!!(S.shows[x.externals.thetvdb||'tm'+x.id]||Object.values(S.shows).some(s=>s.tm==x.id));
@@ -882,7 +886,7 @@ const IT=id=>S.shows[id]||MV()[id]||BK()[id]||PV[id],BDF={s:'cours',m:'tosee',b:
 const COLL=k=>k=='s'?Object.values(S.shows):k=='m'?Object.values(MV()):Object.values(BK()).filter(b=>k=='c'?b.bd:!b.bd);
 const kindOf=sh=>sh.kind=='b'?(sh.bd?'c':'b'):sh.kind=='m'?'m':'s';
 const hasAny=()=>Object.keys(S.shows).length||Object.keys(MV()).length||Object.keys(BK()).length;
-function setMode(m){view.serBack=null;view.shr=null;S.mode=m;view.f=defF();view.tag='';view.open=null;view.add=0;view.sel=null;view.pp=null;clearQ()}
+function setMode(m){view.serBack=null;view.shr=null;view.imp=null;S.mode=m;view.f=defF();view.tag='';view.open=null;view.add=0;view.sel=null;view.pp=null;clearQ()}
 const FOOT='<p class="foot">Séries : TVmaze.com · Films : TMDB. Ce produit utilise l’API TMDB mais n’est ni approuvé ni certifié par TMDB.</p>';
 const TG={28:'action',12:'adventure',16:'animation',35:'comedy',80:'crime',99:'documentary',18:'drama',10751:'family',14:'fantasy',36:'history',27:'horror',10402:'music',9648:'mystery',10749:'romance',878:'science-fiction',53:'thriller',10752:'war',37:'western'};
 const CREW={Director:'Réalisation','Original Music Composer':'Musique',Composer:'Musique',Producer:'Production','Executive Producer':'Production exécutive',Screenplay:'Scénario',Writer:'Scénario',Creator:'Création'};
@@ -1124,11 +1128,11 @@ document.addEventListener('change',ev=>{if(ev.target.id!='pgi')return;const b=IT
 function detailB(b){trB(b);const tab=view.tab||'cast',au=(b.ppl||[]).filter(p=>p.r=='author');if(tab=='rel'&&b.rel===undefined)loadRel(b);
  return`<div class="det"><button data-act="back">← Retour</button>${b.pv?'':icons(b)}
 <div class="hd"><div class="poster">${b.po?`<img src="${esc(b.po)}" alt="">`:''}</div><div><h2>${esc(nm(b))}</h2><p class="mu">${esc([b.sub,au.map(p=>p.n).join(', '),[b.pub,yr(b.date),b.pages?b.pages+' p.':''].filter(Boolean).join(' · '),gnB(b)].filter(Boolean).join(' – '))}</p></div></div>
-<p class="sum">${esc(ovB(b))}</p>${bkExtra(b)}${!b.pv&&b.seen?`<label class="rdl">📅 Lu le <input type="date" id="rdin" data-id="${esc(b.id)}" value="${b.rd||''}" max="${dLoc()}">${b.rd?'':'<small class="mu">date inconnue</small>'}</label>`:''}${b.pv&&serOf(b)?`<button class="pls" data-act="ser" data-s="${esc(serOf(b).s)}" data-bd="${b.bd?1:0}">📚 Toute la série « ${esc(serOf(b).s)} »</button>`:''}
+<p class="sum">${esc(ovB(b))}</p>${bkExtra(b)}${!b.pv&&b.seen?`<label class="rdl">📅 ${LU(b)} le <input type="date" id="rdin" data-id="${esc(b.id)}" value="${b.rd||''}" max="${dLoc()}">${b.rd?'':'<small class="mu">date inconnue</small>'}</label>`:''}${b.pv&&serOf(b)?`<button class="pls" data-act="ser" data-s="${esc(serOf(b).s)}" data-bd="${b.bd?1:0}">📚 Toute la série « ${esc(serOf(b).s)} »</button>`:''}
 ${b.pv?`<div class="act"><button class="pri" data-act="addbook" data-gid="${esc(b.gid)}" data-bd="${b.bd?1:0}">Ajouter à ma bibliothèque</button></div>`:''}
 ${b.pv?'':tagBlock(b)}${tabsHtml(tab,b.pv?[['cast','Auteur'],['rel','Du même auteur']]:[['cast','Auteur'],['rel','Du même auteur'],['rate','Avis']])}${tab=='rate'&&!b.pv?ratingHtml(b):tab=='rel'?relB(b):castHtml(b)}</div>`}
 const bcard=b=>{const sub=[(b.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).join(', '),yr(b.date)].filter(Boolean).join(' · ');
- return`<article class="tc ${view.sel&&view.sel[b.id]?'sel':''}" data-act="open" data-id="${b.id}"><div class="bn bk">${b.po?`<img class="bcv" loading="lazy" src="${esc(b.po)}" alt="">`:''}${view.sel?`<span class="ck ${view.sel[b.id]?'on':''}">✓</span>`:''}${b.arch?`<button class="ai" data-act="archive" data-id="${b.id}" aria-label="Remettre dans la liste" style="${view.sel?'left:46px':''}">${ARCH}</button>`:''}<button class="pinb ${b.pin?'on':'off'}" data-act="pin" data-id="${b.id}" aria-label="${b.pin?'Retirer l’épingle':'Épingler en début de liste'}">${PIN}</button><button class="hrb ${b.fav?'on':''}" data-act="fav" data-id="${b.id}" aria-label="${b.fav?'Retirer des favoris':'Ajouter aux favoris'}">♥</button><h3>${esc(nm(b))}${fmtIc(b)?` <span class="fmi">${fmtIc(b)}</span>`:''}</h3><p>${esc(sub)}</p></div>${!b.seen&&bkPc(b)?`<div class="pg"><i style="width:${bkPc(b)}%"></i></div>`:''}<div class="nx nxs">${b.loan?`<span class="lnb">🤝 ${esc(b.loan.to)}</span>`:''}<span>${b.seen?(b.rd?'Lu le '+dd(b.rd):b.arch?'Lu et archivé':'Lu'):!b.seen&&byH(b)&&b.ph?fmtH(b.ph)+' écoutées':!b.seen&&!byH(b)&&b.pg?'Page '+b.pg:'À lire'}</span><button class="eye ${b.seen?'seen':''}" data-act="seen" data-id="${b.id}" aria-label="${b.seen?'Marqué non lu':'Marquer comme lu'}">${EYE}</button></div></article>`};
+ return`<article class="tc ${view.sel&&view.sel[b.id]?'sel':''}" data-act="open" data-id="${b.id}"><div class="bn bk">${b.po?`<img class="bcv" loading="lazy" src="${esc(b.po)}" alt="">`:''}${view.sel?`<span class="ck ${view.sel[b.id]?'on':''}">✓</span>`:''}${b.arch?`<button class="ai" data-act="archive" data-id="${b.id}" aria-label="Remettre dans la liste" style="${view.sel?'left:46px':''}">${ARCH}</button>`:''}<button class="pinb ${b.pin?'on':'off'}" data-act="pin" data-id="${b.id}" aria-label="${b.pin?'Retirer l’épingle':'Épingler en début de liste'}">${PIN}</button><button class="hrb ${b.fav?'on':''}" data-act="fav" data-id="${b.id}" aria-label="${b.fav?'Retirer des favoris':'Ajouter aux favoris'}">♥</button><h3>${esc(nm(b))}${fmtIc(b)?` <span class="fmi">${fmtIc(b)}</span>`:''}</h3><p>${esc(sub)}</p></div>${!b.seen&&bkPc(b)?`<div class="pg"><i style="width:${bkPc(b)}%"></i></div>`:''}<div class="nx nxs">${b.loan?`<span class="lnb">🤝 ${esc(b.loan.to)}</span>`:''}<span>${b.seen?(b.rd?LU(b)+' le '+dd(b.rd):b.arch?LU(b)+' et archivé':LU(b)):!b.seen&&byH(b)&&b.ph?fmtH(b.ph)+' écoutées':!b.seen&&!byH(b)&&b.pg?'Page '+b.pg:'À lire'}</span><button class="eye ${b.seen?'seen':''}" data-act="seen" data-id="${b.id}" aria-label="${b.seen?'Marqué non lu':'Marquer comme lu'}">${EYE}</button></div></article>`};
 /* Pages de personnes */
 const fd=d=>d?fmtDate(d,(S.dfmt||'dmy2')=='dmy2'?'dmy4':S.dfmt=='mdy2'?'ymd':S.dfmt):'';
 function libOf(p){const key=norm(p.n),out=[];for(const it of[...Object.values(S.shows),...Object.values(MV()),...Object.values(BK())]){const x=(it.ppl||[]).find(q=>norm(q.n)===key);if(x)out.push({it,role:x.c||CREW[x.j]||(x.r=='author'?'Auteur':'')})}return out}
@@ -1275,8 +1279,8 @@ function shrHtml(){const P=view.shr,L=shrList(),c=MODE()=='c',y=new Date().getFu
 ${P.p=='m'?`<p class="shin">Mois : <input type="month" id="shm" value="${esc(P.m||dLoc().slice(0,7))}" max="${dLoc().slice(0,7)}"></p>`:''}${P.p=='r'?`<p class="shin">Du <input type="date" id="sha" value="${esc(P.a||'')}"> au <input type="date" id="shb" value="${esc(P.b||'')}"></p>`:''}
 <p><b>${esc(shrTitle(L.length))}</b></p>${L.length?`<div class="act"><button class="pri" data-act="shtx">📝 Envoyer en texte</button><button class="pri" data-act="shim">🖼 Envoyer en image</button></div>`:`<p class="mu">Aucun ${c?'BD lue':'livre lu'} sur cette période.${P.p!='all'?' Les '+(c?'BDs':'livres')+' marqués lus avant cette version n’ont pas de date : choisis « Tout », ou ajoute la date sur leur fiche.':''}</p>`}
 ${P.img?`<div class="shimg"><img src="${P.img}" alt="Aperçu de l’image"><div class="act"><button class="pri" data-act="shimgo">📤 Envoyer l’image</button></div></div>`:''}
-<div class="shl">${L.map(b=>`<div class="shr1"><div class="poster sm">${b.po?`<img loading="lazy" src="${esc(b.po)}" alt="">`:''}</div><div><b>${esc(nm(b))}${fmtIc(b)?' '+fmtIc(b):''}</b><small>${esc([auOf(b),b.rd?'lu le '+fd(b.rd):'date inconnue'].filter(Boolean).join(' · '))}</small></div></div>`).join('')}</div></div>`}
-function shrText(){const L=shrList();return'📚 '+shrTitle(L.length)+'\n\n'+L.map(b=>'• '+nm(b)+(fmtIc(b)?' '+fmtIc(b):'')+(auOf(b)?' – '+auOf(b):'')+(b.rd?' (lu'+(MODE()=='c'?'e':'')+' le '+fd(b.rd)+')':'')).join('\n')}
+<div class="shl">${L.map(b=>`<div class="shr1"><div class="poster sm">${b.po?`<img loading="lazy" src="${esc(b.po)}" alt="">`:''}</div><div><b>${esc(nm(b))}${fmtIc(b)?' '+fmtIc(b):''}</b><small>${esc([auOf(b),b.rd?(heard(b)?'écouté':'lu')+' le '+fd(b.rd):'date inconnue'].filter(Boolean).join(' · '))}</small></div></div>`).join('')}</div></div>`}
+function shrText(){const L=shrList();return'📚 '+shrTitle(L.length)+'\n\n'+L.map(b=>'• '+nm(b)+(fmtIc(b)?' '+fmtIc(b):'')+(auOf(b)?' – '+auOf(b):'')+(b.rd?' ('+(heard(b)?'écouté':MODE()=='c'?'lue':'lu')+' le '+fd(b.rd)+')':'')).join('\n')}
 async function shrSendText(){const t=shrText();
  if(navigator.share){try{await navigator.share({text:t});return}catch(e){if(e.name=='AbortError')return}}
  try{await navigator.clipboard.writeText(t);toast('Liste copiée : colle-la dans ton message')}catch(e){dl('mes-lectures.txt',t)}}
@@ -1299,6 +1303,68 @@ async function shrMakeImg(){const all=shrList(),MAX=120,L=all.slice(0,MAX);if(!L
 async function shrSendImg(){const bl=view.shr&&view.shr.blob;if(!bl)return;const f=new File([bl],'mes-lectures.png',{type:'image/png'});
  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name=='AbortError')return}}
  const l=document.createElement('a');l.href=view.shr.img;l.download='mes-lectures.png';l.click();toast('Image enregistrée')}
+/* Import d'une liste : nettoyage d'une ligne « Titre – Auteur » (souvent un nom de fichier) */
+const NCi=s=>norm(s);
+function impLine(line){let s=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' ').trim();if(!s)return null;
+ s=s.replace(/^(?:[-•*·]|\d{1,3}[.)])\s+/,'');
+ const m=s.match(/^(.*)\s[–—]\s(.*)$/);if(!m&&(/:\s*$/.test(s)||/^(voici|here)/i.test(s)))return null;
+ let t=m?m[1]:s,a=m?m[2]:'';
+ const isbn=(t.match(/isbn(?:13)?[\s_-]*(97[89]\d{10})(?!\d)/i)||[])[1]||'';
+ a=a.replace(/\([^)]*\)/g,' ').replace(/\bet al\.?(?=\s|$)/gi,'').replace(/auteur non sp[ée]cifi[ée]|v[áa]rios|divers|inconnu|unknown/gi,'').replace(/\s+/g,' ').trim().replace(/[,;]$/,'');
+ const aw=new Set(NCi(m?m[2]:'').split(' ').filter(w=>w.length>=3&&!['par','presente','et','and','des','les'].includes(w)));
+ t=t.split(/\s--\s|___|_-_|\s-\s{2,}|\s{2,}-\s/)[0];
+ const file=!/\s/.test(t.trim())||((t.match(/[-_.]/g)||[]).length>=4&&(t.match(/\s/g)||[]).length<2);
+ t=t.replace(/^(OceanofPDF\.com_|det__)/i,'').replace(/Anna[’']s[-_ ]Archive.*$/i,'').replace(/\b[0-9a-f]{16,}\b/gi,' ').replace(/isbn(13)?[\s_-]*\d*/gi,' ')
+  .replace(/\((?:French|Spanish|English) Edition\)|[-_ ](?:French|Spanish)[-_ ]Edition/gi,' ').replace(/\(pour transfert\)|\(\d+\)$/gi,' ').replace(/\[[^\]]*\]?/g,' ');
+ t=t.replace(/\b([dljnms])_(?=[a-zàâéèêîôûœ])/gi,"$1'").replace(/\b([dljnms])[’'](?=\w)/gi,"$1'");
+ if(file)t=t.replace(/[_.]+/g,' ').replace(/-+/g,' ');else t=t.replace(/_/g,' ');
+ t=t.split(/\s_\s|\s:\s/)[0].replace(/\s+/g,' ').trim();
+ let W=t.split(' ');
+ while(W.length>2&&aw.has(NCi(W[0])))W.shift();
+ const cut=file?W.findIndex((w,i)=>i>=2&&aw.has(NCi(w))):-1;if(cut>0)W=W.slice(0,cut);
+ const SW=/^(\d{4}|french|none|edition|ps|ww|-|_|–|de|du|des|la|le|les|et|en|d|l|sous|une|un|par|presentes|présentés|présente|à|au|aux)$/i;
+ while(W.length>2&&(SW.test(W[W.length-1])||(/^(\d{1,2}|[ivx]+)$/i.test(W[W.length-1])&&!/^tome$/i.test(W[W.length-2]||''))))W.pop();
+ t=W.join(' ').replace(/[\s\-–_.,:]+$/,'').trim();
+ if(t.length>3&&t==t.toUpperCase()&&/[A-Z]/.test(t))t=t[0]+t.slice(1).toLowerCase();
+ const A=a.split(/\s*(?:,|;|&|\bet\b|\band\b)\s*/).map(x=>x.trim()).filter(Boolean);
+ return t?{raw:s,t,a:A,isbn}:null}
+const impParse=txt=>String(txt||'').split(/\r?\n/).map(impLine).filter(Boolean).slice(0,500);
+async function gbQ(q){for(let i=0;i<3;i++){const r=await fetch('https://www.googleapis.com/books/v1/volumes?maxResults=8&printType=books&q='+encodeURIComponent(q));if(r.status==429){await sleep(2000*(i+1));continue}if(!r.ok)throw Error('GB '+r.status);const j=await r.json();return(j.items||[]).map(gbDoc)}throw Error('429')}
+async function olQ(t,a){const r=await fetch(OLU+'/search.json?limit=8&title='+encodeURIComponent(t)+(a?'&author='+encodeURIComponent(a):'')+'&fields=key,title,author_name,first_publish_year,cover_i,subject,publisher,number_of_pages_median,isbn');if(!r.ok)throw Error('OL '+r.status);return((await r.json()).docs||[]).map(olDoc)}
+function impScore(d,row){const T=new Set(norm(d.t).split(' ')),W=norm(row.t).split(' ').filter(w=>w.length>=3);const t=W.length?W.filter(w=>T.has(w)).length/W.length:0;
+ const A=norm((d.au||[]).join(' ')),S=row.a.map(a=>norm(a).split(' ').pop()).filter(Boolean);return t+(S.length&&S.some(x=>A.includes(x))?0.4:0)+(row.isbn&&d.isbn==row.isbn?0.8:0)}
+const impEx=d=>Object.values(BK()).find(b=>b.gid==d.gid||(norm(b.name)==norm(d.t)&&norm(((b.ppl||[])[0]||{}).n)==norm((d.au||[])[0])));
+async function impFind(row){let L=[];const sur=row.a.length?row.a[0].split(' ').pop():'';row.err=0;
+ if(row.isbn){try{L=await bkIsbn(row.isbn)}catch(e){}}
+ if(!L.length){try{L=await gbQ(row.t+(sur?' inauthor:'+sur:''))}catch(e){row.err=1}}
+ if(!L.length&&sur){try{L=await gbQ(row.t)}catch(e){row.err=1}}
+ if(!L.length){try{L=await olQ(row.t,row.a[0]||'')}catch(e){row.err=1}}
+ L.forEach(d=>BKRES[d.gid]=d);L=L.map(d=>({d,s:impScore(d,row)})).sort((a,b)=>b.s-a.s);
+ row.c=L.slice(0,6).map(x=>x.d);row.sc=L.length?L[0].s:0;row.k=0;row.ok=row.sc>=0.75;row.ex=row.c.length?!!impEx(row.c[0]):false;row.on=row.c.length>0&&row.ok&&!row.ex}
+async function impRun(){const V=view.imp;V.run=1;V.done=0;render(1);let i=0;const R=V.rows;
+ const work=async()=>{while(i<R.length&&view.imp===V&&!V.stop){const r=R[i++];await impFind(r);V.done++;if(view.imp===V&&!$('#impT'))impPaint()}};
+ await Promise.all([work(),work()]);V.run=0;if(view.imp===V)render()}
+let impPT=0;function impPaint(){clearTimeout(impPT);impPT=setTimeout(()=>{if(view.imp)render()},250)}
+function impHtml(){const V=view.imp,FB=FMT.map(([k,i,l])=>`<button class="chip ${V.f.includes(k)?'on':''}" data-act="impf" data-v="${k}">${i} ${l}</button>`).join('');
+ if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer une liste de livres</h2><p class="mu">Colle une liste, un livre par ligne, par exemple « Titre – Auteur ». Les noms de fichiers (PDF…) sont nettoyés automatiquement. Tu vérifies tout avant l’ajout.</p>
+<textarea id="impT" rows="9" placeholder="Le Petit Prince – Antoine de Saint-Exupéry">${esc(V.txt)}</textarea>
+<p><b>Format de ces livres</b></p><div class="fmts">${FB}</div>
+<p><b>État</b></p><div class="srt"><button class="${V.seen?'on':''}" data-act="impst" data-v="1">✓ Déjà lus / écoutés</button><button class="${V.seen?'':'on'}" data-act="impst" data-v="0">À lire</button></div>
+${V.seen?`<p class="shin">Date de lecture (facultatif) : <input type="date" id="impD" value="${esc(V.rd||'')}" max="${dLoc()}"></p>`:''}
+<div class="act"><button class="pri" data-act="impgo" id="impN" ${n?'':'disabled'}>🔎 Chercher ${n} livre${n>1?'s':''}</button></div></div>`}
+ const R=V.rows,N=R.filter(r=>r.on).length,F=R.filter(r=>r.c&&r.c.length&&r.ok&&!r.ex).length,U=R.filter(r=>r.c&&r.c.length&&!r.ok&&!r.ex).length,X=R.filter(r=>r.c&&!r.c.length).length,E=R.filter(r=>r.ex).length;
+ return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Vérifie avant d’ajouter</h2>
+<p>${V.run?`🔎 Recherche… ${V.done} / ${R.length}`:`✅ ${F} trouvé${F>1?'s':''} · ❓ ${U} à vérifier · ❌ ${X} pas trouvé${X>1?'s':''}${E?' · '+E+' déjà dans ta liste':''}`}</p>
+<p class="mu" style="font-size:13px">Seront ajoutés : ${V.f.map(k=>FMT.find(f=>f[0]==k).slice(1).join(' ')).join(' + ')} · ${V.seen?'déjà lus / écoutés'+(V.rd?' le '+fd(V.rd):''):'à lire'}. Décoche ceux à ne pas ajouter.</p>
+<div class="imps">${R.map((r,i)=>{const d=r.c&&r.c[r.k],st=!r.c?'⏳':r.ex?'✔️ Déjà dans ta liste':!r.c.length?'❌ Pas trouvé':r.ok?'':'❓ À vérifier';
+ return`<div class="imr ${r.on?'on':''}"><input type="checkbox" class="impC" data-i="${i}" ${r.on?'checked':''} ${!d||r.ex?'disabled':''} aria-label="Ajouter"><div class="poster sm">${d&&d.po?`<img loading="lazy" src="${esc(d.po)}" alt="">`:''}</div><div class="imt">${d?`<b>${esc(d.t)}</b><small>${esc([(d.au||[]).join(', '),d.y].filter(Boolean).join(' · '))}</small>`:`<b>${esc(r.t)}</b>`}${st?`<small class="ims">${st}</small>`:''}<small class="mu">Ta ligne : ${esc(r.t)}${r.a.length?' – '+esc(r.a.join(', ')):''}</small>
+${r.c&&r.c.length>1&&!r.ex?`<select class="impS" data-i="${i}">${r.c.map((c,j)=>`<option value="${j}" ${j==r.k?'selected':''}>${esc(c.t+(c.au&&c.au[0]?' – '+c.au[0]:'')+(c.y?' ('+c.y+')':''))}</option>`).join('')}</select>`:''}${r.c&&!V.run?`<button class="lnk2" data-act="impfix" data-i="${i}">✏️ Corriger la recherche</button>`:''}</div></div>`}).join('')}</div>
+<div class="selbar"><span>${N} coché${N>1?'s':''}</span><button class="pri" data-act="impadd" ${V.run||!N?'disabled':''}>Ajouter ${N} livre${N>1?'s':''}</button></div></div>`}
+async function impAdd(){const V=view.imp;if(!V||V.run)return;const L=V.rows.filter(r=>r.on&&r.c&&r.c[r.k]).map(r=>r.c[r.k]);if(!L.length)return;
+ if(!confirm('Ajouter '+L.length+' livre'+(L.length>1?'s':'')+' à ta bibliothèque ?'))return;const add=[];
+ for(const d of L){const id='b'+d.gid;if(BK()[id])continue;const b=bookFromDoc(d,0);b.fmt=FMT.map(f=>f[0]).filter(k=>V.f.includes(k));if(V.seen){b.seen=1;b.arch=1;if(okD(V.rd))b.rd=V.rd}b.mod=Date.now();BK()[id]=b;add.push(b)}
+ logEv(null,'Import d’une liste : '+add.length+' livres');S.impF=V.f;view.imp=null;if(S.gh)S.gh.dirty=1;await saveNow();schedSync();S.mode='b';view.f=V.seen?'arch':defF();view.open=null;render(1);toast(add.length+' livre'+(add.length>1?'s':'')+' ajouté'+(add.length>1?'s':''),4000);
+ for(const b of add){if(!BK()[b.id])continue;try{await fetchBook(b,1)}catch(e){}await sleep(250)}save();render()}
 /* Séries : le résumé dans la langue de l'appli vient de TMDB quand il existe (meilleur qu'une traduction) */
 const sumBusy=new Set();
 async function sumFr(sh){if(!FR()||sumBusy.has(sh.id)||(sh.src=='tmdb'&&sh.sum))return;const k='sumT'+LS(),f='sumf'+LS();
@@ -1400,10 +1466,10 @@ async function findTitle(q){if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE(
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,mod:Date.now(),eps:[]};toast('Ajout…');
  try{await syncShow(sh);logEv(sh,'Série ajoutée');view.add=0;view.open=id;view.s=null;view.f='all';toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
-function render(top){applyUI();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp||view.ser);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
+function render(top){applyUI();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp||view.ser||view.imp||view.shr);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
  const hs=['st','tgr','tb','tgb'].map(id=>{const e=$('#'+id);return[id,e,e?e.scrollLeft:0]});
  if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq').value}const kR=view.add&&!view.pp?view.resK:null,kQ=view.aqK||'';
- $('#app').innerHTML=view.shr?shrHtml():view.pp?personHtml(view.pp):view.ser?serHtml()+selBar():view.add?addView():view.open&&IT(view.open)?detail(IT(view.open)):list();
+ $('#app').innerHTML=view.imp?impHtml():view.shr?shrHtml():view.pp?personHtml(view.pp):view.ser?serHtml()+selBar():view.add?addView():view.open&&IT(view.open)?detail(IT(view.open)):list();
  if(kR!=null&&view.add&&!view.pp&&$('#res')){$('#res').innerHTML=kR;$('#aq').value=kQ;const pr=$('#res .pres');if(pr&&view.resP)pr.outerHTML=personRes(view.resP)}
  for(const[id,o,sl]of hs){const n=$('#'+id);if(n){if(o)n.scrollLeft=sl;else{const a=n.querySelector('.on');if(a)n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.offsetWidth/2}}}if(top===2||top===3){const l=(top===3?view.fy:view.ly)||0;scrollTo(0,l);requestAnimationFrame(()=>scrollTo(0,l));setTimeout(()=>scrollTo(0,l),150)}else scrollTo(0,top?0:y);hsync();i18n()}
 
@@ -1502,6 +1568,12 @@ document.addEventListener('click',async ev=>{
  else if(a=='grest')return grestore();
  else if(a=='bkgo'){bkNow();toast('Copie complète enregistrée')}
  else if(a=='bklater')bkSkip=1;
+ else if(a=='impopen'){view.imp={st:'paste',txt:'',f:(S.impF&&S.impF.length?S.impF:['n','i']).slice(),seen:1,rd:''};view.open=null;view.add=0;view.ser=null;view.pp=null;view.shr=null;top=1}
+ else if(a=='impf'){const V=view.imp;if(!V)return;const i=V.f.indexOf(d.v);if(i>=0){if(V.f.length==1)return toast('Garde au moins un format');V.f.splice(i,1)}else V.f.push(d.v)}
+ else if(a=='impst'){if(view.imp)view.imp.seen=d.v=='1'?1:0}
+ else if(a=='impgo'){const V=view.imp;if(!V)return;V.rows=impParse(V.txt);if(!V.rows.length)return toast('Aucun livre trouvé dans le texte');V.st='rev';V.stop=0;return impRun()}
+ else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur) :',r.t+(r.a.length?' '+r.a[0]:''));if(!q||!q.trim())return;r.t=q.trim().slice(0,200);r.a=[];r.isbn='';r.c=null;render();await impFind(r);return render()}
+ else if(a=='impadd')return impAdd();
  else if(a=='bfmt'){if(!sh)return;const f=fmtOf(sh).slice(),i=f.indexOf(d.v);if(i>=0)f.splice(i,1);else f.push(d.v);if(!f.length)return toast('Garde au moins un format');sh.fmt=FMT.map(x=>x[0]).filter(k=>f.includes(k));if(!sh.fmt.includes('a'))delete sh.pm}
  else if(a=='bpm'){if(!sh)return;sh.pm=d.v=='h'?'h':'p'}
  else if(a=='rds'){S.rdS=d.v=='az'?'az':''}
@@ -1623,7 +1695,11 @@ document.addEventListener('pointermove',ev=>{if(!sw)return;const dx=ev.clientX-s
  s.a.style.transition='transform .2s';s.a.style.transform='translateX(0)';s.bg.style.width='0';s.bg.innerHTML='';
  if(go){const it=IT(s.w.dataset.id);if(!it)return;if(s.dx>0)toggleArch(it);else await deleteIt(it,1)}}));
 document.addEventListener('selectstart',ev=>{const n=ev.target.nodeType==3?ev.target.parentNode:ev.target;if(n&&n.closest&&n.closest('#menu,.tc,.card,.sw,.tabs')&&!n.closest('textarea,input'))ev.preventDefault()});
+document.addEventListener('input',ev=>{const t=ev.target;if(t.id!='impT'||!view.imp)return;view.imp.txt=t.value.slice(0,200000);const n=impParse(view.imp.txt).length,b=$('#impN');if(b){b.disabled=!n;b.textContent='🔎 Chercher '+n+' livre'+(n>1?'s':'')}});
 document.addEventListener('change',ev=>{const t=ev.target;
+ if(view.imp&&t.classList.contains('impC')){const r=view.imp.rows[+t.dataset.i];if(r){r.on=t.checked;render()}return}
+ if(view.imp&&t.classList.contains('impS')){const r=view.imp.rows[+t.dataset.i];if(r){r.k=+t.value||0;r.ex=!!impEx(r.c[r.k]);r.on=!r.ex;render()}return}
+ if(view.imp&&t.id=='impD'){view.imp.rd=okD(t.value)?t.value:'';return}
  if(t.id=='rdin'){const b=IT(t.dataset.id);if(!b)return;if(okD(t.value)&&t.value<=dLoc())b.rd=t.value;else delete b.rd;b.mod=Date.now();save();schedSync();render();toast(b.rd?'Date de lecture : '+dd(b.rd):'Date de lecture effacée');return}
  if(view.shr&&['shm','sha','shb'].includes(t.id)){view.shr[t.id.slice(2)]=t.value;view.shr.img=null;render()}});
 let nT;document.addEventListener('input',ev=>{const t=ev.target;if(t.id!='nt')return;const it=IT(t.dataset.id);if(!it)return;it.note=t.value;it.mod=Date.now();clearTimeout(nT);nT=setTimeout(()=>{save();schedSync()},800)});
