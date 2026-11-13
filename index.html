@@ -286,15 +286,15 @@ const dLoc=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2
 const okD=v=>typeof v=='string'&&/^\d{4}-\d\d-\d\d$/.test(v);
 /* Formats d'un livre ou d'une BD (plusieurs possibles) et avancement en pages ou en heures */
 const FMT=[['p','📖','Papier'],['n','📱','Numérique'],['a','🎧','Audio'],['i','🤖','Résumé IA']],FMK='pnai';
-const fmtOf=b=>{const f=Array.isArray(b.fmt)?(b.bd?b.fmt.filter(x=>x!='a'):b.fmt):[];return f.length?f:['p']};
-const FMTof=b=>b.bd?FMT.filter(f=>f[0]!='a'):FMT;
+const fmtOf=b=>{const f=Array.isArray(b.fmt)?(b.bd?b.fmt.filter(x=>x=='p'||x=='n'):b.fmt):[];return f.length?f:['p']};
+const FMTof=b=>b.bd?FMT.filter(f=>f[0]=='p'||f[0]=='n'):FMT;
 const fmtIc=b=>FMT.filter(f=>f[0]!='p'&&fmtOf(b).includes(f[0])).map(f=>f[1]).join('');
 const byH=b=>fmtOf(b).includes('a')&&(b.pm=='h'||(b.pm!='p'&&!fmtOf(b).some(x=>x=='p'||x=='n')));
 const fmtH=m=>Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');
 const bkPc=b=>byH(b)?(b.dur&&b.ph?Math.min(100,Math.round(100*b.ph/b.dur)):0):(b.pages&&b.pg?Math.min(100,Math.round(100*b.pg/b.pages)):0);
 const okFmt=v=>Array.isArray(v)?[...new Set(v.filter(x=>typeof x=='string'&&x.length==1&&FMK.includes(x)))]:null;
 function rdSet(b){if(!b||b.kind!='b')return;if(b.seen)b.rd=dLoc();else delete b.rd}
-const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['ia','Résumés IA 🤖'],['all','Toutes les BDs'],['arch','Archive']];
+const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
 function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','ghsteps','serpick','serlist','unipick','uniadd'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','ghsteps','serpick','serlist','unipick','uniadd'].includes(view.menu)?' w':'');
  m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
