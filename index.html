@@ -1476,7 +1476,7 @@ async function impAdd(){const V=view.imp;if(!V||V.run)return;const RR=V.rows.fil
  let n=0;for(const b of add){if(!BK()[b.id])continue;if(b.ov||(b.src=='gb'&&Date.now()<gbOff)||(b.src=='ol'&&!/^OL\d+W$/.test(b.gid))){bkTags(b);n++;continue}try{await fetchBook(b,1)}catch(e){bkTags(b)}await sleep(250)}save();render()}
 function bkTags(b){const t=new Set(b.tags||[]),s=(b.gn||[]).join(' ').toLowerCase();for(const[re,k]of BGEN)if(re.test(s))t.add('g:'+k);b.tags=[...t]}
 /* Synthèse d'un livre : collée à la main, ou faite par Gemini à partir du PDF / EPUB (clé personnelle, facultative) */
-const okGmKey=k=>/^[A-Za-z0-9._-]{20,200}$/.test(String(k||'')),GM_MODELS=['gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash'];let gmModel=0;
+const okGmKey=k=>/^[A-Za-z0-9._-]{20,200}$/.test(String(k||'')),GM_MODELS=['gemini-flash-latest','gemini-2.5-flash','gemini-flash-lite-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];let gmModel=0;
 function synFmt(t){return esc(String(t||'')).split(/\n/).map(l=>{l=l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#{1,4}\s*(.+)$/,'<b>$1</b>');return /^\s*[-•*]\s+/.test(l)?'<li>'+l.replace(/^\s*[-•*]\s+/,'')+'</li>':l.trim()?'<p>'+l+'</p>':''}).join('').replace(/(<li>.*?<\/li>)+/g,m=>'<ul>'+m+'</ul>')}
 function synTab(b){if(view.synEd==b.id)return`<div class="syn"><textarea id="synT" rows="14" placeholder="Colle ici la synthèse (par exemple celle de NotebookLM)…">${esc(b.syn?b.syn.t:'')}</textarea><div class="act"><button class="pri" data-act="synsave" data-id="${esc(b.id)}">💾 Enregistrer</button><button data-act="syncancel">Annuler</button></div></div>`;
  const ai=okGmKey(S.gmKey),busy=synBusy==b.id;
@@ -1496,11 +1496,11 @@ async function epubText(file){const z=await zipOpen(await file.arrayBuffer()),X=
  let text=P.join('\n');if(text.length>SYN_MAX){const n=20,sz=Math.floor(SYN_MAX/n),out=[];for(let i=0;i<n;i++){const a=Math.floor(i*(text.length-sz)/(n-1));out.push(text.slice(a,a+sz))}text=out.join('\n[…]\n')}return{text}}
 const b64=buf=>{const u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)};
 async function gmCall(parts){const key=S.gmKey;if(!okGmKey(key))throw Error('gm-key');
- for(let m=gmModel;m<GM_MODELS.length;m++){let r;try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GM_MODELS[m]+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.3,maxOutputTokens:16384}})})}catch(e){throw Error('gm-net')}
-  if(r.status==404){continue}let j={};try{j=await r.json()}catch(e){}
+ let busy=0;for(let m=gmModel,tr=0;m<GM_MODELS.length;){let r;try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+GM_MODELS[m]+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.3,maxOutputTokens:16384}})})}catch(e){throw Error('gm-net')}
+  if(r.status==404){m++;tr=0;continue}if(r.status==500||r.status==502||r.status==503||r.status==504){busy=1;if(tr<1){tr++;await sleep(3000);continue}m++;tr=0;continue}let j={};try{j=await r.json()}catch(e){}
   if(!r.ok){const msg=String((j.error||{}).message||'');if(r.status==429)throw Error(/per ?day|PerDay|daily/i.test(msg)?'gm-day':'gm-rate');if(r.status==400&&/api key/i.test(msg)||r.status==401||r.status==403)throw Error('gm-key');{const x=Error('gm-'+r.status+'');x.detail=msg;throw x}}
-  gmModel=m;const cd=(j.candidates||[])[0]||{},t=(cd.content||{}).parts;const out=(t||[]).filter(x=>!x.thought).map(x=>x.text||'').join('').trim();if(!out){const x=Error('gm-empty');x.detail=String(cd.finishReason||(j.promptFeedback||{}).blockReason||'');throw x}return out}
- throw Error('gm-model')}
+  gmModel=Math.min(m,1);const cd=(j.candidates||[])[0]||{},t=(cd.content||{}).parts;const out=(t||[]).filter(x=>!x.thought).map(x=>x.text||'').join('').trim();if(!out){const x=Error('gm-empty');x.detail=String(cd.finishReason||(j.promptFeedback||{}).blockReason||'');throw x}return out}
+ throw Error(busy?'gm-busy':'gm-model')}
 const SYN_PROMPT=(ti,au)=>`Tu es un assistant de lecture. Voici le contenu d'un livre${ti?' intitulé « '+ti+' »':''}${au?' de '+au:''}. Écris en français une synthèse d'environ une page (350 à 500 mots), avec :
 **Idée générale** : 2 ou 3 phrases.
 **Les grandes parties** : une liste à puces (« - ») des idées ou parties principales du livre.
@@ -1513,7 +1513,7 @@ async function synMake(b,file){const ep=/\.epub$/i.test(file.name)||/epub/.test(
  else throw Error('gm-notext');
  let out;try{out=await gmCall(parts)}catch(e){if(/^gm-4\d\d$/.test(e.message)&&/token|too long|too large|exceed|size/i.test(e.detail||'')&&parts[0].text&&T.text.length>50000){parts=[{text:SYN_PROMPT(nm(b),au)+'\n(Extraits du livre.)\n\n--- TEXTE DU LIVRE ---\n'+T.text.slice(0,Math.floor(T.text.length/2))}];out=await gmCall(parts)}else throw e}
  b.syn={t:out.slice(0,20000),s:'ia',d:dLoc()};delete synFail[b.id];b.mod=Date.now();if(S.gh)S.gh.dirty=1;save();schedSync();return b.syn}
-const gmErr=e=>({'gm-key':'Clé Gemini refusée par Google ('+keyDesc(String(S.gmKey||''))+') : vérifie-la dans ⚙ Paramètres → 🤖 Clé Gemini','gm-day':'Limite du jour de Gemini atteinte : réessaie demain','gm-rate':'Gemini demande une pause : réessaie dans une minute','gm-empty':'Gemini n’a rien répondu pour ce livre','gm-notext':'Pas de texte lisible dans ce fichier (scan trop gros ou EPUB vide)','gm-net':'Pas de connexion Internet','gm-model':'Gemini indisponible pour le moment'})[e.message]||'Synthèse impossible ('+e.message+')';
+const gmErr=e=>({'gm-key':'Clé Gemini refusée par Google ('+keyDesc(String(S.gmKey||''))+') : vérifie-la dans ⚙ Paramètres → 🤖 Clé Gemini','gm-day':'Limite du jour de Gemini atteinte : réessaie demain','gm-rate':'Gemini demande une pause : réessaie dans une minute','gm-empty':'Gemini n’a rien répondu pour ce livre','gm-notext':'Pas de texte lisible dans ce fichier (scan trop gros ou EPUB vide)','gm-net':'Pas de connexion Internet','gm-model':'Gemini indisponible pour le moment','gm-busy':'Gemini est surchargé en ce moment (serveurs gratuits de Google très demandés) : réessaie dans quelques minutes'})[e.message]||'Synthèse impossible ('+e.message+')';
 const gmErrD=e=>gmErr(e)+(e.detail?' — '+({SAFETY:'contenu jugé sensible par Gemini',RECITATION:'Gemini refuse de recopier un texte protégé',MAX_TOKENS:'réponse trop longue',PROHIBITED_CONTENT:'contenu refusé par Gemini',OTHER:'raison non précisée'}[e.detail]||String(e.detail).slice(0,140)):'');
 const synFail={};
 let synBusy=null;
@@ -1526,8 +1526,8 @@ async function synRunQ(){if(synRunning)return;synRunning=1;synStop=0;synDone=0;s
  while(synQ.length&&!synStop){const it=synQ[0],b=BK()[it.id];if(!b||(b.syn&&b.syn.s=='me')){synQ.shift();synTot--;continue}
   synBar(`🤖 Synthèses : ${synDone+ko} / ${synTot}${ko?' ('+ko+' échec'+(ko>1?'s':'')+')':''} — garde l’appli ouverte`);
   try{await synMake(b,it.file);synQ.shift();synDone++;fails=0;if(view.open==b.id)render()}
-  catch(e){if(e.message=='gm-rate'&&fails<5){fails++;for(let s=60;s>0&&!synStop;s--){synBar(`⏸ Gemini demande une pause : reprise dans ${s} s (${synDone} / ${synTot})`);await sleep(1000)}continue}
-   if(e.message=='gm-day'||e.message=='gm-key'||e.message=='gm-net'||e.message=='gm-model'||e.message=='gm-rate'){toast(gmErr(e)+' — '+synQ.length+' synthèse(s) non faite(s) : tu pourras les faire depuis la fiche des livres',8000);break}
+  catch(e){if((e.message=='gm-rate'||e.message=='gm-busy')&&fails<5){fails++;for(let s=60;s>0&&!synStop;s--){synBar(`⏸ ${e.message=='gm-busy'?'Gemini est surchargé':'Gemini demande une pause'} : reprise dans ${s} s (${synDone} / ${synTot})`);await sleep(1000)}continue}
+   if(e.message=='gm-day'||e.message=='gm-key'||e.message=='gm-net'||e.message=='gm-model'||e.message=='gm-rate'||e.message=='gm-busy'){toast(gmErr(e)+' — '+synQ.length+' synthèse(s) non faite(s) : tu pourras les faire depuis la fiche des livres',8000);break}
    synQ.shift();ko++;why=synFail[b.id]=gmErrD(e)}
   await sleep(500)}
  const left=synQ.length;synQ.length=0;synRunning=0;synBar('');if(!left&&(synDone||ko))toast((synDone?'📝 '+synDone+' synthèse'+(synDone>1?'s':'')+' faite'+(synDone>1?'s':''):'')+(ko?(synDone?' · ':'')+'⚠️ '+ko+' échec'+(ko>1?'s':'')+' : '+why:''),ko?10000:5000);render()}
