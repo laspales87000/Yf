@@ -220,6 +220,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 #menu a.lnk::after{content:" ↗";opacity:.7}
 #mbg{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:8;background:#0006;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:mbgIn .15s}#mbg[hidden]{display:none}@keyframes mbgIn{from{opacity:0}}
 .irep{margin:8px 8px 10px;padding:10px 12px;border-radius:10px;background:var(--sf);border-left:4px solid var(--ac);box-shadow:0 1px 4px #0003;font-size:14px}.irep p{margin:6px 0}.irh{display:flex;align-items:center;gap:8px}.irh small{flex:1}.irh button{background:none;font-size:18px;padding:2px 8px}.irep details{margin:4px 0}.irep summary{cursor:pointer;color:var(--ac)}.irep ul{margin:4px 0;padding-left:20px;max-height:240px;overflow:auto}
+.cr.crx{cursor:pointer}.cr.crx .t span{opacity:.75}.okm{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--s2);color:var(--ac);font-weight:700}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -858,7 +859,7 @@ let hbusy=0;
 const nonDef=()=>!!(view.f!=defF()||view.tag||view.q),ovl=()=>!!(view.open||view.add||view.sel);
 const clearQ=()=>{view.q='';$('#q').value='';$('#hd').classList.remove('sq')};
 function resetList(){view.f=defF();view.tag='';clearQ()}
-function goBack(){let t=2;if(view.imp){view.imp.stop=1;if(view.imp.st!='paste'){view.imp.st='paste';view.imp.rows=null;render(1);return 1}view.imp=null;render(0);return 1}if(view.shr){if(view.shr.img)URL.revokeObjectURL(view.shr.img);view.shr=null;render(0);return 1}if(view.ssel){view.ssel=null;render(0);return 1}if(view.ser){view.ser=null;t=3}else if(view.pp){view.pp=null;if(view.open)t=3}else if(view.serBack&&view.open&&!view.sel&&!view.add){const b=view.serBack;view.serBack=null;view.ser=b.ser;view.open=b.open;render(0);const y=b.y;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));return 1}else if(view.sel)view.sel=null;else if(view.open||view.add){view.open=null;view.add=0}else if(nonDef()){resetList();render(1);return 1}else return 0;render(t);return 1}
+function goBack(){let t=2;if(view.imp){view.imp.stop=1;if(view.imp.st!='paste'){view.imp.st='paste';view.imp.rows=null;render(1);return 1}view.imp=null;render(0);return 1}if(view.shr){if(view.shr.img)URL.revokeObjectURL(view.shr.img);view.shr=null;render(0);return 1}if(view.ssel){view.ssel=null;render(0);return 1}if(view.ser){view.ser=null;t=3}else if(view.pp){view.pp=null;if(view.open)t=3}else if(view.serBack&&view.open&&!view.sel&&!view.add){const b=view.serBack;view.serBack=null;view.ser=b.ser;view.open=b.open;render(0);const y=b.y;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));return 1}else if(view.sel)view.sel=null;else if(view.open||view.add){view.open=null;view.add=0;if(view.ppBack){const b=view.ppBack;view.ppBack=null;view.pp=b.id;render(0);scrollTo(0,b.y||0);requestAnimationFrame(()=>scrollTo(0,b.y||0));return 1}}else if(nonDef()){resetList();render(1);return 1}else return 0;render(t);return 1}
 function hsync(){if(hbusy)return;try{const want=lvls().length,have=(history.state&&history.state.n)||0;
  if(want>have){for(let i=have+1;i<=want;i++)history.pushState({n:i},'')}
  else if(want<have){hbusy=1;setTimeout(()=>hbusy=0,600);history.go(want-have)}}catch(e){hbusy=0}}
@@ -895,7 +896,7 @@ const IT=id=>S.shows[id]||MV()[id]||BK()[id]||PV[id],BDF={s:'cours',m:'tosee',b:
 const COLL=k=>k=='s'?Object.values(S.shows):k=='m'?Object.values(MV()):Object.values(BK()).filter(b=>k=='c'?b.bd:!b.bd);
 const kindOf=sh=>sh.kind=='b'?(sh.bd?'c':'b'):sh.kind=='m'?'m':'s';
 const hasAny=()=>Object.keys(S.shows).length||Object.keys(MV()).length||Object.keys(BK()).length;
-function setMode(m){view.serBack=null;view.shr=null;view.imp=null;S.mode=m;view.f=defF();view.tag='';view.open=null;view.add=0;view.sel=null;view.pp=null;clearQ()}
+function setMode(m){view.serBack=null;view.ppBack=null;view.shr=null;view.imp=null;S.mode=m;view.f=defF();view.tag='';view.open=null;view.add=0;view.sel=null;view.pp=null;clearQ()}
 const FOOT='<p class="foot">Séries : TVmaze.com · Films : TMDB. Ce produit utilise l’API TMDB mais n’est ni approuvé ni certifié par TMDB.</p>';
 const TG={28:'action',12:'adventure',16:'animation',35:'comedy',80:'crime',99:'documentary',18:'drama',10751:'family',14:'fantasy',36:'history',27:'horror',10402:'music',9648:'mystery',10749:'romance',878:'science-fiction',53:'thriller',10752:'war',37:'western'};
 const CREW={Director:'Réalisation','Original Music Composer':'Musique',Composer:'Musique',Producer:'Production','Executive Producer':'Production exécutive',Screenplay:'Scénario',Writer:'Scénario',Creator:'Création'};
@@ -1168,6 +1169,7 @@ function ppAt(i){const L=view.ppl||[],n=L[i];if(!n)return;view.ppi=i;return n.au
 function ppPre(){const L=view.ppl;if(!L||view.ppi==null)return;for(const d of[1,-1]){const n=L[view.ppi+d];if(!n||n.k&&PP[n.k]||n.ld)continue;n.ld=1;
  (n.au?loadAuthor(n.pn):loadPerson(n.pid,n.pn,n.src,1)).then(id=>{if(id)n.k=id}).catch(()=>{}).finally(()=>{n.ld=0})}}
 const sameT=(o,c)=>[o.name,o.orig,nm(o)].some(n=>n&&norm(n)==norm(c.t)),
+ haveId=c=>{let x;if(c.gid)x=BK()['b'+c.gid]||Object.values(BK()).find(b=>sameT(b,c));else if(c.mt=='movie')x=MV()['m'+c.id]||Object.values(MV()).find(m=>m.tmdb==c.id);else x=Object.values(S.shows).find(s=>s.tmdbtv==c.id||sameT(s,c));return x?x.id:''},
  haveC=c=>c.gid?!!BK()['b'+c.gid]||Object.values(BK()).some(b=>sameT(b,c)):c.mt=='movie'?!!MV()['m'+c.id]||Object.values(MV()).some(m=>m.tmdb==c.id):Object.values(S.shows).some(s=>s.tmdbtv==c.id||sameT(s,c));
 const DEPT={Acting:['Acteur','Actrice'],Directing:'Réalisation',Writing:'Scénario',Production:'Production',Sound:'Musique',Camera:'Photographie',Editing:'Montage',Art:'Décors',Crew:'Équipe technique','Visual Effects':'Effets visuels','Costume & Make-Up':'Costumes et maquillage',Lighting:'Lumière'};
 const dept=p=>{const d=DEPT[p.dept];if(!d||LANG()=='en')return p.dept||'';return Array.isArray(d)?d[p.gd==1?1:0]:d};
@@ -1180,7 +1182,7 @@ ${p.bio?`<p class="sum">${esc((p.bioEn&&(fr(p,'bio','biof'),gl(p,'biof')))||p.bi
 <button class="pls" data-act="pp" data-t="lib"><b>${t.lib?'−':'+'}</b> Dans ma bibliothèque (${lib.length})</button>
 ${t.lib?(lib.length?lib.map(({it,role})=>`<div class="cr" data-act="open" data-id="${esc(it.id)}">${pst(it.po||it.img)}<div class="t"><span>${esc(nm(it))}</span><small>${esc([yr(it.date),role].filter(Boolean).join(' · '))}</small></div></div>`).join(''):'<p class="mu">Aucune information</p>'):''}
 <button class="pls" data-act="pp" data-t="imp"><b>${t.imp?'−':'+'}</b> ${p.au?'Livres à importer':'Filmographie à importer'} (${imp.length})</button>
-${t.imp?imp.map(c=>`<div class="cr">${pst(c.po)}<div class="t"><span>${esc(c.t)}</span><small>${esc([yr(c.d),c.role].filter(Boolean).join(' · '))}</small></div><button class="add" data-act="${c.gid?'addbq':c.mt=='movie'?'addmq':'addtv'}" data-tm="${c.id||''}" data-gid="${esc(c.gid||'')}" data-tn="${esc(c.t)}" ${have(c)?'disabled':''} aria-label="Ajouter">+</button></div>`).join(''):''}</div>`}
+${t.imp?imp.map(c=>{const hid=haveId(c);return`<div class="cr ${hid?'crx':''}" ${hid?`data-act="open" data-id="${esc(hid)}"`:''}>${pst(c.po)}<div class="t"><span>${esc(c.t)}</span><small>${esc([yr(c.d),c.role].filter(Boolean).join(' · '))}</small></div>${hid?'<span class="okm" title="Déjà dans ta bibliothèque : touche pour ouvrir">✓</span>':`<button class="add" data-act="${c.gid?'addbq':c.mt=='movie'?'addmq':'addtv'}" data-tm="${c.id||''}" data-gid="${esc(c.gid||'')}" data-tn="${esc(c.t)}" aria-label="Ajouter">+</button>`}</div>`}).join(''):''}</div>`}
 async function addMq(tm){const id='m'+tm;if(MV()[id])return;const m=MV()[id]={id,kind:'m',tmdb:+tm,name:'',fav:0,mod:Date.now()};toast('Ajout…');
  try{if(!await fetchMovie(m,1))throw 0;logEv(m,'Film ajouté');toast('Film ajouté')}catch(e){delete MV()[id];toast('Connexion impossible')}save();render()}
 const exShow=x=>{const i=String(x.externals&&x.externals.thetvdb||'tm'+x.id);return S.shows[i]?i:((Object.values(S.shows).find(s=>s.tm==x.id)||{}).id||'')};
@@ -1632,7 +1634,7 @@ async function findPerson(q){const bk=MODE()=='b'||MODE()=='c',P={q};let r=null;
  if(!P.id&&!au.length)return null;P.n=name;P.au=au;P.ab=ab;return P}
 function personRes(P){if(!P)return'';const cr=P.id&&PP[P.id]?PP[P.id].cr||[]:[],bd=MODE()=='c'?1:0;
  const pst=u=>`<div class="poster sm">${u?`<img loading="lazy" src="${esc(u)}" alt="">`:''}</div>`;
- const row=(c,img,sub,act)=>`<div class="ep">${pst(img)}<div class="t"><span>${esc(c.t)}</span><small>${esc(sub)}</small></div><button class="pri" ${act} ${haveC(c)?'disabled':''}>Ajouter</button></div>`;
+ const row=(c,img,sub,act)=>{const hid=haveId(c);return`<div class="ep ${hid?'ex':''}" ${hid?`data-act="openex" data-id="${esc(hid)}"`:''}>${pst(img)}<div class="t"><span>${esc(c.t)}</span><small>${esc(sub)}</small></div><button class="pri" ${act} ${hid?'disabled':''}>Ajouter</button></div>`};
  const tm=c=>row(c,c.po?TI(c.po,'w154'):'',[yr(c.d),c.role].filter(Boolean).join(' · '),`data-act="${c.mt=='movie'?'addmq':'addtv'}" data-tm="${c.id}" data-tn="${esc(c.t)}"`);
  const bkr=d=>{const c={gid:d.gid,t:d.t};return row(c,d.po,[(d.au||[]).join(', '),d.y].filter(Boolean).join(' – '),`data-act="addpb" data-gid="${esc(d.gid)}" data-bd="${bd}"`)};
  const G=[['Films',cr.filter(c=>c.mt=='movie').map(tm)],['Séries',cr.filter(c=>c.mt=='tv').map(tm)],['Livres et BDs de '+P.n,P.au.map(bkr)],['Livres et BDs sur '+P.n,P.ab.map(bkr)]].filter(g=>g[1].length);
@@ -1661,7 +1663,7 @@ document.addEventListener('click',async ev=>{
  const ek=()=>sh.eps.find(e=>e.s+'-'+e.n===d.k);
  if(view.ssel&&view.ser&&['sertap','unitap','sagtap','serinfo'].includes(a)){const t0=el.closest('.stile')||el,q=t0.dataset,key=q.id?'i:'+q.id:q.gid?'g:'+q.gid:'t:'+q.tm;view.ssel.has(key)?view.ssel.delete(key):view.ssel.add(key);render();return}
  if(view.sel&&(a=='open'||a=='seen'||a=='fav'||a=='pin')){skipLog=1;view.sel[d.id]?delete view.sel[d.id]:view.sel[d.id]=1;if(!Object.keys(view.sel).length)view.sel=null}
- else if(a=='open'){view.ly=scrollY;view.pp=null;view.open=d.id;view.s=null;view.tab=null;top=1}
+ else if(a=='open'){view.ly=scrollY;if(view.pp)view.ppBack={id:view.pp,y:scrollY};view.pp=null;view.open=d.id;view.s=null;view.tab=null;top=1}
  else if(a=='back'){goBack();return;if(view.pp){view.pp=null;top=view.open?3:2}else{view.open=null;view.add=0;top=2}}
  else if(a=='qx'){clearQ();top=1}
  else if(a=='mode'){const sq=$('#hd').classList.contains('sq'),q=view.q;if(d.v!=MODE())setMode(d.v);if(sq){$('#hd').classList.add('sq');view.q=q;$('#q').value=q}top=1}
