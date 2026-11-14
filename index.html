@@ -218,6 +218,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 #synbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;background:#263238;color:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 2px 10px #0006;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}#synbar button{background:#ffffff22;color:#fff;border-radius:8px;padding:6px 10px}
 .imp .chk{display:flex;gap:8px;align-items:flex-start;text-align:left;background:none;padding:6px 0;font-size:14px}
 #menu a.lnk::after{content:" ↗";opacity:.7}
+#mbg{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:8;background:#0006;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:mbgIn .15s}#mbg[hidden]{display:none}@keyframes mbgIn{from{opacity:0}}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -228,7 +229,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 <button data-act="grid" aria-label="Changer l'affichage"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></button>
 <button data-act="menu" data-m="filt" aria-label="Filtrer" id="flb"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg><small id="fl"></small></button>
 </header>
-<div id="menu" hidden></div>
+<div id="mbg" hidden></div><div id="menu" hidden></div>
 <div id="peek" hidden></div><div id="undo" hidden role="status"><span></span><button data-act="undo">Annuler</button></div><div id="scan" hidden></div><main id="app"></main>
 <button class="fab" data-act="add" aria-label="Ajouter une série">+</button>
 <div id="dlg" hidden></div>
@@ -307,7 +308,7 @@ const okFmt=v=>Array.isArray(v)?[...new Set(v.filter(x=>typeof x=='string'&&x.le
 function rdSet(b){if(!b||b.kind!='b')return;if(b.seen)b.rd=dLoc();else delete b.rd}
 const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['notag','Livres sans tag 🏷'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
-function renderMenu(){const m=$('#menu');m.hidden=!view.menu;m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','ghsteps','gbkey','gbhelp','gmkey','gmhelp','serpick','serlist','unipick','uniadd'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','ghsteps','gbkey','gbhelp','gmkey','gmhelp','serpick','serlist','unipick','uniadd'].includes(view.menu)?' w':'');
+function renderMenu(){const m=$('#menu');m.hidden=!view.menu;{const g=$('#mbg');if(g){g.hidden=!view.menu;if(view.menu){const h=$('header');g.style.top=Math.max(0,h?h.getBoundingClientRect().bottom:0)+'px'}}}m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','ghsteps','gbkey','gbhelp','gmkey','gmhelp','serpick','serlist','unipick','uniadd'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','ghsteps','gbkey','gbhelp','gmkey','gmhelp','serpick','serlist','unipick','uniadd'].includes(view.menu)?' w':'');
  m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='gbkey'?gbKeyHtml():view.menu=='gmkey'?gmKeyHtml():view.menu=='gmhelp'?gmHelpHtml():view.menu=='gbhelp'?gbHelpHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button><button data-act="impopen">📋 Importer des livres (liste, PDF, EPUB)</button><button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
