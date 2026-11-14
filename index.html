@@ -219,6 +219,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 .imp .chk{display:flex;gap:8px;align-items:flex-start;text-align:left;background:none;padding:6px 0;font-size:14px}
 #menu a.lnk::after{content:" ↗";opacity:.7}
 #mbg{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:8;background:#0006;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:mbgIn .15s}#mbg[hidden]{display:none}@keyframes mbgIn{from{opacity:0}}
+.irep{margin:8px 8px 10px;padding:10px 12px;border-radius:10px;background:var(--sf);border-left:4px solid var(--ac);box-shadow:0 1px 4px #0003;font-size:14px}.irep p{margin:6px 0}.irh{display:flex;align-items:center;gap:8px}.irh small{flex:1}.irh button{background:none;font-size:18px;padding:2px 8px}.irep details{margin:4px 0}.irep summary{cursor:pointer;color:var(--ac)}.irep ul{margin:4px 0;padding-left:20px;max-height:240px;overflow:auto}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -1287,9 +1288,9 @@ function list(){
  const rdM=(md=='b'||md=='c')&&f=='arch'&&!view.tag,byD=rdM&&S.rdS!='az';
  if(byD){L.sort((a,b)=>(b.rd||'').localeCompare(a.rd||'')||sk(a).localeCompare(sk(b),'fr'));const G=[];for(const it of L){const k=it.rd?it.rd.slice(0,4):'?';if(!G.length||G[G.length-1].k!=k)G.push({k,L:[]});G[G.length-1].L.push(it)}
   view.ids=L.map(x=>x.id);const W=md=='c'?['BD','BDs']:['livre','livres'];
-  return tb+rdBar()+G.map(g=>`<h4 class="shd">${g.k=='?'?'Date de lecture inconnue':'Lus en '+g.k} · ${g.L.length} ${g.L.length>1?W[1]:W[0]}</h4>`+(view.grid?`<div class="grid">${g.L.map(mposter).join('')}</div>`:`<div class="list">${g.L.map(cardOf).join('')}</div>`)).join('')+(L.length?'':'<p class="mu pad">Rien ici.</p>')+FOOT}
+  return repHtml()+tb+rdBar()+G.map(g=>`<h4 class="shd">${g.k=='?'?'Date de lecture inconnue':'Lus en '+g.k} · ${g.L.length} ${g.L.length>1?W[1]:W[0]}</h4>`+(view.grid?`<div class="grid">${g.L.map(mposter).join('')}</div>`:`<div class="list">${g.L.map(cardOf).join('')}</div>`)).join('')+(L.length?'':'<p class="mu pad">Rien ici.</p>')+FOOT}
  view.ids=L.map(x=>x.id);
- return tb+(rdM?rdBar():'')+(view.grid?`<div class="grid">${L.map(it=>it.kind=='s'||!it.kind?card(it,st(it)):mposter(it)).join('')}</div>`:`<div class="list">${L.map(cardOf).join('')}</div>`)+(L.length?'':`<p class="mu pad">${md!='s'&&!all.length?({m:"Aucun film pour l'instant.",b:"Aucun livre pour l'instant.",c:"Aucune BD pour l'instant."})[md]:'Rien ici.'}</p>`)+FOOT}
+ return repHtml()+tb+(rdM?rdBar():'')+(view.grid?`<div class="grid">${L.map(it=>it.kind=='s'||!it.kind?card(it,st(it)):mposter(it)).join('')}</div>`:`<div class="list">${L.map(cardOf).join('')}</div>`)+(L.length?'':`<p class="mu pad">${md!='s'&&!all.length?({m:"Aucun film pour l'instant.",b:"Aucun livre pour l'instant.",c:"Aucune BD pour l'instant."})[md]:'Rien ici.'}</p>`)+FOOT}
 const rdBar=()=>`<div class="srt rdb"><button class="${S.rdS!='az'?'on':''}" data-act="rds" data-v="d">📅 Ordre de lecture</button><button class="${S.rdS=='az'?'on':''}" data-act="rds" data-v="az">🔤 A → Z</button><button data-act="shr">📤 Partager</button></div>`;
 /* Partager la liste des livres (ou BDs) lus sur une période, en texte ou en image */
 const MOIS=m=>new Date(m+'-15T12:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
@@ -1448,7 +1449,7 @@ async function impRun(){const V=view.imp,R=V.rows;V.run=1;V.restored=0;V.pz=0;R.
 let impPT=0;function impPaint(){if(impPT)return;const n=view.imp&&view.imp.rows?view.imp.rows.length:0;impPT=setTimeout(()=>{impPT=0;if(view.imp)render()},n>300?1500:n>80?700:250)}
 function impHtml(){const V=view.imp,FB=FMT.map(([k,i,l])=>`<button class="chip ${V.f.includes(k)?'on':''}" data-act="impf" data-v="${k}">${i} ${l}</button>`).join('');
  if(V.st=='paste'){const n=impParse(V.txt).length;return`<div class="det imp"><button data-act="back">← Retour</button><h2>📋 Importer des livres</h2>
-<p><b>1. Format de ces livres</b></p><div class="fmts">${FB}</div>
+${S.impRep?'<button class="lnk2" data-act="repopen">📋 Voir le rapport du dernier import</button>':''}<p><b>1. Format de ces livres</b></p><div class="fmts">${FB}</div>
 <p><b>2. État</b></p><div class="srt"><button class="${V.seen?'on':''}" data-act="impst" data-v="1">✓ Déjà lus / écoutés</button><button class="${V.seen?'':'on'}" data-act="impst" data-v="0">À lire</button></div>
 ${V.seen?`<p class="shin">Date de lecture (facultatif) : <input type="date" id="impD" value="${esc(V.rd||'')}" max="${dLoc()}"></p>`:''}
 <p><b>3. Choisis tes fichiers…</b></p><div class="act"><button class="pri" data-act="impfile">📄 Choisir des PDF ou EPUB</button><input type="file" id="impFile" accept=".pdf,.epub,application/pdf,application/epub+zip" multiple hidden>${dirOK()?`<button data-act="impdir">📁 Choisir un dossier</button><input type="file" id="impDir" webkitdirectory multiple hidden>`:''}</div><p class="mu" style="font-size:13px">L’appli lit seulement les 5 premières et les 5 dernières pages pour y trouver l’ISBN. Les fichiers restent sur ton téléphone et ne sont pas gardés.</p>${okGmKey(S.gmKey)?`<button class="chk" data-act="impsyn"><span class="cb">${V.syn?'☑':'☐'}</span>🤖 Faire aussi la synthèse avec Gemini (lit tout le livre, envoyé à Google ; plus long)</button>`:'<p class="mu" style="font-size:12px">🤖 Synthèse automatique possible avec une clé Gemini (⚙ Paramètres).</p>'}
@@ -1471,6 +1472,7 @@ async function impAdd(){const V=view.imp;if(!V||V.run)return;const RR=V.rows.fil
  if(!L.length&&!SY.length)return;
  if(!confirm((L.length?'Ajouter '+L.length+' livre'+(L.length>1?'s':'')+' à ta bibliothèque ?':'')+(SY.length?(L.length?'\n':'')+'Faire '+SY.length+' synthèse'+(SY.length>1?'s':'')+' avec Gemini (en arrière-plan, garde l’appli ouverte) ?':'')))return;const add=[];
  for(const[j,d]of L.entries()){const id='b'+d.gid;if(BK()[id])continue;const b=bookFromDoc(d,0);b.ik=impKeys(RR[j]).slice(0,3);b.fmt=FMT.map(f=>f[0]).filter(k=>V.f.includes(k));if(V.seen){b.seen=1;b.arch=1;if(okD(V.rd))b.rd=V.rd}b.mod=Date.now();BK()[id]=b;add.push(b)}
+ {const tl=r=>{const d=r.c&&r.c[r.k];return d?d.t:(r.t||r.raw||'')};S.impRep={t:Date.now(),add:add.map(b=>nm(b)).slice(0,2000),ex:V.rows.filter(r=>r.ex).length,no:V.rows.filter(r=>!r.ex&&!r.on).map(r=>({t:tl(r),w:!r.c?'pas encore cherché':!r.c.length?'pas trouvé':r.dup?'en double':'décoché'})).slice(0,2000),syn:SY.length?{n:SY.length,ok:[],ko:[],left:0,run:1}:null}}
  for(const x of SY)if(!synQ.some(q=>q.id==x.id))synQ.push({id:x.id,file:x.r.file});if(synQ.length)setTimeout(synRunQ,1500);
  logEv(null,'Import d’une liste : '+add.length+' livres');S.impF=V.f;view.imp=null;if(S.gh)S.gh.dirty=1;await saveNow();schedSync();S.mode='b';view.f=V.seen?'arch':defF();view.open=null;render(1);toast(add.length+' livre'+(add.length>1?'s':'')+' ajouté'+(add.length>1?'s':''),4000);
  let n=0;for(const b of add){if(!BK()[b.id])continue;if(b.ov||(b.src=='gb'&&Date.now()<gbOff)||(b.src=='ol'&&!/^OL\d+W$/.test(b.gid))){bkTags(b);n++;continue}try{await fetchBook(b,1)}catch(e){bkTags(b)}await sleep(250)}save();render()}
@@ -1522,15 +1524,21 @@ async function synOne(b,file){if(synBusy)return toast('Une synthèse est déjà 
 /* File d'attente des synthèses après un import (une à la fois, pause si Gemini le demande) */
 const synQ=[];let synRunning=0,synStop=0,synDone=0,synTot=0;
 function synBar(txt){let e=$('#synbar');if(!txt){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='synbar';document.body.appendChild(e)}e.innerHTML=txt+' <button data-act="synstop">Arrêter</button>'}
+function repSyn(ok,b,why){const y=S.impRep&&S.impRep.syn;if(!y||!y.run)return;if(ok)y.ok.push(nm(b));else y.ko.push({t:nm(b),w:String(why||'').slice(0,200)});save();if(!view.open&&!view.imp&&!view.menu)render()}
+function repHtml(){const R=S.impRep;if(!R||R.closed||MODE()!='b')return'';const y=R.syn,li=a=>a.map(x=>`<li>${esc(typeof x=='string'?x:x.t+' — '+x.w)}</li>`).join('');
+ return`<div class="irep"><div class="irh"><b>📋 Rapport du dernier import</b><small class="mu">${new Date(R.t).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</small><button data-act="repx" aria-label="Fermer le rapport">✕</button></div>
+<p>✅ <b>${R.add.length}</b> livre${R.add.length>1?'s':''} ajouté${R.add.length>1?'s':''}${R.ex?` · ✔️ ${R.ex} déjà dans ta bibliothèque`:''}${R.no.length?` · ⏭ ${R.no.length} non ajouté${R.no.length>1?'s':''}`:''}</p>
+${R.add.length?`<details><summary>Livres ajoutés</summary><ul>${li(R.add)}</ul></details>`:''}${R.no.length?`<details><summary>Non ajoutés</summary><ul>${li(R.no.map(x=>({t:x.t,w:x.w})))}</ul></details>`:''}
+${y?`<p>🤖 Synthèses : <b>${y.ok.length}</b> faite${y.ok.length>1?'s':''}${y.ko.length?` · ⚠️ <b>${y.ko.length}</b> échec${y.ko.length>1?'s':''}`:''}${y.run?` · en cours (${y.ok.length+y.ko.length} / ${y.n})…`:y.left?` · ⏸ ${y.left} non faite${y.left>1?'s':''} (${esc(y.stop||'')})`:''}</p>${y.ko.length?`<details open><summary>Synthèses en échec</summary><ul>${li(y.ko)}</ul></details>`:''}${!y.run&&y.left?'<p class="mu" style="font-size:12px">Pour les faire : refais l’import des fichiers avec la synthèse cochée (les livres déjà faits sont sautés), ou depuis la fiche du livre.</p>':''}`:''}</div>`}
 async function synRunQ(){if(synRunning)return;synRunning=1;synStop=0;synDone=0;synTot=synQ.length;let fails=0,ko=0,why='';
  while(synQ.length&&!synStop){const it=synQ[0],b=BK()[it.id];if(!b||(b.syn&&b.syn.s=='me')){synQ.shift();synTot--;continue}
   synBar(`🤖 Synthèses : ${synDone+ko} / ${synTot}${ko?' ('+ko+' échec'+(ko>1?'s':'')+')':''} — garde l’appli ouverte`);
-  try{await synMake(b,it.file);synQ.shift();synDone++;fails=0;if(view.open==b.id)render()}
+  try{await synMake(b,it.file);synQ.shift();synDone++;fails=0;repSyn(1,b);if(view.open==b.id)render()}
   catch(e){if((e.message=='gm-rate'||e.message=='gm-busy')&&fails<5){fails++;for(let s=60;s>0&&!synStop;s--){synBar(`⏸ ${e.message=='gm-busy'?'Gemini est surchargé':'Gemini demande une pause'} : reprise dans ${s} s (${synDone} / ${synTot})`);await sleep(1000)}continue}
    if(e.message=='gm-day'||e.message=='gm-key'||e.message=='gm-net'||e.message=='gm-model'||e.message=='gm-rate'||e.message=='gm-busy'){toast(gmErr(e)+' — '+synQ.length+' synthèse(s) non faite(s) : tu pourras les faire depuis la fiche des livres',8000);break}
-   synQ.shift();ko++;why=synFail[b.id]=gmErrD(e)}
+   synQ.shift();ko++;why=synFail[b.id]=gmErrD(e);repSyn(0,b,why)}
   await sleep(500)}
- const left=synQ.length;synQ.length=0;synRunning=0;synBar('');if(!left&&(synDone||ko))toast((synDone?'📝 '+synDone+' synthèse'+(synDone>1?'s':'')+' faite'+(synDone>1?'s':''):'')+(ko?(synDone?' · ':'')+'⚠️ '+ko+' échec'+(ko>1?'s':'')+' : '+why:''),ko?10000:5000);render()}
+ const left=synQ.length;synQ.length=0;synRunning=0;synBar('');{const y=S.impRep&&S.impRep.syn;if(y&&y.run){y.run=0;y.left=left;y.stop=left?(synStop?'arrêtées par toi':why||'interrompues'):'';S.impRep.closed=0;save()}}if(!left&&(synDone||ko))toast((synDone?'📝 '+synDone+' synthèse'+(synDone>1?'s':'')+' faite'+(synDone>1?'s':''):'')+(ko?(synDone?' · ':'')+'⚠️ '+ko+' échec'+(ko>1?'s':'')+' : '+why:''),ko?10000:5000);render()}
 /* Séries : le résumé dans la langue de l'appli vient de TMDB quand il existe (meilleur qu'une traduction) */
 const sumBusy=new Set();
 async function sumFr(sh){if(!FR()||sumBusy.has(sh.id)||(sh.src=='tmdb'&&sh.sum))return;const k='sumT'+LS(),f='sumf'+LS();
@@ -1759,6 +1767,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='impgo'){const V=view.imp;if(!V)return;V.rows=impParse(V.txt);V.skip=0;if(!V.rows.length)return toast('Aucun livre trouvé dans le texte');V.st='rev';V.stop=0;return impRun()}
  else if(a=='impfix'){const V=view.imp,r=V&&V.rows[+d.i];if(!r)return;const q=prompt('Titre à chercher (tu peux ajouter l’auteur, ou taper un ISBN) :',r.t?r.t+(r.a.length?' '+r.a[0]:''):r.raw);if(!q||!q.trim())return;{const o=impLine(q.trim().slice(0,300))||{t:q.trim().slice(0,200),a:[],isbn:''};r.t=o.t;r.a=o.a;r.isbn=o.isbn}r.c=null;r.later=0;render();try{await impFind(r)}catch(e){r.later=1;toast(e.message=='rate'?'Google Livres refuse pour le moment : réessaie plus tard':'Recherche impossible')}return render()}
  else if(a=='impadd')return impAdd();
+ else if(a=='repx'){if(S.impRep)S.impRep.closed=1}
+ else if(a=='repopen'){if(S.impRep){S.impRep.closed=0;view.imp=null;S.mode='b';view.open=null;top=1}}
  else if(a=='impsyn'){if(view.imp){view.imp.syn=view.imp.syn?0:1;if(view.imp.syn&&view.imp.rows)view.imp.rows.forEach(r=>{if(r.ex)delete r.sy})}}
  else if(a=='impall'){const V=view.imp;if(!V||!V.rows)return;const on=d.v=='1',so=!!(V.syn&&okGmKey(S.gmKey));for(const r of V.rows){const dd=r.c&&r.c[r.k];if(!dd)continue;if(r.ex){if(so&&impSyOk(r))r.sy=on}else r.on=on}}
  else if(a=='impresume'){const V=view.imp;if(!V||V.run)return;gbOff=0;return impRun()}
