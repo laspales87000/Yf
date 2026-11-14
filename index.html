@@ -217,6 +217,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 #synT{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx)}
 #synbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;background:#263238;color:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 2px 10px #0006;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}#synbar button{background:#ffffff22;color:#fff;border-radius:8px;padding:6px 10px}
 .imp .chk{display:flex;gap:8px;align-items:flex-start;text-align:left;background:none;padding:6px 0;font-size:14px}
+#menu a.lnk::after{content:" ↗";opacity:.7}
 </style></head><body>
 <header id="hd">
 <button data-act="menu" data-m="nav" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
@@ -1640,6 +1641,7 @@ function render(top){applyUI();const y=scrollY;$('.fab').hidden=!!(view.open||vi
 /* Actions */
 document.addEventListener('click',async ev=>{
  if(lp){lp=0;ev.preventDefault();return}
+ if(ev.target.closest('#menu a[href]'))return;
  const el=ev.target.closest('[data-act]');if(view.menu){const keep=el&&['menu','th','ac','lang','tg','df','lg','undo','gbkset','gbkdel','gbktest','gmset','gmdel','gmtest'].includes(el.dataset.act);if(!keep){const inM=ev.target.closest('#menu');view.menu=0;renderMenu();if(!inM)return}}if(!el)return;const d=el.dataset,a=d.act,sh=IT(d.id);let top=0;
  const ek=()=>sh.eps.find(e=>e.s+'-'+e.n===d.k);
  if(view.ssel&&view.ser&&['sertap','unitap','sagtap','serinfo'].includes(a)){const t0=el.closest('.stile')||el,q=t0.dataset,key=q.id?'i:'+q.id:q.gid?'g:'+q.gid:'t:'+q.tm;view.ssel.has(key)?view.ssel.delete(key):view.ssel.add(key);render();return}
