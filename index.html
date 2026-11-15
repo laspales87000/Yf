@@ -1408,10 +1408,13 @@ let PDFJS=null,PDFW=null,pdfOld=0;
 /* Un nouveau champ de fichier à chaque fois, posé hors de la page : il ne peut pas rester bloqué, ni disparaître pendant le choix */
 /* Fichiers venant de Google Drive : Android les télécharge d'abord, et l'avis « change » arrive parfois mal : on regarde aussi nous-mêmes */
 function pickFiles(o,cb){const old=document.getElementById('pickIn');if(old)old.remove();const n=document.createElement('input');n.type='file';n.id='pickIn';n.style.cssText='position:fixed;left:-99px;top:0;width:1px;height:1px;opacity:0';if(o.acc)n.accept=o.acc;if(o.multi)n.multiple=true;if(o.dir)n.webkitdirectory=true;
- let done=0,iv=0,vis=0;const unflag=()=>{try{sessionStorage.removeItem('picking')}catch(e){}};const t0=Date.now(),fin=()=>{if(done)return;const F=n.files?[...n.files]:[];if(!F.length)return;done=1;clearInterval(iv);unflag();n.remove();cb(F)};
+ let done=0,iv=0,vis=0;const unflag=()=>{try{sessionStorage.removeItem('picking')}catch(e){}};const t0=Date.now(),fin=()=>{if(done)return;const F=n.files?[...n.files]:[];if(!F.length)return;done=1;clearInterval(iv);unflag();n.remove();if(S.note&&S.note.pk){delete S.note;save();renderNote()}cb(F)};
  n.addEventListener('change',fin);n.addEventListener('input',fin);n.addEventListener('cancel',unflag);
  iv=setInterval(()=>{if(done||!document.body.contains(n)||Date.now()-t0>15*60e3){clearInterval(iv);return}fin();if(document.hidden)vis=0;else if(!vis)vis=Date.now();else if(Date.now()-vis>60e3)unflag()},700);
- try{sessionStorage.setItem('picking',String(Date.now()))}catch(e){}document.body.appendChild(n);n.click()}
+ try{sessionStorage.setItem('picking',String(Date.now()))}catch(e){}document.body.appendChild(n);
+ /* Chrome n'ouvre pas un nouveau choix tant que le précédent n'est pas fini (fichiers Drive encore en téléchargement) : on le dit */
+ let left=0;const gone=()=>{left=1;if(S.note&&S.note.pk){delete S.note;save();renderNote()}document.removeEventListener('visibilitychange',gone);removeEventListener('blur',gone)};document.addEventListener('visibilitychange',gone);addEventListener('blur',gone);
+ n.click();setTimeout(()=>{if(left||done||!document.body.contains(n)||!matchMedia('(pointer:coarse)').matches)return;unflag();noteShow('<b>📄 Le choix des fichiers ne s’ouvre pas</b><p>Chrome attend sans doute encore les fichiers du choix précédent (par exemple des fichiers de Google Drive en cours de téléchargement). Tant que ce choix n’est pas fini, il n’en ouvre pas d’autre.</p><p>Touche <b>🔄 Recharger l’appli</b> ci-dessous, puis réessaie. Si ça ne suffit pas, ferme cet onglet de Chrome et rouvre l’appli.</p><div class="act"><button data-act="reload">🔄 Recharger l’appli</button></div>');if(S.note)S.note.pk=1},4000)}
 function pdfFree(){try{if(PDFW&&!PDFW.destroyed)PDFW.destroy()}catch(e){}PDFW=null}
 async function pdfLib(){if(!PDFJS){let L;try{L=await import('./vendor/pdfjs/pdf.min.mjs')}catch(e){if(!pdfOld){pdfOld=1;noteShow('<b>📄 Lecture des PDF impossible sur cet appareil</b><p>Le navigateur de cet appareil est trop ancien pour lire l’intérieur des PDF. Les livres seront cherchés avec le nom de leur fichier, et les synthèses ne peuvent pas être faites ici. Essaie avec un navigateur à jour (Chrome récent), ou depuis ton téléphone.</p>')}throw e}L.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.min.mjs',location.href).href;PDFJS=L}if(!PDFW||PDFW.destroyed)PDFW=new PDFJS.PDFWorker();return PDFJS}
 function isbnTxt(t){t=String(t||'');const lab=/isbn(?:[\s-]*1[03])?[^0-9]{0,15}((?:97[89][\s-]{0,2})?(?:\d[\s-]{0,2}){8}\d[\s-]{0,2}[\dXx])/gi;let m;
@@ -1813,6 +1816,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='syndel'){const b=IT(d.id);if(!b||!confirm('Supprimer la synthèse de ce livre ?'))return;delete b.syn;b.mod=Date.now();if(S.gh)S.gh.dirty=1}
  else if(a=='synai'){if(!synRunning)pdfFree();const id=d.id;pickFiles({acc:'.pdf,.epub,application/pdf,application/epub+zip'},F=>{const b=IT(id);if(b)synOne(b,F[0])});return}
  else if(a=='noteok'){delete S.note;save();renderNote();return}
+ else if(a=='reload'){delete S.note;try{sessionStorage.removeItem('picking')}catch(e){}try{vSnap()}catch(e){}await saveNow();location.reload();return}
  else if(a=='synresume'){if(synRunning||!synLeft.length)return;synQ.push(...synLeft);synLeft=[];synRunQ();return}
  else if(a=='synstop'){synStop=1;synBar('⏹ Arrêt après la synthèse en cours…');return}
  else if(a=='gmset'){const k=keyClean(prompt('Colle ta clé Gemini :'));if(!k)return;if(!okGmKey(k))return toast('Ce texte ne ressemble pas à une clé ('+keyDesc(k)+') : recopie-la avec le bouton « Copier » de Google',7000);S.gmKey=k;gmModel=0;await saveNow();view.menu='gmkey';renderMenu();return gmTest()}
