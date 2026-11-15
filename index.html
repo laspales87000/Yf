@@ -1404,6 +1404,8 @@ async function impFind(row){let L=[],rate=0;const sur=row.a.length?row.a[0].spli
 /* Import de fichiers PDF / EPUB : on lit seulement les 5 premières puis les 5 dernières pages pour trouver l'ISBN.
    Le fichier reste sur le téléphone et n'est pas gardé. PDF.js est rangé dans vendor/pdfjs (ouvert sans « eval »). */
 let PDFJS=null,PDFW=null,pdfOld=0;
+/* Le lecteur de PDF prend beaucoup de mémoire : on le libère dès qu'il ne sert plus (sinon Android vide l'onglet pendant le choix des fichiers) */
+function pdfFree(){try{if(PDFW&&!PDFW.destroyed)PDFW.destroy()}catch(e){}PDFW=null}
 async function pdfLib(){if(!PDFJS){let L;try{L=await import('./vendor/pdfjs/pdf.min.mjs')}catch(e){if(!pdfOld){pdfOld=1;noteShow('<b>📄 Lecture des PDF impossible sur cet appareil</b><p>Le navigateur de cet appareil est trop ancien pour lire l’intérieur des PDF. Les livres seront cherchés avec le nom de leur fichier, et les synthèses ne peuvent pas être faites ici. Essaie avec un navigateur à jour (Chrome récent), ou depuis ton téléphone.</p>')}throw e}L.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.min.mjs',location.href).href;PDFJS=L}if(!PDFW||PDFW.destroyed)PDFW=new PDFJS.PDFWorker();return PDFJS}
 function isbnTxt(t){t=String(t||'');const lab=/isbn(?:[\s-]*1[03])?[^0-9]{0,15}((?:97[89][\s-]{0,2})?(?:\d[\s-]{0,2}){8}\d[\s-]{0,2}[\dXx])/gi;let m;
  while((m=lab.exec(t))){const d=m[1].replace(/[\s-]/g,'').toUpperCase();if(isbnChk(d))return isbnTo13(d)}
@@ -1437,7 +1439,7 @@ async function impFiles(files){const V=view.imp;if(!V)return;const F=[...files].
   r.isbn=o.isbn||fl.isbn||'';r.t=o.t||fl.t;r.a=o.a&&o.a.length?o.a:fl.a;
   r.how=o.isbn?'ISBN trouvé ('+o.how+')':fl.isbn?'ISBN trouvé (nom du fichier)':o.how=='scan'?'PDF scanné : recherche avec le nom du fichier':o.how=='err'?'Fichier illisible : recherche avec le nom du fichier':o.t?'Pas d’ISBN : recherche avec le titre du fichier':'Pas d’ISBN : recherche avec le nom du fichier';
   r.rd=0;V.read++;impPaint();await sleep(0)}
- V.reading=0;if(view.imp===V&&!V.stop)return impRun()}
+ V.reading=0;if(!synRunning&&!synBusy)pdfFree();if(view.imp===V&&!V.stop)return impRun()}
 const dirOK=()=>'webkitdirectory' in document.createElement('input')&&!/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 /* Avant de chercher sur Internet, on regarde si le livre est déjà dans la bibliothèque (rien n'est décompté chez Google) */
 const surOf=a=>norm(String(a||'').split(' ').pop()),impKeys=r=>[r.isbn?'i:'+r.isbn:'',r.t?'t:'+norm(r.t)+'|'+surOf(r.a[0]):''].filter(Boolean);
@@ -1541,7 +1543,7 @@ const synFail={};
 function synErrSet(b,w){b.synErr={w:String(w||'').slice(0,300),d:dLoc()};b.mod=Date.now();if(S.gh)S.gh.dirty=1;save();schedSync();return b.synErr.w}
 let synBusy=null,synCur=null;
 async function synOne(b,file){if(synBusy)return toast('Une synthèse est déjà en cours');synBusy=b.id;synT0=Date.now();synPh='📄 Ouverture du fichier…';const tk=setInterval(synTick,1000);render();toast('🤖 Lecture du livre et synthèse…',6000);
- try{await synMake(b,file)}catch(e){toast(synErrSet(b,gmErrD(e)),8000)}finally{clearInterval(tk);const d=Math.round((Date.now()-synT0)/1000);synT0=0;synPh='';synBusy=null;render();if(b.syn&&b.syn.d==dLoc())toast('📝 Synthèse ajoutée en '+(d>=60?Math.floor(d/60)+' min '+d%60+' s':d+' s'),4000)}}
+ try{await synMake(b,file)}catch(e){toast(synErrSet(b,gmErrD(e)),8000)}finally{clearInterval(tk);if(!synRunning)pdfFree();const d=Math.round((Date.now()-synT0)/1000);synT0=0;synPh='';synBusy=null;render();if(b.syn&&b.syn.d==dLoc())toast('📝 Synthèse ajoutée en '+(d>=60?Math.floor(d/60)+' min '+d%60+' s':d+' s'),4000)}}
 /* File d'attente des synthèses après un import (une à la fois, pause si Gemini le demande) */
 const synQ=[];let synRunning=0,synStop=0,synDone=0,synTot=0;
 function synBar(txt){let e=$('#synbar');if(!txt){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='synbar';document.body.appendChild(e)}e.innerHTML=txt+' <button data-act="synstop">Arrêter</button>'}
@@ -1571,7 +1573,7 @@ async function synRunQ(){if(synRunning)return;synRunning=1;const qtk=setInterval
    if(e.message=='gm-key'||e.message=='gm-model'){await pause(900,e.message=='gm-key'?'Clé Gemini refusée : corrige-la dans ⚙ Paramètres':'Gemini indisponible');continue}
    synQ.shift();ko++;why=synErrSet(b,gmErrD(e));koL.push({t:nm(b),f:(it.file&&it.file.name)||'',w:why});repSyn(0,b,why);if(view.open==b.id)render()}
   await sleep(synQ.length?4000:0)}
- clearInterval(qtk);synT0=0;synPh='';const left=synQ.length;synLeft=synQ.splice(0);synRunning=0;synCur=null;synBar('');wakeOn(0);
+ clearInterval(qtk);pdfFree();synT0=0;synPh='';const left=synQ.length;synLeft=synQ.splice(0);synRunning=0;synCur=null;synBar('');wakeOn(0);
  {const y=S.impRep&&S.impRep.syn;if(y&&y.run){y.run=0;y.left=left;y.stop=left?(synStop?'arrêtées par toi':stopWhy||'interrompues'):'';S.impRep.closed=0;save()}}
  if(synDone||ko||left){if(ko||left)noteShow(`<b>🤖 Synthèses terminées</b><p>📝 ${synDone} faite${synDone>1?'s':''}${ko?` · ⚠️ ${ko} échec${ko>1?'s':''}`:''}${left?` · ⏸ ${left} non faite${left>1?'s':''}`:''}</p>${ko?`<ul>${koL.map(x=>`<li><b>${esc(x.t)}</b>${x.f?`<br><small>📄 ${esc(x.f)}</small>`:''}<br><small>${esc(x.w)}</small></li>`).join('')}</ul>`:''}${left?`<p>⏸ Arrêt : ${esc(synStop?'arrêtées par toi':stopWhy||'interrompues')}.${synLeft.length?' Le rapport en haut de ta liste de livres propose « Reprendre ».':''}</p>`:''}`);else toast('📝 '+synDone+' synthèse'+(synDone>1?'s':'')+' faite'+(synDone>1?'s':''),5000)}render()}
 /* Message important qui reste affiché jusqu'à « OK, j'ai lu » (gardé même si l'appli est rechargée) */
@@ -1797,7 +1799,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='syncancel'){view.synEd=null}
  else if(a=='synsave'){const b=IT(d.id),t=($('#synT')||{}).value||'';if(!b)return;if(t.trim()){b.syn={t:t.slice(0,20000),s:'me',d:dLoc()};delete b.synErr}else delete b.syn;b.mod=Date.now();view.synEd=null;if(S.gh)S.gh.dirty=1;toast(t.trim()?'Synthèse enregistrée':'Synthèse retirée')}
  else if(a=='syndel'){const b=IT(d.id);if(!b||!confirm('Supprimer la synthèse de ce livre ?'))return;delete b.syn;b.mod=Date.now();if(S.gh)S.gh.dirty=1}
- else if(a=='synai'){const f=$('#synFile');if(f){f.dataset.id=d.id;f.value='';f.click()}return}
+ else if(a=='synai'){if(!synRunning)pdfFree();const f=$('#synFile');if(f){f.dataset.id=d.id;f.value='';f.click()}return}
  else if(a=='noteok'){delete S.note;save();renderNote();return}
  else if(a=='synresume'){if(synRunning||!synLeft.length)return;synQ.push(...synLeft);synLeft=[];synRunQ();return}
  else if(a=='synstop'){synStop=1;synBar('⏹ Arrêt après la synthèse en cours…');return}
@@ -1814,8 +1816,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='impsyn'){if(view.imp){view.imp.syn=view.imp.syn?0:1;if(view.imp.syn&&view.imp.rows)view.imp.rows.forEach(r=>{if(r.ex)delete r.sy})}}
  else if(a=='impall'){const V=view.imp;if(!V||!V.rows)return;const on=d.v=='1',so=!!(V.syn&&aiOn());for(const r of V.rows){const dd=r.c&&r.c[r.k];if(!dd)continue;if(r.ex){if(so&&impSyOk(r))r.sy=on}else r.on=on}}
  else if(a=='impresume'){const V=view.imp;if(!V||V.run)return;gbOff=0;return impRun()}
- else if(a=='impdir'){const f=$('#impDir');if(f){f.value='';f.click()}return}
- else if(a=='impfile'){const f=$('#impFile');if(f){f.value='';f.click()}return}
+ else if(a=='impdir'){pdfFree();const f=$('#impDir');if(f){f.value='';f.click()}return}
+ else if(a=='impfile'){pdfFree();const f=$('#impFile');if(f){f.value='';f.click()}return}
  else if(a=='bfmt'){if(!sh)return;const f=fmtOf(sh).slice(),i=f.indexOf(d.v);if(i>=0)f.splice(i,1);else f.push(d.v);if(!f.length)return toast('Garde au moins un format');sh.fmt=FMT.map(x=>x[0]).filter(k=>f.includes(k));if(!sh.fmt.includes('a'))delete sh.pm}
  else if(a=='bpm'){if(!sh)return;sh.pm=d.v=='h'?'h':'p'}
  else if(a=='rds'){S.rdS=d.v=='az'?'az':''}
