@@ -213,7 +213,8 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 #impT{width:100%;font:inherit;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx);box-sizing:border-box}
 .imr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--s2)}.imr:not(.on){opacity:.75}.imr input[type=checkbox]{width:22px;height:22px;margin-top:20px;flex:none;accent-color:var(--ac)}
 .imt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.imt small{display:block}.imt .ims{font-weight:600}.imt select{max-width:100%;font:inherit;font-size:13px;margin-top:4px;padding:4px;border-radius:6px;background:var(--sf);color:var(--tx);border:1px solid var(--s2)}.imt .lnk2{align-self:flex-start;font-size:13px}
-.syn{margin:10px 0}.synt{line-height:1.5}.synt p{margin:6px 0}.synt ul{margin:6px 0;padding-left:20px}.synt li{margin:3px 0}
+.syn{margin:10px 0}.synt{line-height:1.5;padding-left:12px}.synt p{margin:6px 0}.synt ul{margin:6px 0;padding-left:20px}.synt li{margin:3px 0}
+.synt.rd>p,.synt.rd li{position:relative;transition:color .3s}.synt .ton{background:linear-gradient(90deg,#ff880040,transparent 90%);border-radius:0 6px 6px 0}.synt .ton::before{content:'';position:absolute;left:-12px;top:1px;bottom:1px;width:4px;border-radius:2px;background:var(--ac)}.synt li.ton::before{left:-32px}.synt .tdn{color:var(--mu)}
 #synT{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx)}
 #synbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;background:#263238;color:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 2px 10px #0006;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}#synbar button{background:#ffffff22;color:#fff;border-radius:8px;padding:6px 10px}
 .imp .chk{display:flex;gap:8px;align-items:flex-start;text-align:left;background:none;padding:6px 0;font-size:14px}
@@ -1325,21 +1326,25 @@ let tts={id:null,ch:[],i:0,on:0,tok:0,done:0,tot:0,ci:0};
 const ttsOK=()=>'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!='undefined';
 const ttsRate=()=>{const r=+S.ttsR;return r>=0.6&&r<=1.8?r:1};
 function synPlain(y){return String(y.t||'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#{1,4}\s*/gm,'').replace(/^\s*[-•*]\s+/gm,'• ').replace(/\n{3,}/g,'\n\n').trim()}
+function ttsBlocks(b){const out=[{t:nm(b)+'.',k:-1}];let k=0;for(const l of String(b.syn.t||'').split(/\n/)){if(!l.trim())continue;const pl=l.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#{1,4}\s*/,'').replace(/^\s*[-•*]\s+/,'').trim();for(const c of ttsChunks(pl))out.push({t:c,k});k++}return out}
+function ttsMark(){const z=document.querySelector('#ttsbox')&&document.querySelector('.synt');if(!z)return;const me=tts.id&&document.getElementById('ttsbox').dataset.id==tts.id,B=z.querySelectorAll(':scope > p, :scope li'),cur=me&&tts.ch[tts.i]?tts.ch[tts.i].k:-2;
+ z.classList.toggle('rd',!!me);let el=null;B.forEach((e,i)=>{const on=me&&i==cur,dn=me&&(i<cur||cur==-2&&tts.i>=tts.ch.length);e.classList.toggle('ton',on);e.classList.toggle('tdn',!!dn&&!on);if(on)el=e});
+ if(el&&tts.on&&z.dataset.k!=cur){z.dataset.k=cur;const r=el.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-20)el.scrollIntoView({block:'center',behavior:'smooth'})}if(!me)delete z.dataset.k}
 function ttsChunks(t){const P=t.replace(/•\s*/g,'').replace(/([.!?…;:])\s+/g,'$1\n').split(/\n+/).map(x=>x.trim()).filter(Boolean),out=[];let cur='';for(const p of P){if(cur&&(cur+' '+p).length>220){out.push(cur);cur=p}else cur=cur?cur+' '+p:p}if(cur)out.push(cur);return out}
 const ttsPct=()=>tts.tot?Math.min(1,(tts.done+tts.ci)/tts.tot):0;
 const TTS_C=2*Math.PI*21;
 function ttsIcon(on){return on?'<rect x="18" y="16" width="5" height="16" rx="1.5"/><rect x="26" y="16" width="5" height="16" rx="1.5"/>':'<path d="M19 15 L34 24 L19 33 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'}
-function ttsBtns(id){if(!ttsOK())return'';const me=tts.id==id,p=me?ttsPct():0;
+function ttsBtns(id){if(!ttsOK())return'';const me=tts.id==id,p=me?ttsPct():0;if(me)setTimeout(ttsMark,0);
  return`<div class="ttsp"><button class="ttsb" data-act="ttsbtn" data-id="${esc(id)}" aria-label="${me&&tts.on?'Pause':'Écouter la synthèse'}"><svg viewBox="0 0 48 48" width="48" height="48"><circle cx="24" cy="24" r="21" class="ttsk"/><circle cx="24" cy="24" r="21" class="ttsa" stroke-dasharray="${(TTS_C*p).toFixed(1)} ${TTS_C.toFixed(1)}" ${p?'':'visibility="hidden"'} transform="rotate(-90 24 24)"/><g class="ttsi">${ttsIcon(me&&tts.on)}</g></svg></button><div class="ttsr"><b>Écouter la synthèse</b><label><span aria-hidden="true">🐢</span><input type="range" id="ttsR" min="0.6" max="1.8" step="0.1" value="${ttsRate()}" aria-label="Vitesse de lecture"><span aria-hidden="true">🐇</span></label></div></div>`}
-function ttsUi(){const e=document.getElementById('ttsbox');if(!e)return;const me=tts.id==e.dataset.id,p=me?ttsPct():0,a=e.querySelector('.ttsa'),i=e.querySelector('.ttsi'),bt=e.querySelector('.ttsb');if(!a){e.innerHTML=ttsBtns(e.dataset.id);return}
+function ttsUi(){const e=document.getElementById('ttsbox');if(!e)return;ttsMark();const me=tts.id==e.dataset.id,p=me?ttsPct():0,a=e.querySelector('.ttsa'),i=e.querySelector('.ttsi'),bt=e.querySelector('.ttsb');if(!a){e.innerHTML=ttsBtns(e.dataset.id);return}
  a.setAttribute('stroke-dasharray',(TTS_C*p).toFixed(1)+' '+TTS_C.toFixed(1));if(p)a.removeAttribute('visibility');else a.setAttribute('visibility','hidden');i.innerHTML=ttsIcon(me&&tts.on);bt.setAttribute('aria-label',me&&tts.on?'Pause':'Écouter la synthèse')}
 function ttsVoice(){try{const V=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang));return V.find(v=>/^fr[-_]FR/i.test(v.lang)&&v.localService)||V.find(v=>/^fr[-_]FR/i.test(v.lang))||V[0]||null}catch(e){return null}}
 function ttsNext(){const k=++tts.tok;tts.ci=0;if(!tts.on)return ttsUi();if(tts.i>=tts.ch.length){tts={id:null,ch:[],i:0,on:0,tok:tts.tok,done:0,tot:0,ci:0};return ttsUi()}
- const txt=tts.ch[tts.i],u=new SpeechSynthesisUtterance(txt),v=ttsVoice();u.lang=v?v.lang:'fr-FR';if(v)u.voice=v;u.rate=ttsRate();
+ const txt=tts.ch[tts.i].t,u=new SpeechSynthesisUtterance(txt),v=ttsVoice();u.lang=v?v.lang:'fr-FR';if(v)u.voice=v;u.rate=ttsRate();
  u.onboundary=ev=>{if(k==tts.tok&&ev&&ev.charIndex>=0){tts.ci=Math.min(ev.charIndex,txt.length);ttsUi()}};
  u.onend=()=>{if(k!=tts.tok||!tts.on)return;tts.done+=txt.length;tts.i++;ttsNext()};u.onerror=ev=>{if(k!=tts.tok||!tts.on)return;if(ev&&(ev.error=='interrupted'||ev.error=='canceled'))return;tts.done+=txt.length;tts.i++;ttsNext()};
  speechSynthesis.speak(u);ttsUi()}
-function ttsGo(b){if(!ttsOK())return toast('Lecture à voix haute impossible sur ce navigateur');if(!b.syn)return;try{speechSynthesis.cancel()}catch(e){}const ch=ttsChunks(nm(b)+'. '+synPlain(b.syn));tts={id:b.id,ch,i:0,on:1,tok:tts.tok,done:0,tot:ch.reduce((n,c)=>n+c.length,0),ci:0};ttsNext()}
+function ttsGo(b){if(!ttsOK())return toast('Lecture à voix haute impossible sur ce navigateur');if(!b.syn)return;try{speechSynthesis.cancel()}catch(e){}const ch=ttsBlocks(b);tts={id:b.id,ch,i:0,on:1,tok:tts.tok,done:0,tot:ch.reduce((n,c)=>n+c.t.length,0),ci:0};ttsNext()}
 function ttsPause(){tts.on=0;tts.tok++;tts.ci=0;try{speechSynthesis.cancel()}catch(e){}ttsUi()}
 function ttsStop(){tts.tok++;tts={id:null,ch:[],i:0,on:0,tok:tts.tok,done:0,tot:0,ci:0};try{speechSynthesis.cancel()}catch(e){}ttsUi()}
 async function synShare(b){const y=b.syn;if(!y)return;const who=y.s=='ia'?'par '+(y.by=='gm'?'Gemini':'une IA')+' (intelligence artificielle)':'par moi';
