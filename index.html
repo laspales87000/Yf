@@ -1494,11 +1494,11 @@ function synTab(b){if(view.synEd==b.id)return`<div class="syn"><textarea id="syn
 /* Texte complet d'un livre : toutes les pages, sans exception */
 const SYN_CH=150000;
 /* Où en est la synthèse (affiché sur la fiche avec un chronomètre) */
-let synPh='',synT0=0;const synSet=t=>{synPh=t;synTick()};
+let synPh='',synT0=0;const synSet=t=>{synPh=t;synTick();if(synRunning&&synHdr)synBar(synHdr+(synTitle?' · « '+synTitle+' »':'')+' — '+t)};
 function synTick(){const e=document.getElementById('synprog');if(!e)return;const s=Math.round((Date.now()-synT0)/1000);e.textContent=synPh+(synT0?' — '+(s>=60?Math.floor(s/60)+' min '+String(s%60).padStart(2,'0')+' s':s+' s'):'')}
 async function pdfText(file){const L=await pdfLib(),doc=await L.getDocument({data:new Uint8Array(await file.arrayBuffer()),worker:PDFW,isEvalSupported:false,enableXfa:false,disableFontFace:true,stopAtErrors:false,verbosity:0}).promise;
  try{const n=doc.numPages,rd=async i=>{const pg=await doc.getPage(i),tc=await pg.getTextContent();pg.cleanup();return tc.items.map(x=>x.str||'').join(' ').replace(/\s+/g,' ')};
-  const P=[];for(let i=1;i<=n;i++){if(i%5==1||i==n)synSet('📄 Lecture du livre : page '+i+' / '+n);P.push(await rd(i))}return{text:P.join('\n'),pages:n}}finally{doc.destroy()}}
+  const P=[];let miss=0;for(let i=1;i<=n;i++){synChk();if(i%5==1||i==n)synSet('📄 Lecture du livre : page '+i+' / '+n);const t=await Promise.race([rd(i),sleep(20000).then(()=>null)]);if(t===null){if(++miss>=8)throw Error('gm-pdfslow');P.push('')}else{miss=0;P.push(t)}}return{text:P.join('\n'),pages:n}}finally{doc.destroy()}}
 async function epubText(file){const z=await zipOpen(await file.arrayBuffer()),X=s=>new DOMParser().parseFromString(s,'application/xml');
  const c=X(await z.text('META-INF/container.xml')),rp=(c.querySelector('rootfile')||{getAttribute:()=>''}).getAttribute('full-path')||z.names.find(n=>/\.opf$/i.test(n))||'';
  const opf=X(await z.text(rp)),base=rp.includes('/')?rp.slice(0,rp.lastIndexOf('/')+1):'',man={};for(const it of opf.getElementsByTagNameNS('*','item'))man[it.getAttribute('id')]=it.getAttribute('href');
@@ -1533,10 +1533,10 @@ async function synMake(b,file){const ep=/\.epub$/i.test(file.name)||/epub/.test(
  if(text.length<2000){if(!ep&&file.size<=14e6&&okGmKey(S.gmKey)){synSet('🤖 Gemini lit le PDF scanné…');res={out:await gmCall([{text:SYN_PROMPT(ti,au)},{inline_data:{mime_type:'application/pdf',data:b64(await file.arrayBuffer())}}]),by:'gm'}}else throw Error('gm-notext')}
  else if(text.length<=SYN_CH*1.2){synSet('🤖 Gemini écrit la synthèse du livre entier… (souvent 20 s à 2 min)');res=await aiText(SYN_PROMPT(ti,au)+'\n\n--- TEXTE COMPLET DU LIVRE ---\n'+text)}
  else{const C=splitText(text,SYN_CH),key=file.name+'|'+file.size,cache=synParts[b.id]&&synParts[b.id].key==key?synParts[b.id]:(synParts[b.id]={key,r:[]});parts=C.length;
-  for(let i=0;i<C.length;i++){if(cache.r[i])continue;synSet(`🤖 Gemini lit le livre : partie ${i+1} / ${C.length}`);cache.r[i]=(await aiText(PART_PROMPT(ti,au,i+1,C.length)+'\n\n--- TEXTE DE LA PARTIE ---\n'+C[i])).out;await sleep(1500)}
+  for(let i=0;i<C.length;i++){synChk();if(cache.r[i])continue;synSet(`🤖 Gemini lit le livre : partie ${i+1} / ${C.length}`);cache.r[i]=(await aiText(PART_PROMPT(ti,au,i+1,C.length)+'\n\n--- TEXTE DE LA PARTIE ---\n'+C[i])).out;await sleep(1500)}
   synSet('🤖 Gemini écrit la synthèse finale…');res=await aiText(FINAL_PROMPT(ti,au,C.length)+'\n\n'+cache.r.map((r,i)=>'--- PARTIE '+(i+1)+' ---\n'+r).join('\n\n'));delete synParts[b.id]}
  b.syn={t:res.out.slice(0,20000),s:'ia',d:dLoc(),full:1,by:res.by,n:parts};delete b.synErr;b.mod=Date.now();if(S.gh)S.gh.dirty=1;save();schedSync();return b.syn}
-const gmErr=e=>({'gm-key':'Clé Gemini refusée par Google ('+keyDesc(String(S.gmKey||''))+') : vérifie-la dans ⚙ Paramètres → 🤖 Clé Gemini','gm-day':'Limite du jour de Gemini atteinte pour tous les modèles gratuits : réessaie demain (après 9 h)','gm-rate':'Gemini demande une pause : réessaie dans une minute','gm-empty':'Gemini n’a rien répondu pour ce livre','gm-notext':'Pas de texte lisible dans ce fichier (scan trop gros ou EPUB vide)','gm-net':'Pas de connexion Internet','gm-model':'Gemini indisponible pour le moment','gm-busy':'Gemini est surchargé en ce moment (serveurs gratuits de Google très demandés) : réessaie dans quelques minutes'})[e.message]||'Synthèse impossible ('+e.message+')';
+const gmErr=e=>({'gm-key':'Clé Gemini refusée par Google ('+keyDesc(String(S.gmKey||''))+') : vérifie-la dans ⚙ Paramètres → 🤖 Clé Gemini','gm-day':'Limite du jour de Gemini atteinte pour tous les modèles gratuits : réessaie demain (après 9 h)','gm-rate':'Gemini demande une pause : réessaie dans une minute','gm-empty':'Gemini n’a rien répondu pour ce livre','gm-notext':'Pas de texte lisible dans ce fichier (scan trop gros ou EPUB vide)','gm-net':'Pas de connexion Internet','gm-model':'Gemini indisponible pour le moment','gm-slow':'Livre trop long à traiter (plus de 40 minutes) : abandonné','gm-pdfslow':'PDF trop lent ou abîmé : plusieurs pages ne répondent pas','gm-busy':'Gemini est surchargé en ce moment (serveurs gratuits de Google très demandés) : réessaie dans quelques minutes'})[e.message]||'Synthèse impossible ('+e.message+')';
 const gmErrD=e=>gmErr(e)+(e.detail?' — '+({SAFETY:'contenu jugé sensible par Gemini',RECITATION:'Gemini refuse de recopier un texte protégé',MAX_TOKENS:'réponse trop longue',PROHIBITED_CONTENT:'contenu refusé par Gemini',OTHER:'raison non précisée'}[e.detail]||String(e.detail).slice(0,140)):'');
 const synFail={};
 /* L'échec d'une synthèse est gardé dans la fiche du livre (et synchronisé) jusqu'à une synthèse réussie */
@@ -1546,7 +1546,9 @@ async function synOne(b,file){if(synBusy)return toast('Une synthèse est déjà 
  try{await synMake(b,file)}catch(e){toast(synErrSet(b,gmErrD(e)),8000)}finally{clearInterval(tk);if(!synRunning)pdfFree();const d=Math.round((Date.now()-synT0)/1000);synT0=0;synPh='';synBusy=null;render();if(b.syn&&b.syn.d==dLoc())toast('📝 Synthèse ajoutée en '+(d>=60?Math.floor(d/60)+' min '+d%60+' s':d+' s'),4000)}}
 /* File d'attente des synthèses après un import (une à la fois, pause si Gemini le demande) */
 const synQ=[];let synRunning=0,synStop=0,synDone=0,synTot=0;
-function synBar(txt){let e=$('#synbar');if(!txt){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='synbar';document.body.appendChild(e)}e.innerHTML=txt+' <button data-act="synstop">Arrêter</button>'}
+function synBar(txt){let e=$('#synbar');if(!txt){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='synbar';document.body.appendChild(e)}e.innerHTML='<span>'+esc(txt)+'</span> <button data-act="synstop">Arrêter</button>'}
+let synHdr='',synTitle='',synTok=0,synDead=0;
+const synChk=()=>{if(synDead&&Date.now()>synDead)throw Error('gm-slow')};
 function repSyn(ok,b,why){const y=S.impRep&&S.impRep.syn;if(!y||!y.run)return;if(ok)y.ok.push(nm(b));else y.ko.push({t:nm(b),w:String(why||'').slice(0,200)});save();if(!view.open&&!view.imp&&!view.menu)render()}
 function repHtml(){const R=S.impRep;if(!R||R.closed||MODE()!='b')return'';const y=R.syn,li=a=>a.map(x=>`<li>${esc(typeof x=='string'?x:x.t+' — '+x.w)}</li>`).join('');
  return`<div class="irep"><div class="irh"><b>📋 Rapport du dernier import</b><small class="mu">${new Date(R.t).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</small><button data-act="repx" aria-label="Fermer le rapport">✕</button></div>
@@ -1561,9 +1563,9 @@ let synLeft=[];
 async function synRunQ(){if(synRunning)return;synRunning=1;const qtk=setInterval(synTick,1000);synStop=0;synDone=0;synTot=synQ.length;synLeft=[];wakeOn(1);let fails=0,ko=0,why='',stopWhy='',lastBusy='';const koL=[];
  const y0=S.impRep&&S.impRep.syn;if(y0&&!y0.run&&y0.left){y0.run=1;y0.n=y0.ok.length+y0.ko.length+synQ.length;y0.left=0;y0.stop=''}
  while(synQ.length&&!synStop){const it=synQ[0],b=BK()[it.id];if(!b||(b.syn&&b.syn.s=='me')){synQ.shift();synTot--;continue}
-  synCur=b.id;synT0=Date.now();synPh='📄 Ouverture du fichier…';if(view.open==b.id)render();synBar(`🤖 Synthèses : ${synDone+ko} / ${synTot}${ko?' ('+ko+' échec'+(ko>1?'s':'')+')':''} — garde l’appli ouverte`);
+  synCur=b.id;synT0=Date.now();synPh='📄 Ouverture du fichier…';if(view.open==b.id)render();synHdr=`🤖 ${synDone+ko+1} / ${synTot}${ko?' ('+ko+' échec'+(ko>1?'s':'')+')':''}`;synTitle=nm(b).slice(0,40);synBar(synHdr+' · « '+synTitle+' » — garde l’appli ouverte');
   if(document.hidden||navigator.onLine===false){synBar('⏸ En attente : reviens dans l’appli (et vérifie Internet) pour continuer');await waitBack();continue}
-  try{await synMake(b,it.file);synQ.shift();synDone++;fails=0;repSyn(1,b);synCur=null;if(view.open==b.id)render()}
+  try{synDead=Date.now()+40*60e3;try{await synMake(b,it.file)}finally{synDead=0}synQ.shift();synDone++;fails=0;repSyn(1,b);synCur=null;if(view.open==b.id)render()}
   catch(e){synCur=null;
    const pause=async(sec,txt)=>{const end=Date.now()+sec*1000;while(!synStop&&Date.now()<end){const r=Math.ceil((end-Date.now())/1000);synBar(`⏸ ${txt} : nouvel essai ${r>=3600?'à '+new Date(end).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'dans '+(r>=60?Math.floor(r/60)+' min '+String(r%60).padStart(2,'0'):r+' s')} (${synDone} / ${synTot})`);await sleep(1000)}};
    if(e.message=='gm-net'){if(document.hidden||navigator.onLine===false){synBar('⏸ En attente : reviens dans l’appli (et vérifie Internet) pour continuer');await waitBack()}else await pause(30,'Pas de connexion');continue}
@@ -1961,7 +1963,8 @@ const VKEYS=['f','q','open','tab','menu','tag','ser','pp','shr','synEd','fy','ly
 function vSnap(){try{const v={};for(const k of VKEYS)if(view[k]!=null)v[k]=view[k];if(v.shr)v.shr={...v.shr,img:null,blob:null};sessionStorage.setItem('vsnap',JSON.stringify({t:Date.now(),y:scrollY,mode:S.mode,v,syn:synQ.length}))}catch(e){}impSnap()}
 async function impSnap(){try{const d=await idb;if(!d)return;const V=view.imp,t=d.transaction('k','readwrite'),st=t.objectStore('k');
  if(V)st.put({...V,rows:(V.rows||[]).map(r=>{const{file,busy,...x}=r;return x}),run:0,reading:0,stop:0,t:Date.now()},'impv');else st.delete('impv')}catch(e){}}
-async function vRestore(){let o=null;try{o=JSON.parse(sessionStorage.getItem('vsnap')||'null')}catch(e){}if(!o||Date.now()-o.t>6*36e5)return;
+function repFix(){const y=S.impRep&&S.impRep.syn;if(y&&y.run&&!synRunning){y.run=0;y.left=Math.max(0,y.n-y.ok.length-y.ko.length);y.stop='interrompues : le téléphone a rechargé l’appli. Refais l’import des fichiers avec la synthèse cochée (les livres déjà faits sont sautés)';save()}}
+async function vRestore(){repFix();let o=null;try{o=JSON.parse(sessionStorage.getItem('vsnap')||'null')}catch(e){}if(!o||Date.now()-o.t>6*36e5)return;
  for(const k of VKEYS)if(k in o.v)view[k]=o.v[k];if(view.open&&!IT(view.open))view.open=null;
  try{const d=await idb;const V=d&&await new Promise(r=>{const q=d.transaction('k').objectStore('k').get('impv');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)});
   if(V&&Date.now()-V.t<6*36e5&&Array.isArray(V.rows)){for(const r of V.rows){r.busy=0;if(r.rd){r.rd=0;const f=impLine(String(r.fname||'').replace(/\.(pdf|epub)$/i,''))||{t:r.fname||'',a:[],isbn:''};r.t=f.t;r.a=f.a;r.isbn=f.isbn;r.how='Lecture interrompue : recherche avec le nom du fichier'}}V.restored=1;V.nofile=1;view.imp=V}}catch(e){}
