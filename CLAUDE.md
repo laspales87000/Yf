@@ -13,6 +13,10 @@
 - Répondre en français, simplement, sans jargon technique.
 - Modifier directement `index.html` du dépôt. Ne pas demander de renvoyer le fichier.
 - Tester chaque modification dans un navigateur, en taille téléphone, avant de l'envoyer.
+- **Toujours illustrer les propositions avec des images** (maquettes ou captures en taille téléphone,
+  une image par proposition), et pas seulement avec des descriptions, avant de demander un choix.
+- Poser des questions avant de travailler quand quelque chose n'est pas clair.
+- Commencer chaque réponse par l'heure de Paris : « 🕐 **JJ/MM/AAAA – HH h MM** ».
 - **Fusionner soi-même** la demande de fusion (pull request) vers `main` dès que la modification
   est prête et testée, sans demander de validation. Ensuite, dire qu'il suffit de recharger
   https://laspales87000.github.io/Yf/ après une ou deux minutes.
