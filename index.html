@@ -1535,7 +1535,7 @@ function vCost(p,n){return p=='gm'?'environ '+Math.max(1,Math.round(n/600))+' ce
 function vAsk(b){const p=vPaid();if(!p)return true;const ch=ttsBlocks(b),v=vVoice(p),M=vMem(),n=ch.filter(c=>M[vKeyOf(p,v,c.t)]==null).reduce((s,c)=>s+c.t.length,0);if(!n)return true;const key=b.id+'|'+p+'|'+v;if(vAsked.has(key))return true;
  if(!confirm('Écouter avec la voix « '+vName()+' » ?\n\nPremière écoute : '+vCost(p,n)+'.\nEnsuite, les réécoutes sont gratuites sur cet appareil.'))return false;vAsked.add(key);return true}
 let ttsAud=null,ttsUrl='';
-function ttsUnlock(){try{if(!ttsAud)ttsAud=new Audio();if(vPaid()&&ttsAud.paused){ttsAud.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';const q=ttsAud.play();if(q&&q.catch)q.catch(()=>{})}}catch(e){}}
+function ttsUnlock(){try{if(navigator.audioSession&&navigator.audioSession.type!='playback')navigator.audioSession.type='playback'}catch(e){}try{if(!ttsAud)ttsAud=new Audio();if(vPaid()&&ttsAud.paused){ttsAud.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';const q=ttsAud.play();if(q&&q.catch)q.catch(()=>{})}}catch(e){}}
 function ttsCancel(){try{if(ttsDevOK()&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}catch(e){}try{if(ttsAud)ttsAud.pause()}catch(e){}}
 async function ttsAudioNext(k,txt){const p=vPaid(),v=vVoice(p),i=tts.i;let b;tts.wait=1;ttsUi();
  try{b=await vAudio(p,v,txt)}catch(e){if(k!=tts.tok)return;tts.wait=0;tts.on=0;ttsPosSave();ttsUi();noteShow('<b>🔊 La voix « '+esc(vName())+' » ne répond pas</b><p>'+esc(e.message)+(e.detail?' ('+esc(e.detail)+')':'')+'.</p><p>Touche la roue dentée ⚙ à côté du lecteur pour vérifier ta clé ou choisir une autre voix (les voix gratuites marchent toujours).</p>');return}
@@ -1631,13 +1631,15 @@ function ttsNext(){const k=++tts.tok;tts.ci=0;if(!tts.on){ttsPosSave();return tt
  window._ttsU=u;try{if(speechSynthesis.paused)speechSynthesis.resume()}catch(e){}speechSynthesis.speak(u);ttsUi();
  if(!ttsHeard)setTimeout(()=>{if(k==tts.tok&&tts.on&&!started&&!ttsHeard){tts.on=0;tts.tok++;ttsCancel();ttsPosSave();ttsUi();ttsMute('')}},4500)}
 /* Aucun son : on explique quoi vérifier (une seule fois par ouverture de l'appli) */
-let ttsHeard=0,ttsMuteSaid=0;const isIOS=()=>/iP(hone|ad|od)/.test(navigator.userAgent)||navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1;
+let ttsHeard=0,ttsMuteSaid=0,iosA=null;
+/* Astuce iPhone : jouer un son muet très court au moment de l'appui met Safari en mode « lecture », comme la musique */
+function iosWake(){try{if(!iosA){iosA=new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');iosA.setAttribute('playsinline','');iosA.loop=false}const q=iosA.play();if(q&&q.catch)q.catch(()=>{})}catch(e){}}const isIOS=()=>/iP(hone|ad|od)/.test(navigator.userAgent)||navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1;
 function ttsMute(er){if(ttsMuteSaid)return toast('Pas de son : touche ▶ pour réessayer');ttsMuteSaid=1;const ios=isIOS();noteShow('<b>🔇 La voix ne démarre pas</b><p>Voici quoi vérifier :</p><ul>'+(ios?'<li><b>Le mode silencieux</b> : sur iPhone, la voix est coupée si le bouton sur le côté (ou le bouton Action) est sur silencieux. Remets la sonnerie, puis touche ▶.</li>':'')+'<li><b>Le volume</b> : monte le son avec les touches du côté.</li><li><b>Une voix française installée</b> : '+(ios?'Réglages → Accessibilité → Contenu énoncé → Voix → Français → télécharge une voix.':'Paramètres → Synthèse vocale → moteur Google → Installer les données vocales → Français.')+'</li><li><b>Une autre voix</b> : touche la roue dentée ⚙ du lecteur et essaie-en une autre avec « ▶ Essayer ».</li></ul>'+(er?'<p class="mu" style="font-size:12px">(Détail : '+esc(er)+')</p>':''))}
 /* Toucher un passage de la synthèse : la lecture saute à ce passage (en avant comme en arrière) */
 function ttsJump(t){const z=t.closest&&t.closest('.synt'),bx=document.getElementById('ttsbox');if(!z||!bx||!ttsOK())return 0;if(getSelection&&String(getSelection()).length>1)return 0;
  const B=[...z.querySelectorAll(':scope > p, :scope li')],blk=t.closest('.synt > p, .synt li'),k=B.indexOf(blk);if(k<0)return 0;const b=IT(bx.dataset.id);if(!b||!b.syn)return 0;
  ttsLoad(b);const i=tts.ch.findIndex(c=>c.k==k);if(i<0)return 0;if(!tts.on&&!vAsk(b))return 1;ttsUnlock();ttsCancel();tts.tok++;tts.end=0;tts.i=i;tts.ci=0;tts.on=1;ttsNext();return 1}
-function ttsPlay(b){if(!ttsOK())return toast('Lecture à voix haute impossible sur ce navigateur');if(!b.syn)return;ttsLoad(b);if(tts.end){tts.end=0;tts.i=0}if(!vAsk(b))return;ttsUnlock();ttsCancel();tts.on=1;ttsNext()}
+function ttsPlay(b){if(!ttsOK())return toast('Lecture à voix haute impossible sur ce navigateur');if(!b.syn)return;ttsLoad(b);if(tts.end){tts.end=0;tts.i=0}if(!vAsk(b))return;ttsUnlock();if(isIOS()&&!vPaid())iosWake();ttsCancel();tts.on=1;ttsNext()}
 function ttsPause(){if(!tts.on)return;tts.on=0;tts.tok++;tts.ci=0;ttsCancel();ttsPosSave();ttsUi()}
 function ttsStop(){tts.on=0;tts.tok++;tts.ci=0;tts.i=0;tts.end=0;ttsCancel();ttsPosSave();ttsUi()}
 /* La fiche n'est plus à l'écran (autre page, écran éteint, autre appli) : pause */
