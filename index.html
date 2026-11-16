@@ -59,7 +59,7 @@ button.ai{background:none;padding:0;width:34px;height:34px;left:6px;top:6px;disp
 .swbg{overflow:hidden}.swi{position:absolute;top:50%;transform:translateY(-50%)}.swi svg{width:30px;height:30px;fill:#fff}.swi.l{left:14px}.swi.r{right:14px}
 .fvs{gap:0}.fvi{display:flex;flex-direction:column;align-items:center;width:44px}
 .fvb{min-width:40px;height:36px}
-.lg{font-size:9px;line-height:1.05;margin-top:-1px;color:var(--mu);text-align:center;max-width:46px;word-break:break-word}
+.lg{font-size:9px;line-height:1.05;margin-top:-1px;color:var(--mu);text-align:center;max-width:46px;word-break:break-word}.fvi .lg{word-break:keep-all;overflow-wrap:normal;letter-spacing:-.25px;white-space:normal}@media(max-width:400px){.fvi{width:40px}.fvi .fvb{min-width:38px}}@media(max-width:360px){.fvi{width:35px}.fvi .fvb{min-width:33px;font-size:24px}.fvi .fvb svg{width:24px;height:24px}.det>button[data-act=back]{font-size:13px;padding:6px 8px}.fvi .lg{font-size:8px;letter-spacing:-.45px}}
 body[data-leg=none] .lg,body[data-leg=none] #flb small,body[data-leg=list] .lg{display:none}
 .tabs.stk,.tgw.stk{position:sticky;top:56px;z-index:4;background:var(--bg);padding-bottom:6px!important}.tgw{display:flex;align-items:center;gap:6px;padding:8px 8px 0}.tgw .tabs{flex:1;min-width:0;padding:0}.serb{flex:none;width:44px;height:38px;border-radius:99px;background:var(--s2);font-size:20px;padding:0;display:grid;place-items:center}
 .ep.ex{cursor:pointer}.ep.ex .t>span:after{content:""}
@@ -1476,6 +1476,7 @@ function rcvClean(o){if(!o||o.v!==1||!Array.isArray(o.i))return null;const str=(
 const rcvId=r=>r.k=='m'?'m'+r.tm:r.k=='b'?'b'+r.g:r.tv?'t'+r.tv:r.id;
 function rcvHave(r){if(r.k=='m')return MV()['m'+r.tm];if(r.k=='b')return BK()['b'+r.g];return S.shows[rcvId(r)]||Object.values(S.shows).find(x=>r.tv?x.tmdbtv==r.tv:x.tm&&x.tm==r.tm)}
 async function rcvOpen(){const h=location.hash||'';if(!/^#p=[zj][A-Za-z0-9_-]+$/.test(h))return;try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}
+ if(h[3]=='z'&&typeof DecompressionStream=='undefined')return toast('Ce navigateur est trop ancien pour ouvrir ce lien : mets à jour ton téléphone (sur iPhone : iOS 16.4 ou plus)',7000);
  let L=null;try{const raw=h.slice(3),t=raw[0]=='z'?await zip8(lnk64.de(raw.slice(1)),1):new TextDecoder().decode(lnk64.de(raw.slice(1)));L=rcvClean(JSON.parse(t))}catch(e){}
  if(!L)return toast('Ce lien de fiches est abîmé ou incomplet');
  view.rcv={L,on:L.map(r=>{const h=rcvHave(r);return!h||(r.sy&&!h.syn)?1:0})};view.open=null;view.add=0;view.imp=null;view.shr=null;view.pp=null;view.ser=null;view.sel=null;render(1);scrollTo(0,0)}
@@ -1677,7 +1678,7 @@ const NCi=s=>norm(s);
 function isbnChk(d){if(d.length==13)return /^97[89]\d{10}$/.test(d)&&[...d].reduce((s,c,i)=>s+(+c)*(i%2?3:1),0)%10==0;
  if(d.length==10&&/^\d{9}[\dX]$/.test(d))return[...d].reduce((s,c,i)=>s+(c=='X'?10:+c)*(10-i),0)%11==0;return false}
 const isbnTo13=d=>{if(d.length==13)return d;const b='978'+d.slice(0,9);return b+((10-[...b].reduce((s,c,i)=>s+(+c)*(i%2?3:1),0)%10)%10)};
-function isbnFind(s){const re=/(?<![0-9A-Za-z])(?:97[89][\s-]?)?(?:\d[\s-]?){8}\d[\s-]?[\dXx](?![0-9A-Za-z])/g;let m;while((m=re.exec(s))){const d=m[0].replace(/[\s-]/g,'').toUpperCase();if(isbnChk(d))return{d:isbnTo13(d),m:m[0]}}return null}
+function isbnFind(s){const re=/(^|[^0-9A-Za-z])((?:97[89][\s-]?)?(?:\d[\s-]?){8}\d[\s-]?[\dXx])(?![0-9A-Za-z])/g;let m;while((m=re.exec(s))){const d=m[2].replace(/[\s-]/g,'').toUpperCase();if(isbnChk(d))return{d:isbnTo13(d),m:m[2]};re.lastIndex=m.index+m[1].length+1}return null}
 function impLine(line){const s0=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();let s=String(line||'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' ').trim();if(!s)return null;
  s=s.replace(/^(?:[-•*·]|\d{1,3}[.)])\s+/,'');
  const ib=isbnFind(s);if(ib){const rest=s.replace(ib.m,' ').replace(/\bisbn(?:[\s-]*1[03])?\s*:?/gi,' ').replace(/[\s\-–—:;,|()]+/g,' ').trim();if(!rest||/^(voir|n°|no)$/i.test(rest))return{raw:s0,t:'',a:[],isbn:ib.d};s=s.replace(ib.m,' ').replace(/\bisbn(?:[\s-]*1[03])?\s*:?/gi,' ').replace(/\s+[–—]\s*$/,'').replace(/\s{2,}/g,' ').trim()}
