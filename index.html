@@ -229,6 +229,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 .fbtn{position:relative;display:inline-block;font:inherit;color:var(--tx);background:var(--s2);border-radius:4px;padding:8px 12px;cursor:pointer;overflow:hidden}.fbtn.pri{background:var(--ac);color:var(--on);font-weight:600}.fbtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:100px}
 .syndt{font-size:13px;font-weight:600;color:var(--mu);margin:0 0 6px}
 #selsh{position:relative}.selc{position:absolute;top:2px;right:0;background:#fff;color:var(--ac);border-radius:99px;min-width:18px;height:18px;font-size:12px;line-height:18px;text-align:center;padding:0 4px;box-shadow:0 1px 3px #0006;font-weight:700;pointer-events:none}
+.dupn{background:var(--ac);color:#fff;border-radius:99px;padding:0 7px;font-size:12px;margin-left:6px}.dupg{background:var(--sf);border-radius:12px;padding:10px 12px;margin:0 0 12px;box-shadow:0 1px 3px #0003}.dupw{font-size:12.5px;font-weight:700;color:var(--ac);margin-bottom:4px}.duprow{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--s2);cursor:pointer}.duprow:last-of-type{border-bottom:0}.duprow .poster.sm,.dupk .poster.sm{flex:none}.dupscan{margin:4px 0 14px}.dupscan p{margin:6px 0}.dupk{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;color:var(--tx);padding:6px 0;border-radius:0}.dupr{font-size:20px;color:var(--ac);flex:none;width:24px}.kv{font-size:13.5px;margin:3px 0}.kv span{color:var(--mu)}
 body.selm header #cl,body.selm header [data-act=sq]{display:none}
 </style></head><body>
 <header id="hd">
@@ -317,10 +318,10 @@ const fmtH=m=>Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');
 const bkPc=b=>byH(b)?(b.dur&&b.ph?Math.min(100,Math.round(100*b.ph/b.dur)):0):(b.pages&&b.pg?Math.min(100,Math.round(100*b.pg/b.pages)):0);
 const okFmt=v=>Array.isArray(v)?[...new Set(v.filter(x=>typeof x=='string'&&x.length==1&&FMK.includes(x)))]:null;
 function rdSet(b){if(!b||b.kind!='b')return;if(b.seen)b.rd=dLoc();else delete b.rd}
-const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['notag','Livres sans tag 🏷'],['find','Livres à chercher 🔍'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['find','BDs à chercher 🔍'],['all','Toutes les BDs'],['arch','Archive']];
+const FILTB=[['toread','À lire'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['notag','Livres sans tag 🏷'],['find','Livres à chercher 🔍'],['dup','Livres en double 👯'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['find','BDs à chercher 🔍'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT=()=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[MODE()];
 function renderMenu(){const m=$('#menu');m.hidden=!view.menu;{const g=$('#mbg');if(g){g.hidden=!view.menu;if(view.menu){const h=$('header');g.style.top=Math.max(0,h?h.getBoundingClientRect().bottom:0)+'px'}}}m.className=(['nav','cloud','look','lang','hist','set','dfmt','about','leg','ghhelp','ghsteps','gbkey','gbhelp','gmkey','gmhelp','serpick','serlist','unipick','uniadd'].includes(view.menu)?'l':'')+(['cloud','hist','about','ghhelp','ghsteps','gbkey','gbhelp','gmkey','gmhelp','serpick','serlist','unipick','uniadd'].includes(view.menu)?' w':'');
- m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='gbkey'?gbKeyHtml():view.menu=='gmkey'?gmKeyHtml():view.menu=='gmhelp'?gmHelpHtml():view.menu=='gbhelp'?gbHelpHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button>${MODE()=='b'?'<button data-act="impopen">📋 Importer des livres (liste, PDF, EPUB)</button>':''}<button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
+ m.innerHTML=view.menu=='leg'?legHtml():view.menu=='serpick'?serPickHtml():view.menu=='serlist'?serListHtml():view.menu=='unipick'?uniPickHtml():view.menu=='uniadd'?uniAddHtml():view.menu=='set'?setHtml():view.menu=='gbkey'?gbKeyHtml():view.menu=='gmkey'?gmKeyHtml():view.menu=='gmhelp'?gmHelpHtml():view.menu=='gbhelp'?gbHelpHtml():view.menu=='dfmt'?dfmtHtml():view.menu=='about'?aboutHtml():view.menu=='hist'?histHtml():view.menu=='lang'?langHtml():view.menu=='cloud'?cloudHtml():view.menu=='ghhelp'?ghHelp():view.menu=='ghsteps'?ghSteps():view.menu=='look'?lookHtml():view.menu=='nav'?`<button data-act="menu" data-m="set">⚙ Paramètres</button><button data-act="import">Importer une sauvegarde</button>${MODE()=='b'?'<button data-act="impopen">📋 Importer des livres (liste, PDF, EPUB)</button>':''}<button data-act="bkshare">Exporter une sauvegarde en local, cloud, ou mail</button><button data-act="menu" data-m="hist">🕘 Historique des modifications</button><button data-act="menu" data-m="about">À propos</button><button data-act="upd8">Rechercher une mise à jour</button>`:view.menu=='filt'?FLT().map(([k,l])=>`<button class="${view.f==k?'on':''}" data-act="tab" data-f="${k}">${defF()==k?'<span class="dfh" title="Liste par défaut">🏠</span>':''}${k=='arch'?`<span class="mi">${ARCH}</span>`:''}${l}${k=='dup'&&MODE()=='b'?dupBadge():''}</button>`).join('')+'<div class="cp"><p style="font-size:12px">🏠 = liste affichée à l’ouverture. Reste appuyé 2 secondes sur une liste pour la choisir.</p></div>':''}
 const past=(sh,e)=>e.d?e.d<=today():(e.s==0||sh.status=='Ended');
 const isAnim=sh=>sh.kind=='m'?(sh.gen||[]).includes(16):(sh.type=='Animation'||/animation|anime/i.test(sh.genre||''));
 const noInfo=sh=>sh.status!='Ended'&&!sh.eps.some(e=>!e.w&&e.d>today())?1:0;
@@ -868,7 +869,7 @@ let hbusy=0;
 const nonDef=()=>!!(view.f!=defF()||view.tag||view.q),ovl=()=>!!(view.open||view.add||view.sel);
 const clearQ=()=>{view.q='';$('#q').value='';$('#hd').classList.remove('sq')};
 function resetList(){view.f=defF();view.tag='';clearQ()}
-function goBack(){let t=2;if(view.rcv){view.rcv=null;render(0);return 1}if(view.imp){view.imp.stop=1;if(view.imp.st!='paste'){view.imp.st='paste';view.imp.rows=null;render(1);return 1}view.imp=null;render(0);return 1}if(view.shr){if(view.shr.img)URL.revokeObjectURL(view.shr.img);view.shr=null;render(0);return 1}if(view.ssel){view.ssel=null;render(0);return 1}if(view.ser){view.ser=null;t=3}else if(view.pp){view.pp=null;if(view.open)t=3}else if(view.serBack&&view.open&&!view.sel&&!view.add){const b=view.serBack;view.serBack=null;view.ser=b.ser;view.open=b.open;render(0);const y=b.y;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));return 1}else if(view.sel)view.sel=null;else if(view.open||view.add){view.open=null;view.add=0;if(view.ppBack){const b=view.ppBack;view.ppBack=null;view.pp=b.id;render(0);scrollTo(0,b.y||0);requestAnimationFrame(()=>scrollTo(0,b.y||0));return 1}}else if(nonDef()){resetList();render(1);return 1}else return 0;render(t);return 1}
+function goBack(){let t=2;if(view.dupm){view.dupm=null;render(0);return 1}if(view.rcv){view.rcv=null;render(0);return 1}if(view.imp){view.imp.stop=1;if(view.imp.st!='paste'){view.imp.st='paste';view.imp.rows=null;render(1);return 1}view.imp=null;render(0);return 1}if(view.shr){if(view.shr.img)URL.revokeObjectURL(view.shr.img);view.shr=null;render(0);return 1}if(view.ssel){view.ssel=null;render(0);return 1}if(view.ser){view.ser=null;t=3}else if(view.pp){view.pp=null;if(view.open)t=3}else if(view.serBack&&view.open&&!view.sel&&!view.add){const b=view.serBack;view.serBack=null;view.ser=b.ser;view.open=b.open;render(0);const y=b.y;scrollTo(0,y);requestAnimationFrame(()=>scrollTo(0,y));return 1}else if(view.sel)view.sel=null;else if(view.open||view.add){view.open=null;view.add=0;if(view.ppBack){const b=view.ppBack;view.ppBack=null;view.pp=b.id;render(0);scrollTo(0,b.y||0);requestAnimationFrame(()=>scrollTo(0,b.y||0));return 1}}else if(nonDef()){resetList();render(1);return 1}else return 0;render(t);return 1}
 function hsync(){if(hbusy)return;try{const want=lvls().length,have=(history.state&&history.state.n)||0;
  if(want>have){for(let i=have+1;i<=want;i++)history.pushState({n:i},'')}
  else if(want<have){hbusy=1;setTimeout(()=>hbusy=0,600);history.go(want-have)}}catch(e){hbusy=0}}
@@ -1284,6 +1285,7 @@ function navFiche(d){const ids=view.ids||[],i=ids.indexOf(view.open),n=ids[i+d];
 function stamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'-'+z(d.getHours())+'_'+z(d.getMinutes())+'_'+z(d.getSeconds())}
 function dl(name,text){const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));l.download=name;l.click()}
 function list(){
+ if(MODE()=='b'&&view.dupm)return dupMHtml();if(MODE()=='b'&&view.f=='dup'&&!view.q.trim()&&!view.tag)return dupHtml();
  const md=MODE(),q=view.q.trim(),f=view.f,ALL={s:COLL('s'),m:COLL('m'),b:COLL('b'),c:COLL('c')},all=ALL[md];
  if(!hasAny())return`<div class="empty"><p>${({s:"Aucune série pour l'instant.",m:"Aucun film pour l'instant.",b:"Aucun livre pour l'instant.",c:"Aucune BD pour l'instant."})[md]}</p><button class="pri" data-act="import">Importer une sauvegarde</button></div>`;
  const cardOf=it=>`<div class="sw" data-id="${esc(it.id)}"><div class="swbg"></div>${it.kind=='m'?mcard(it):it.kind=='b'?bcard(it):tcard(it)}</div>`;
@@ -1322,6 +1324,60 @@ ${P.p=='m'?`<p class="shin">Mois : <input type="month" id="shm" value="${esc(P.m
 ${P.img?`<div class="shimg"><img src="${P.img}" alt="Aperçu de l’image"><div class="act"><button class="pri" data-act="shimgo">📤 Envoyer l’image</button></div></div>`:''}
 <div class="shl">${L.map(b=>`<div class="shr1"><div class="poster sm">${b.po?`<img loading="lazy" src="${esc(b.po)}" alt="">`:''}</div><div><b>${esc(nm(b))}${fmtIc(b)?' '+fmtIc(b):''}</b><small>${esc([auOf(b),b.rd?(heard(b)?'écouté':'lu')+' le '+fd(b.rd):'date inconnue'].filter(Boolean).join(' · '))}</small></div></div>`).join('')}</div></div>`}
 function shrText(){const L=shrList();return'📚 '+shrTitle(L.length)+'\n\n'+L.map(b=>'• '+nm(b)+(fmtIc(b)?' '+fmtIc(b):'')+(auOf(b)?' – '+auOf(b):'')+(b.rd?' ('+(heard(b)?'écouté':MODE()=='c'?'lue':'lu')+' le '+fd(b.rd)+')':'')).join('\n')}
+/* Livres en double (pas les BDs) : même ISBN, même titre et même auteur, ou même « œuvre » Open Library (traductions) */
+const dupT=t=>norm(String(t||'').replace(/\(.*?\)|\[.*?\]/g,' '));
+const dupBase=t=>dupT(String(t||'').split(/\s[:–—-]\s|\s*:\s|\s*\(/)[0]);
+const dupAu=b=>(b.ppl||[]).filter(p=>p.r=='author').map(p=>{const w=norm(p.n).split(' ');return w[w.length-1]}).filter(x=>x&&x.length>1);
+const dupKey=(a,b)=>a<b?a+'|'+b:b+'|'+a;
+const dupIsbn=b=>{const d=String(b.isbn||'').replace(/[^0-9Xx]/g,'').toUpperCase();return d.length==13||d.length==10?isbnTo13(d):''};
+const dupWork=b=>b.src=='ol'&&/^OL\d+W$/.test(b.gid)?b.gid:b.olw&&b.olw!='-'?b.olw:'';
+const DUPW={isbn:['🔢 Même ISBN',3],title:['📗 Même titre, même auteur',2],work:['🌍 Même livre (autre langue ou autre édition)',1]};
+let dupLast=[],dupRun=null;
+function dupGroups(){const L=Object.values(BK()).filter(b=>!b.bd),no=new Set(S.dupNo||[]),par={},links=[];L.forEach(b=>par[b.id]=b.id);
+ const f=x=>{while(par[x]!=x){par[x]=par[par[x]];x=par[x]}return x};
+ const idx={};const add=(k,b,w)=>{if(!k)return;(idx[w+':'+k]=idx[w+':'+k]||[]).push(b)};
+ for(const b of L){add(dupIsbn(b),b,'isbn');const t=dupBase(nm(b));if(t.length>=3){const A=dupAu(b);if(A.length)A.forEach(a=>add(t+'#'+a,b,'title'));else add('#'+dupT(nm(b)),b,'title')}add(dupWork(b),b,'work')}
+ for(const[k,B]of Object.entries(idx)){if(B.length<2||B.length>12)continue;const w=k.split(':')[0];for(let i=1;i<B.length;i++){const a=B[0],c=B[i];if(a.id==c.id||no.has(dupKey(a.id,c.id)))continue;par[f(a.id)]=f(c.id);links.push([a.id,c.id,w])}}
+ const G={};for(const b of L){const r=f(b.id);(G[r]=G[r]||[]).push(b)}
+ const W={};for(const[a,,w]of links){const r=f(a);if(!W[r]||DUPW[w][1]>DUPW[W[r]][1])W[r]=w}
+ return Object.entries(G).filter(([,v])=>v.length>1).map(([r,v])=>({w:W[r]||'title',L:v.sort((x,y)=>nm(x).localeCompare(nm(y)))})).sort((x,y)=>nm(x.L[0]).localeCompare(nm(y.L[0])))}
+function dupBadge(){try{const n=dupGroups().length;return n?` <span class="dupn">${n}</span>`:''}catch(e){return''}}
+function dupRow(b){const bits=[auOf(b),fmtIc(b)?FMT.filter(f=>fmtOf(b).includes(f[0])).map(f=>f[1]+' '+f[2]).join(', '):'📖 Papier',b.rd?(heard(b)?'écouté':'lu')+' le '+fd(b.rd):b.seen?'lu':'',b.syn?'📝 synthèse':''].filter(Boolean);
+ return`<div class="duprow" data-act="open" data-id="${esc(b.id)}"><div class="poster sm">${b.po?`<img loading="lazy" src="${esc(b.po)}" alt="">`:''}</div><div class="imt"><b>${esc(nm(b))}</b><small>${esc(bits.join(' · '))}</small></div></div>`}
+function dupHtml(){const G=dupLast=dupGroups(),L=Object.values(BK()).filter(b=>!b.bd),todo=L.filter(b=>!dupWork(b)&&!b.olw).length,R=dupRun;
+ return`<div class="det"><h2 style="margin:4px 0">👯 Livres en double</h2><p class="mu" style="font-size:13px">${G.length?G.length+' groupe'+(G.length>1?'s':'')+' de livres qui se ressemblent. Touche un livre pour ouvrir sa fiche.':'Aucun doublon trouvé.'}</p>
+<div class="dupscan">${R?`<p id="dupprog">🌍 Recherche des traductions : ${R.i} / ${R.n}</p><button data-act="dupstop">Arrêter</button>`:todo?`<button data-act="dupscan">🌍 Chercher aussi les traductions</button><p class="mu" style="font-size:12px">Demande à Open Library (gratuit, Internet) l’« œuvre » de ${todo} livre${todo>1?'s':''} pas encore vérifié${todo>1?'s':''}, pour trouver le même livre dans une autre langue. Une seule fois par livre ; peut prendre quelques minutes.</p>`:'<p class="mu" style="font-size:12px">🌍 Traductions : tous les livres ont été vérifiés.</p>'}</div>
+${G.map((g,i)=>`<div class="dupg"><div class="dupw">${DUPW[g.w][0]}</div>${g.L.map(dupRow).join('')}<div class="act"><button class="pri" data-act="dupm" data-g="${i}">Fusionner…</button><button data-act="dupno" data-g="${i}">Ce n’est pas un doublon</button></div></div>`).join('')}</div>`}
+/* Fusion : la fiche gardée réunit tout ce qu'il y a dans les autres */
+function dupMerged(K,O){const r={fmt:[...new Set([...fmtOf(K),...O.flatMap(fmtOf)])],tags:[...new Set([...(K.tags||[]),...O.flatMap(b=>b.tags||[])])]};const all=[K,...O];
+ r.rd=K.rd||(O.find(b=>b.rd)||{}).rd||'';r.seen=all.some(b=>b.seen);r.fav=all.some(b=>b.fav);r.pin=all.some(b=>b.pin);r.arch=r.seen?all.some(b=>b.arch):!!K.arch;
+ r.rate=K.rate||(O.find(b=>b.rate)||{}).rate||0;const N=[K,...O].map(b=>String(b.note||'').trim()).filter(Boolean);r.note=[...new Set(N)].join('\n\n');
+ const S2=all.filter(b=>b.syn&&b.syn.t);if(S2.length){const k=K.syn&&K.syn.t?K:S2[0];r.syn={...k.syn};const more=S2.filter(b=>b!==k);if(more.length)r.syn.t=(k.syn.t+more.map(b=>'\n\n— Autre synthèse (fiche « '+nm(b)+' ») —\n'+b.syn.t).join('')).slice(0,20000)}
+ r.pg=Math.max(...all.map(b=>+b.pg||0));r.loan=K.loan||(O.find(b=>b.loan)||{}).loan||null;r.ser=K.ser||(O.find(b=>b.ser)||{}).ser||null;r.dur=K.dur||(O.find(b=>b.dur)||{}).dur||0;r.ph=K.ph||(O.find(b=>b.ph)||{}).ph||0;return r}
+function dupMHtml(){const V=view.dupm,B=V.ids.map(i=>BK()[i]).filter(Boolean);if(B.length<2){view.dupm=null;return dupHtml()}const K=BK()[V.keep]||B[0],O=B.filter(b=>b!==K),r=dupMerged(K,O);
+ const kv=(k,v)=>v?`<div class="kv"><span>${k} :</span> ${esc(v)}</div>`:'';
+ return`<div class="det"><button data-act="back">← Retour</button><h2 style="margin-top:12px">👯 Fusionner</h2><p class="mu" style="font-size:13px">Choisis la fiche à garder : tout le reste y sera réuni, puis les autres fiches seront supprimées.</p><div class="dupg">
+<div class="dupw">Garder quelle fiche ?</div>${B.map(b=>`<button class="dupk ${b===K?'on':''}" data-act="dupk" data-id="${esc(b.id)}"><span class="dupr">${b===K?'◉':'○'}</span><span class="imt"><b>${esc(nm(b))}</b><small>${esc([auOf(b),b.date].filter(Boolean).join(' · '))}</small></span></button>`).join('')}
+<div class="dupw" style="margin-top:12px">La fiche gardée réunira :</div>
+${kv('Formats',r.fmt.map(k=>{const f=FMT.find(x=>x[0]==k);return f?f[1]+' '+f[2]:''}).join(' + '))}${kv((heard({kind:'b',fmt:r.fmt})?'Écouté':'Lu')+' le',r.rd?fd(r.rd):r.seen?'lu (date inconnue)':'')}${kv('Synthèse',r.syn?(S2c(K,O)>1?'les '+S2c(K,O)+' synthèses, l’une après l’autre':'oui'):'')}${kv('Tags',r.tags.join(', '))}${kv('Note',r.rate?'★'.repeat(r.rate):'')}${kv('Commentaire',r.note?'oui':'')}${kv('Prêt',r.loan?'en cours':'')}
+<div class="act"><button class="pri" data-act="dupgo">Fusionner</button><button data-act="back">Annuler</button></div></div></div>`}
+const S2c=(K,O)=>[K,...O].filter(b=>b.syn&&b.syn.t).length;
+function dupGo(){const V=view.dupm;if(!V)return;const B=V.ids.map(i=>BK()[i]).filter(Boolean),K=BK()[V.keep]||B[0],O=B.filter(b=>b!==K);if(!O.length)return;const r=dupMerged(K,O),now=Date.now();
+ K.fmt=r.fmt;K.tags=r.tags;if(r.rd)K.rd=r.rd;K.seen=r.seen?1:0;K.fav=r.fav?1:0;K.pin=r.pin?1:0;K.arch=r.arch?1:0;K.rate=r.rate;K.note=r.note;if(r.syn){K.syn=r.syn;delete K.synErr}if(r.pg)K.pg=r.pg;if(r.loan)K.loan=r.loan;if(r.ser)K.ser=r.ser;if(r.dur)K.dur=r.dur;if(r.ph)K.ph=r.ph;
+ for(const k of ['po','ov','pages','pub','isbn','date'])if(!K[k])for(const b of O)if(b[k]){K[k]=b[k];break}
+ if(!(K.ppl||[]).length)K.ppl=(O.find(b=>(b.ppl||[]).length)||{}).ppl||[];K.mod=now;
+ S.del=S.del||{};for(const b of O){delete BK()[b.id];S.del[b.id]=now;if(S.ttsPos)delete S.ttsPos[b.id];if(tts.id==b.id){ttsStop();tts.id=null}}
+ if(S.ttsPos)delete S.ttsPos[K.id];
+ view.dupm=null;if(S.gh)S.gh.dirty=1;save();schedSync();toast((O.length+1)+' fiches réunies dans « '+nm(K)+' »');render()}
+/* Traductions : une seule demande par livre à Open Library, retenue sur l'appareil */
+async function dupScan(){if(dupRun)return;const L=Object.values(BK()).filter(b=>!b.bd&&!dupWork(b)&&!b.olw);if(!L.length)return;const R=dupRun={i:0,n:L.length,stop:0};render();let fails=0;
+ const upd=()=>{const e=document.getElementById('dupprog');if(e)e.textContent='🌍 Recherche des traductions : '+R.i+' / '+R.n};
+ for(const b of L){if(R.stop)break;R.i++;upd();let w='';
+  try{const isb=dupIsbn(b);if(isb){const r=await fetch(OLU+'/isbn/'+isb+'.json');if(r.ok){const j=await r.json();w=String(((j.works||[])[0]||{}).key||'').replace('/works/','')}}
+   if(!/^OL\d+W$/.test(w)){const au=(b.ppl||[]).filter(p=>p.r=='author').map(p=>p.n)[0]||'',r=await fetch(OLU+'/search.json?title='+encodeURIComponent(String(nm(b)).split(/\s[:–—-]\s|\s*:\s/)[0])+(au?'&author='+encodeURIComponent(au):'')+'&fields=key&limit=1');if(!r.ok)throw 0;const j=await r.json();w=String(((j.docs||[])[0]||{}).key||'').replace('/works/','')}
+   b.olw=/^OL\d+W$/.test(w)?w:'-';fails=0;if(R.i%10==0)save();if(R.i%20==0&&MODE()=='b'&&view.f=='dup'&&!view.open&&!view.dupm&&!view.menu){const y=scrollY;render();scrollTo(0,y)}}catch(e){if(++fails>=3){toast('Open Library ne répond pas : réessaie plus tard');break}}
+  await sleep(350)}
+ dupRun=null;save();if(MODE()=='b'&&view.f=='dup'&&!view.open)render();toast(R.stop?'Recherche arrêtée':'Recherche des traductions terminée')}
 /* Envoyer des fiches à quelqu'un : tout est rangé dans le lien (compressé), rien ne passe par un serveur.
    Jamais envoyé : épisodes vus, dates, tags, prêts, avis (note et commentaire), clés. */
 const lnk64={en:u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},de:t=>{const b=atob(t.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}};
@@ -1797,7 +1853,7 @@ async function findTitle(q){if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE(
 async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,mod:Date.now(),eps:[]};toast('Ajout…');
  try{await syncShow(sh);logEv(sh,'Série ajoutée');view.add=0;view.open=id;view.s=null;view.f='all';toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
-function render(top){applyUI();if(tts.on)setTimeout(ttsCheck,0);renderNote();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp||view.ser||view.imp||view.shr||view.rcv);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
+function render(top){applyUI();if(tts.on)setTimeout(ttsCheck,0);renderNote();const y=scrollY;$('.fab').hidden=!!(view.open||view.add||view.sel||view.pp||view.ser||view.imp||view.shr||view.rcv||view.dupm);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
  const hs=['st','tgr','tb','tgb'].map(id=>{const e=$('#'+id);return[id,e,e?e.scrollLeft:0]});
  if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq').value}const kR=view.add&&!view.pp?view.resK:null,kQ=view.aqK||'';
  $('#app').innerHTML=view.rcv?rcvHtml():view.imp?impHtml():view.shr?shrHtml():view.pp?personHtml(view.pp):view.ser?serHtml()+selBar():view.add?addView():view.open&&IT(view.open)?detail(IT(view.open)):list();
@@ -1914,6 +1970,12 @@ document.addEventListener('click',async ev=>{
  else if(a=='synshare'){const b=IT(d.id);if(b)synShare(b);return}
  else if(a=='syndel'){const b=IT(d.id);if(!b||!confirm('Supprimer la synthèse de ce livre ?'))return;if(tts.id==b.id){ttsStop();tts.id=null}if(S.ttsPos)delete S.ttsPos[b.id];delete b.syn;b.mod=Date.now();if(S.gh)S.gh.dirty=1}
  else if(a=='synai'){if(!synRunning)pdfFree();const id=d.id;pickFiles({acc:'.pdf,.epub,application/pdf,application/epub+zip'},F=>{const b=IT(id);if(b)synOne(b,F[0])});return}
+ else if(a=='dupm'){const g=dupLast[+d.g];if(!g)return;view.dupm={ids:g.L.map(b=>b.id),keep:g.L[0].id};top=1}
+ else if(a=='dupk'){if(view.dupm)view.dupm.keep=d.id}
+ else if(a=='dupgo'){dupGo();return}
+ else if(a=='dupno'){const g=dupLast[+d.g];if(!g)return;S.dupNo=S.dupNo||[];for(let i=0;i<g.L.length;i++)for(let j=i+1;j<g.L.length;j++){const k=dupKey(g.L[i].id,g.L[j].id);if(!S.dupNo.includes(k))S.dupNo.push(k)}save();toast('D’accord, ces livres ne seront plus proposés')}
+ else if(a=='dupscan'){dupScan();return}
+ else if(a=='dupstop'){if(dupRun)dupRun.stop=1;return}
  else if(a=='send1'){sendItems([d.id]);return}
  else if(a=='selshare'){const k=Object.keys(view.sel||{}).filter(i=>IT(i));if(k.length)sendItems(k);return}
  else if(a=='rcvt'){const V=view.rcv,i=+d.i;if(!V||!V.L[i])return;const h=rcvHave(V.L[i]);if(h&&!(V.L[i].sy&&!h.syn))return;V.on[i]=V.on[i]?0:1}
