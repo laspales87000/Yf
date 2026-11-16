@@ -1536,7 +1536,7 @@ function vAsk(b){const p=vPaid();if(!p)return true;const ch=ttsBlocks(b),v=vVoic
  if(!confirm('Écouter avec la voix « '+vName()+' » ?\n\nPremière écoute : '+vCost(p,n)+'.\nEnsuite, les réécoutes sont gratuites sur cet appareil.'))return false;vAsked.add(key);return true}
 let ttsAud=null,ttsUrl='';
 function ttsUnlock(){try{if(!ttsAud)ttsAud=new Audio();if(vPaid()&&ttsAud.paused){ttsAud.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';const q=ttsAud.play();if(q&&q.catch)q.catch(()=>{})}}catch(e){}}
-function ttsCancel(){try{if(ttsDevOK())speechSynthesis.cancel()}catch(e){}try{if(ttsAud)ttsAud.pause()}catch(e){}}
+function ttsCancel(){try{if(ttsDevOK()&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}catch(e){}try{if(ttsAud)ttsAud.pause()}catch(e){}}
 async function ttsAudioNext(k,txt){const p=vPaid(),v=vVoice(p),i=tts.i;let b;tts.wait=1;ttsUi();
  try{b=await vAudio(p,v,txt)}catch(e){if(k!=tts.tok)return;tts.wait=0;tts.on=0;ttsPosSave();ttsUi();noteShow('<b>🔊 La voix « '+esc(vName())+' » ne répond pas</b><p>'+esc(e.message)+(e.detail?' ('+esc(e.detail)+')':'')+'.</p><p>Touche la roue dentée ⚙ à côté du lecteur pour vérifier ta clé ou choisir une autre voix (les voix gratuites marchent toujours).</p>');return}
  tts.wait=0;if(k!=tts.tok||!tts.on)return;const a=ttsAud||(ttsAud=new Audio());if(ttsUrl)URL.revokeObjectURL(ttsUrl);ttsUrl=URL.createObjectURL(b);a.src=ttsUrl;a.playbackRate=ttsRate();try{a.preservesPitch=true}catch(e){}
@@ -1626,8 +1626,13 @@ function ttsNext(){const k=++tts.tok;tts.ci=0;if(!tts.on){ttsPosSave();return tt
  if(vPaid())return ttsAudioNext(k,tts.ch[tts.i].t);if(!ttsDevOK()){tts.on=0;ttsPosSave();return ttsUi()}
  const txt=tts.ch[tts.i].t,u=new SpeechSynthesisUtterance(txt),v=ttsVoice();u.lang=v?v.lang:'fr-FR';if(v)u.voice=v;u.rate=ttsRate();
  u.onboundary=ev=>{if(k==tts.tok&&ev&&ev.charIndex>=0){tts.ci=Math.min(ev.charIndex,txt.length);ttsUi()}};
- u.onend=()=>{if(k!=tts.tok||!tts.on)return;tts.i++;ttsNext()};u.onerror=ev=>{if(k!=tts.tok||!tts.on)return;if(ev&&(ev.error=='interrupted'||ev.error=='canceled'))return;tts.i++;ttsNext()};
- speechSynthesis.speak(u);ttsUi()}
+ let started=0;u.onstart=()=>{started=1;ttsHeard=1};
+ u.onend=()=>{if(k!=tts.tok||!tts.on)return;tts.i++;ttsNext()};u.onerror=ev=>{if(k!=tts.tok||!tts.on)return;const er=ev&&ev.error;if(er=='interrupted'||er=='canceled')return;if(!ttsHeard||er=='not-allowed'||er=='audio-busy'||er=='audio-hardware'||er=='synthesis-unavailable'){tts.on=0;ttsPosSave();ttsUi();ttsMute(er);return}tts.i++;ttsNext()};
+ window._ttsU=u;try{if(speechSynthesis.paused)speechSynthesis.resume()}catch(e){}speechSynthesis.speak(u);ttsUi();
+ if(!ttsHeard)setTimeout(()=>{if(k==tts.tok&&tts.on&&!started&&!ttsHeard){tts.on=0;tts.tok++;ttsCancel();ttsPosSave();ttsUi();ttsMute('')}},4500)}
+/* Aucun son : on explique quoi vérifier (une seule fois par ouverture de l'appli) */
+let ttsHeard=0,ttsMuteSaid=0;const isIOS=()=>/iP(hone|ad|od)/.test(navigator.userAgent)||navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1;
+function ttsMute(er){if(ttsMuteSaid)return toast('Pas de son : touche ▶ pour réessayer');ttsMuteSaid=1;const ios=isIOS();noteShow('<b>🔇 La voix ne démarre pas</b><p>Voici quoi vérifier :</p><ul>'+(ios?'<li><b>Le mode silencieux</b> : sur iPhone, la voix est coupée si le bouton sur le côté (ou le bouton Action) est sur silencieux. Remets la sonnerie, puis touche ▶.</li>':'')+'<li><b>Le volume</b> : monte le son avec les touches du côté.</li><li><b>Une voix française installée</b> : '+(ios?'Réglages → Accessibilité → Contenu énoncé → Voix → Français → télécharge une voix.':'Paramètres → Synthèse vocale → moteur Google → Installer les données vocales → Français.')+'</li><li><b>Une autre voix</b> : touche la roue dentée ⚙ du lecteur et essaie-en une autre avec « ▶ Essayer ».</li></ul>'+(er?'<p class="mu" style="font-size:12px">(Détail : '+esc(er)+')</p>':''))}
 /* Toucher un passage de la synthèse : la lecture saute à ce passage (en avant comme en arrière) */
 function ttsJump(t){const z=t.closest&&t.closest('.synt'),bx=document.getElementById('ttsbox');if(!z||!bx||!ttsOK())return 0;if(getSelection&&String(getSelection()).length>1)return 0;
  const B=[...z.querySelectorAll(':scope > p, :scope li')],blk=t.closest('.synt > p, .synt li'),k=B.indexOf(blk);if(k<0)return 0;const b=IT(bx.dataset.id);if(!b||!b.syn)return 0;
