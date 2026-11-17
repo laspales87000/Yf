@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'">
+<title>Fiche</title>
+<style>
+:root{--bg:#f3f1ee;--sf:#fff;--tx:#222;--mu:#666;--ac:#ff8800;--ln:#ddd}
+@media (prefers-color-scheme:dark){:root{--bg:#121212;--sf:#1e1e1e;--tx:#eee;--mu:#aaa;--ln:#333}}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5}
+main{max-width:640px;margin:0 auto;padding:18px 16px 40px}
+.mu{color:var(--mu)}
+.top{font-size:14px;margin:0 0 14px}
+.f{background:var(--sf);border-radius:14px;padding:16px;margin:0 0 16px;box-shadow:0 1px 3px #0002}
+.h{display:flex;gap:14px}
+.cv{flex:0 0 110px;width:110px;height:165px;border-radius:8px;object-fit:cover;background:#ccc;box-shadow:0 3px 10px #0003}
+.cv.no{display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;color:#fff;font-weight:bold;font-size:13px;background:linear-gradient(160deg,#2c5aa0,#0d2a55)}
+h2{margin:0 0 4px;font-size:21px;line-height:1.25;overflow-wrap:anywhere}
+h3{margin:18px 0 6px;font-size:16px}
+.sy p{margin:0 0 8px}.sy ul{margin:0 0 8px;padding-left:20px}
+.err{background:var(--sf);border-radius:14px;padding:16px}
+</style>
+</head>
+<body>
+<main id="m"><p class="mu">Ouverture de la fiche…</p></main>
+<script>
+/* Page de lecture seule : affiche les fiches contenues dans le lien, sans l'appli.
+   Tout ce qui vient du lien est vérifié et affiché comme du texte. */
+(async()=>{
+const m=document.getElementById('m');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const str=(x,n)=>typeof x=='string'?x.slice(0,n):'';
+const https=u=>typeof u=='string'&&/^https:\/\/[^\s"'<>\\]{1,600}$/.test(u)?u:'';
+const fail=t=>{m.innerHTML='<div class="err">'+esc(t)+'</div>'};
+const h=location.hash||'';
+if(!/^#p=[zj][A-Za-z0-9_-]+$/.test(h))return fail('Ce lien de fiche est abîmé ou incomplet.');
+if(h[3]=='z'&&typeof DecompressionStream=='undefined')return fail('Ce navigateur est trop ancien pour ouvrir cette fiche : mets à jour ton téléphone (sur iPhone : iOS 16.4 ou plus).');
+const de=t=>{const b=atob(t.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
+let o=null;
+try{const raw=h.slice(3),bytes=de(raw.slice(1));
+ const t=raw[0]=='z'?await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text():new TextDecoder().decode(bytes);
+ o=JSON.parse(t)}catch(e){}
+if(!o||o.v!==1||!Array.isArray(o.i))return fail('Ce lien de fiche est abîmé ou incomplet.');
+const L=[];
+for(const r of o.i.slice(0,300)){if(!r||typeof r!='object')continue;const n=str(r.n,300).trim();if(!n)continue;
+ const k=r.k=='b'?'b':r.k=='m'?'m':'s',x={k,n,bd:r.bd?1:0,y:str(r.y,10).match(/\d{4}/)?str(r.y,10).match(/\d{4}/)[0]:'',im:https(r.po)||https(r.im),au:Array.isArray(r.au)?r.au.filter(a=>typeof a=='string').slice(0,10).map(a=>a.slice(0,100)):[]};
+ if(k=='b'&&r.sy&&typeof r.sy=='object'&&typeof r.sy.t=='string'&&r.sy.t.trim())x.sy=r.sy.t.slice(0,20000);
+ L.push(x)}
+if(!L.length)return fail('Ce lien ne contient aucune fiche.');
+const inl=t=>esc(t).replace(/\*\*([^*]{1,300})\*\*/g,'<b>$1</b>');
+const syn=t=>{let out='',ul=0;for(const l0 of t.split(/\r?\n/)){const l=l0.trim();if(!l){if(ul){out+='</ul>';ul=0}continue}
+ const b=l.match(/^[-•*]\s+(.*)$/);if(b){if(!ul){out+='<ul>';ul=1}out+='<li>'+inl(b[1])+'</li>';continue}
+ if(ul){out+='</ul>';ul=0}const hd=l.match(/^#{1,4}\s+(.*)$/);out+=hd?'<p><b>'+inl(hd[1])+'</b></p>':'<p>'+inl(l)+'</p>'}
+ if(ul)out+='</ul>';return out};
+const W={b:['ce livre','livre'],m:['ce film','film'],s:['cette série','série']},k0=L[0].k,same=L.every(x=>x.k==k0&&x.bd==L[0].bd);
+document.title=L.length==1?L[0].n:L.length+' titres conseillés';
+m.innerHTML='<p class="mu top">📚 On te conseille '+(L.length==1?(L[0].bd?'cette BD':W[k0][0]):L.length+' titres')+'</p>'+L.map(x=>{
+ const sub=[x.au.join(', '),x.y].filter(Boolean).join(' · ');
+ return '<section class="f"><div class="h">'+(x.im?'<img class="cv" alt="" referrerpolicy="no-referrer" src="'+esc(x.im)+'">':'<div class="cv no">'+esc(x.n)+'</div>')+'<div><h2>'+esc(x.n)+'</h2>'+(sub?'<div class="mu">'+esc(sub)+'</div>':'')+'</div></div>'+(x.sy?'<h3>📝 Synthèse</h3><div class="sy">'+syn(x.sy)+'</div>':'')+'</section>'}).join('');
+for(const i of m.querySelectorAll('img.cv'))i.addEventListener('error',()=>{const d=document.createElement('div');d.className='cv no';d.textContent=i.closest('.f').querySelector('h2').textContent;i.replaceWith(d)});
+})();
+</script>
+</body>
+</html>
