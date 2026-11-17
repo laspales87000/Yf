@@ -16,7 +16,7 @@ main{max-width:640px;margin:0 auto;padding:18px 16px 40px}
 .top{font-size:14px;margin:0 0 14px}
 .f{background:var(--sf);border-radius:14px;padding:16px;margin:0 0 16px;box-shadow:0 1px 3px #0002}
 .h{display:flex;gap:14px}
-.cv{flex:0 0 110px;width:110px;height:165px;border-radius:8px;object-fit:cover;background:#ccc;box-shadow:0 3px 10px #0003}
+.cw{flex:0 0 110px}.cv{flex:0 0 110px;width:110px;height:165px;border-radius:8px;object-fit:cover;background:#ccc;box-shadow:0 3px 10px #0003}
 .cv.no{display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;color:#fff;font-weight:bold;font-size:13px;background:linear-gradient(160deg,#2c5aa0,#0d2a55)}
 h2{margin:0 0 4px;font-size:21px;line-height:1.25;overflow-wrap:anywhere}
 h3{margin:18px 0 6px;font-size:16px}
@@ -50,7 +50,7 @@ try{const raw=h.slice(3);let b=raw.slice(1);if(b.length%4==1)b=b.slice(0,-1);con
 if(!o||o.v!==1||!Array.isArray(o.i))return fail('Ce lien de fiche est incomplet : il a sans doute été coupé en route (certaines messageries coupent les liens très longs). Demande à la personne de te le renvoyer en entier, par QR code ou par une autre messagerie. (code 2 : '+mt[2].length+' caractères'+(t?', texte coupé':'')+')');
 const L=[];
 for(const r of o.i.slice(0,300)){if(!r||typeof r!='object')continue;const n=str(r.n,300).trim();if(!n)continue;
- const k=r.k=='b'?'b':r.k=='m'?'m':'s',x={k,n,bd:r.bd?1:0,y:str(r.y,10).match(/\d{4}/)?str(r.y,10).match(/\d{4}/)[0]:'',im:https(r.po)||https(r.im),au:Array.isArray(r.au)?r.au.filter(a=>typeof a=='string').slice(0,10).map(a=>a.slice(0,100)):[],g:typeof r.g=='string'&&/^[A-Za-z0-9_-]{1,40}$/.test(r.g)?r.g:'',src:r.src=='ol'?'ol':'gb',tm:Number.isInteger(r.tm)&&r.tm>0&&r.tm<1e9?r.tm:0};
+ const k=r.k=='b'?'b':r.k=='m'?'m':'s',x={k,n,bd:r.bd?1:0,y:str(r.y,10).match(/\d{4}/)?str(r.y,10).match(/\d{4}/)[0]:'',im:https(r.po)||https(r.im),au:Array.isArray(r.au)?r.au.filter(a=>typeof a=='string').slice(0,10).map(a=>a.slice(0,100)):[],g:typeof r.g=='string'&&/^[A-Za-z0-9_-]{1,40}$/.test(r.g)?r.g:'',src:r.src=='ol'?'ol':'gb',ov:str(r.ov,1200).trim(),is:typeof r.is=='string'&&/^(\d{9}[\dXx]|\d{13})$/.test(r.is)?r.is:'',tm:Number.isInteger(r.tm)&&r.tm>0&&r.tm<1e9?r.tm:0};
  if(k=='b'&&r.sy&&typeof r.sy=='object'&&typeof r.sy.t=='string'&&r.sy.t.trim())x.sy=r.sy.t.slice(0,20000);
  L.push(x)}
 if(!L.length)return fail('Ce lien ne contient aucune fiche.');
@@ -63,12 +63,12 @@ const W={b:['ce livre','livre'],m:['ce film','film'],s:['cette série','série']
 document.title=L.length==1?L[0].n:L.length+' titres conseillés';
 m.innerHTML='<p class="mu top">📚 On te conseille '+(L.length==1?(L[0].bd?'cette BD':W[k0][0]):L.length+' titres')+'</p>'+L.map(x=>{
  const sub=[x.au.join(', '),x.y].filter(Boolean).join(' · ');
- return '<section class="f"><div class="h">'+(x.im?'<img class="cv" alt="" referrerpolicy="no-referrer" src="'+esc(x.im)+'">':'<div class="cv no">'+esc(x.n)+'</div>')+'<div><h2>'+esc(x.n)+'</h2>'+(sub?'<div class="mu">'+esc(sub)+'</div>':'')+'</div></div>'+'<div class="more" data-i="'+L.indexOf(x)+'"><p class="mu ld">Recherche des informations…</p></div>'+(x.sy?'<h3>📝 Synthèse</h3><div class="sy">'+syn(x.sy)+'</div>':'')+'</section>'}).join('');
+ return '<section class="f"><div class="h">'+'<div class="cw" data-i="'+L.indexOf(x)+'"><div class="cv no">'+esc(x.n)+'</div></div>'+'<div><h2>'+esc(x.n)+'</h2>'+(sub?'<div class="mu">'+esc(sub)+'</div>':'')+'</div></div>'+'<div class="more" data-i="'+L.indexOf(x)+'">'+(x.ov?'<h3>📖 Résumé</h3><div class="ds">'+esc(x.ov)+'</div>':'<p class="mu ld">Recherche des informations…</p>')+'</div>'+(x.sy?'<h3>📝 Synthèse</h3><div class="sy">'+syn(x.sy)+'</div>':'')+'</section>'}).join('');
 /* Informations publiques du livre (résumé, éditeur, pages…) demandées par cette page : le lien reste court */
 const txt=h=>{try{return(new DOMParser().parseFromString(String(h).replace(/<(script|style)[\s\S]*?<\/\1\s*>/gi,'').replace(/<br\s*\/?>|<\/p>/gi,'\n'),'text/html').body.textContent||'').replace(/\n{3,}/g,'\n\n').trim().slice(0,6000)}catch(e){return''}};
 const get=async u=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);try{const r=await fetch(u,{signal:c.signal,referrerPolicy:'no-referrer'});return r.ok?await r.json():null}catch(e){return null}finally{clearTimeout(t)}};
 async function info(x){const I={};
- if(x.k=='b'&&x.g&&x.src=='gb'){const j=await get('https://www.googleapis.com/books/v1/volumes/'+encodeURIComponent(x.g));const v=j&&j.volumeInfo;if(v){I.ds=txt(v.description||'');I.pub=str(v.publisher,120);I.pg=Number.isInteger(v.pageCount)&&v.pageCount>0?v.pageCount:0;I.gn=Array.isArray(v.categories)?v.categories.filter(c=>typeof c=='string').slice(0,4).join(', '):'';I.dt=str(v.publishedDate,10);const id=(v.industryIdentifiers||[]).find(i=>i&&i.type=='ISBN_13')||(v.industryIdentifiers||[])[0];I.isbn=id&&typeof id.identifier=='string'?id.identifier.replace(/[^0-9X]/gi,'').slice(0,13):'';I.lg=str(v.language,5)}}
+ if(x.k=='b'&&x.g&&x.src=='gb'){const j=await get('https://www.googleapis.com/books/v1/volumes/'+encodeURIComponent(x.g));const v=j&&j.volumeInfo;if(v){I.ds=txt(v.description||'');I.pub=str(v.publisher,120);I.pg=Number.isInteger(v.pageCount)&&v.pageCount>0?v.pageCount:0;I.gn=Array.isArray(v.categories)?v.categories.filter(c=>typeof c=='string').slice(0,4).join(', '):'';I.dt=str(v.publishedDate,10);const id=(v.industryIdentifiers||[]).find(i=>i&&i.type=='ISBN_13')||(v.industryIdentifiers||[])[0];I.isbn=id&&typeof id.identifier=='string'?id.identifier.replace(/[^0-9X]/gi,'').slice(0,13):'';I.lg=str(v.language,5);const il=v.imageLinks||{};I.im=https(String(il.thumbnail||il.smallThumbnail||'').replace(/^http:/,'https:'))}}
  else if(x.k=='b'&&x.g&&x.src=='ol'){const w=/^OL\d+W$/.test(x.g)?await get('https://openlibrary.org/works/'+x.g+'.json'):null;if(w){const d=w.description;I.ds=txt(typeof d=='string'?d:d&&typeof d.value=='string'?d.value:'');I.gn=Array.isArray(w.subjects)?w.subjects.filter(c=>typeof c=='string').slice(0,4).join(', '):''}}
  else if(x.k=='s'&&x.tm){const j=await get('https://api.tvmaze.com/shows/'+x.tm);if(j){I.ds=txt(j.summary||'');I.gn=Array.isArray(j.genres)?j.genres.filter(c=>typeof c=='string').slice(0,4).join(', '):'';I.pub=j.network&&typeof j.network.name=='string'?j.network.name.slice(0,80):'';I.dt=str(j.premiered,10)}}
  return I}
@@ -77,8 +77,10 @@ for(const el of m.querySelectorAll('.more')){const x=L[+el.dataset.i];info(x).th
  const row=(k,v)=>v?'<div><b>'+k+'</b>'+esc(v)+'</div>':'',ed=x.k=='s'?'Chaîne':'Éditeur';
  const d=I.dt&&/^\d{4}-\d{2}-\d{2}$/.test(I.dt)?I.dt.split('-').reverse().join('/'):I.dt||'';
  const rows=row(ed,I.pub)+row('Parution',d)+row('Pages',I.pg?String(I.pg):'')+row('Genres',I.gn)+row('Langue',LG[I.lg]||'')+row('ISBN',I.isbn);
- el.innerHTML=(rows?'<div class="dt">'+rows+'</div>':'')+(I.ds?'<h3>📖 Résumé</h3><div class="ds">'+esc(I.ds)+'</div>':'')+(rows||I.ds?'':'<p class="mu ld">Pas d’autres informations disponibles pour le moment.</p>')})}
-for(const i of m.querySelectorAll('img.cv'))i.addEventListener('error',()=>{const d=document.createElement('div');d.className='cv no';d.textContent=i.closest('.f').querySelector('h2').textContent;i.replaceWith(d)});
+ const ds=I.ds&&I.ds.length>=x.ov.length?I.ds:x.ov;el.innerHTML=(rows?'<div class="dt">'+rows+'</div>':'')+(ds?'<h3>📖 Résumé</h3><div class="ds">'+esc(ds)+'</div>':'')+(rows||ds?'':'<p class="mu ld">Pas d’autres informations disponibles pour le moment.</p>');if(I.im)cover(x,I.im)})}
+function cover(x,u){if(x.ok||!u||x.tried&&x.tried.includes(u))return;(x.tried=x.tried||[]).push(u);const i=new Image();i.className='cv';i.alt='';i.referrerPolicy='no-referrer';
+ i.onload=()=>{if(x.ok||i.naturalWidth<20||i.naturalHeight<20)return;x.ok=1;const w=m.querySelector('.cw[data-i="'+L.indexOf(x)+'"]');if(w)w.replaceChildren(i)};i.src=u}
+for(const x of L){cover(x,x.im);if(x.is)cover(x,'https://covers.openlibrary.org/b/isbn/'+x.is+'-L.jpg?default=false')}
 })();
 </script>
 </body>
