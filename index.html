@@ -1313,10 +1313,11 @@ function list(){
  const cardOf=it=>`<div class="sw" data-id="${esc(it.id)}"><div class="swbg"></div>${it.kind=='m'?mcard(it):it.kind=='b'?bcard(it):tcard(it)}</div>`;
  if(q){const nq0=norm(q),SE=nq0.length>=2?serEntries().filter(x=>norm(x.s).includes(nq0)&&!spDel(x.s)):[],SH=SE.length?`<h4 class="shd">📚 ${md=='s'?'Univers':md=='m'?'Sagas':'Séries'}</h4><div class="srs">${SE.map(x=>`<button class="pls" data-act="ser" data-s="${esc(x.s)}" ${x.a}>📚 ${esc(x.s)}</button>`).join('')}</div>`:'';
   const nq=norm(q),qt=nq.split(' ').filter(Boolean),ok=it=>qt.length&&matchIt(it,nq,qt),okP=it=>qt.length&&matchP(it,qt),LB={s:'Séries',m:'Films',b:'Livres',c:'BDs'},order=[md,...['s','m','b','c'].filter(x=>x!=md)],R={};
-  view.ids=[];let body='';for(const k of order){R[k]=ALL[k].filter(k==md?ok:okP).sort(cmp);view.ids.push(...R[k].map(x=>x.id));if(R[k].length)body+=`<h4 class="shd">${LB[k]}</h4><div class="list">${R[k].map(cardOf).join('')}</div>`}
+  view.ids=[];let body='';const none=!ALL[md].some(ok);for(const k of order){R[k]=ALL[k].filter(k==md||none?ok:okP).sort(cmp);view.ids.push(...R[k].map(x=>x.id));if(R[k].length)body+=`<h4 class="shd">${LB[k]}</h4><div class="list">${R[k].map(cardOf).join('')}</div>`}
   const AW=({s:'une série',m:'un film',b:'un livre',c:'une BD'})[md],LW=({s:'tes séries',m:'tes films',b:'tes livres',c:'tes BDs'})[md],AB=`<button class="pri" data-act="addq" data-q="${esc(q)}">➕ Ajouter ${AW} : chercher « ${esc(q)} »</button>`;
-  const NR=R[md].length||SE.length?'':body?`<div class="nores"><p class="mu">Rien trouvé pour « ${esc(q)} » dans ${LW}.</p>${AB}</div>`:`<div class="nores"><p>🔍 Aucun résultat pour « ${esc(q)} » dans ta bibliothèque.</p><p class="mu">Tu veux l’ajouter ? L’appli le cherche sur Internet, comme avec le bouton ＋.</p>${AB}</div>`;
-  return NR+SH+body+FOOT}
+  if(R[md].length||SE.length)return SH+body+FOOT;
+  if(body)return`<div class="nores"><p>🔍 Rien trouvé pour « ${esc(q)} » dans ${LW}.</p><p class="mu">Mais il y a des résultats dans tes autres catégories :</p></div>`+body+`<div class="nores"><p class="mu">Ce n’est pas ce que tu cherches ? L’appli peut le chercher sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT;
+  return`<div class="nores"><p>🔍 Aucun résultat pour « ${esc(q)} » dans ta bibliothèque.</p><p class="mu">Tu veux l’ajouter ? L’appli le cherche sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT}
  if(md=='s'&&f=='eps'){const r=[];for(const sh of ALL.s)for(const e of sh.eps)if(e.f)r.push(ep(sh,e,1));return`<div class="det">${r.join('')||'<p class="mu">Aucun épisode favori. Touche ♥ sur un épisode.</p>'}</div>`}
  const T=allTags();if(view.tag&&!T.includes(view.tag))view.tag='';
  const sb=`<button class="serb" data-act="menu" data-m="serlist" aria-label="${md=='m'?'Sagas':md=='s'?'Univers':'Séries'}" title="${md=='m'?'Sagas':md=='s'?'Univers':'Séries'}">${md=='m'?'📚':md=='s'?'📚':'📚'}</button>`;
