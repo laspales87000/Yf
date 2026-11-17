@@ -35,15 +35,18 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const str=(x,n)=>typeof x=='string'?x.slice(0,n):'';
 const https=u=>typeof u=='string'&&/^https:\/\/[^\s"'<>\\]{1,600}$/.test(u)?u:'';
 const fail=t=>{m.innerHTML='<div class="err">'+esc(t)+'</div>'};
-const h=location.hash||'';
-if(!/^#p=[zj][A-Za-z0-9_-]+$/.test(h))return fail('Ce lien de fiche est abîmé ou incomplet.');
-if(h[3]=='z'&&typeof DecompressionStream=='undefined')return fail('Ce navigateur est trop ancien pour ouvrir cette fiche : mets à jour ton téléphone (sur iPhone : iOS 16.4 ou plus).');
+/* Certaines messageries abîment un peu la fin du lien (point, espace, %20, paramètres ajoutés) : on ne garde que la partie utile */
+let all=location.hash+'&'+location.search;try{all=decodeURIComponent(all)}catch(e){}
+const mt=all.match(/p=([zj])([A-Za-z0-9_-]{8,})/);
+if(!mt)return fail('Ce lien de fiche est abîmé ou incomplet. (code 1 : contenu absent)');
+if(mt[1]=='z'&&typeof DecompressionStream=='undefined')return fail('Ce navigateur est trop ancien pour ouvrir cette fiche : mets à jour ton téléphone (sur iPhone : iOS 16.4 ou plus).');
+const h='#p='+mt[1]+mt[2];
 const de=t=>{const b=atob(t.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
-let o=null;
-try{const raw=h.slice(3),bytes=de(raw.slice(1));
- const t=raw[0]=='z'?await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text():new TextDecoder().decode(bytes);
+let o=null,t='';
+try{const raw=h.slice(3);let b=raw.slice(1);if(b.length%4==1)b=b.slice(0,-1);const bytes=de(b);
+ t=raw[0]=='z'?await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text():new TextDecoder().decode(bytes);
  o=JSON.parse(t)}catch(e){}
-if(!o||o.v!==1||!Array.isArray(o.i))return fail('Ce lien de fiche est abîmé ou incomplet.');
+if(!o||o.v!==1||!Array.isArray(o.i))return fail('Ce lien de fiche est incomplet : il a sans doute été coupé en route (certaines messageries coupent les liens très longs). Demande à la personne de te le renvoyer en entier, par QR code ou par une autre messagerie. (code 2 : '+mt[2].length+' caractères'+(t?', texte coupé':'')+')');
 const L=[];
 for(const r of o.i.slice(0,300)){if(!r||typeof r!='object')continue;const n=str(r.n,300).trim();if(!n)continue;
  const k=r.k=='b'?'b':r.k=='m'?'m':'s',x={k,n,bd:r.bd?1:0,y:str(r.y,10).match(/\d{4}/)?str(r.y,10).match(/\d{4}/)[0]:'',im:https(r.po)||https(r.im),au:Array.isArray(r.au)?r.au.filter(a=>typeof a=='string').slice(0,10).map(a=>a.slice(0,100)):[]};

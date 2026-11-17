@@ -1504,7 +1504,7 @@ function rcvClean(o){if(!o||o.v!==1||!Array.isArray(o.i))return null;const str=(
  return out.length?out:null}
 const rcvId=r=>r.k=='m'?'m'+r.tm:r.k=='b'?'b'+r.g:r.tv?'t'+r.tv:r.id;
 function rcvHave(r){if(r.k=='m')return MV()['m'+r.tm];if(r.k=='b')return BK()['b'+r.g];return S.shows[rcvId(r)]||Object.values(S.shows).find(x=>r.tv?x.tmdbtv==r.tv:x.tm&&x.tm==r.tm)}
-async function rcvOpen(){const h=location.hash||'';if(!/^#p=[zj][A-Za-z0-9_-]+$/.test(h))return;try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}
+async function rcvOpen(){let h0=location.hash||'';if(!/^#p=[zj]/.test(h0))return;try{h0=decodeURIComponent(h0)}catch(e){}const mt=h0.match(/^#p=([zj][A-Za-z0-9_-]+)/);if(!mt)return;const h='#p='+mt[1];try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}
  if(h[3]=='z'&&typeof DecompressionStream=='undefined')return toast('Ce navigateur est trop ancien pour ouvrir ce lien : mets à jour ton téléphone (sur iPhone : iOS 16.4 ou plus)',7000);
  let L=null;try{const raw=h.slice(3),t=raw[0]=='z'?await zip8(lnk64.de(raw.slice(1)),1):new TextDecoder().decode(lnk64.de(raw.slice(1)));L=rcvClean(JSON.parse(t))}catch(e){}
  if(!L)return toast('Ce lien de fiches est abîmé ou incomplet');
