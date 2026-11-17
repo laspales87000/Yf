@@ -1466,7 +1466,7 @@ async function zip8(str,inv){const st=inv?new DecompressionStream('deflate-raw')
 const httpsOk=u=>typeof u=='string'&&/^https:\/\/[^\s"'<>\\]{1,600}$/.test(u)?u:'';
 function sendRec(it,syn){const im=httpsOk(it.img||it.po||'');
  if(it.kind=='m')return{k:'m',tm:it.tmdb,n:nm(it),im};
- if(it.kind=='b'){const o={k:'b',g:it.gid,src:it.src||'gb',bd:it.bd?1:0,n:nm(it),au:(it.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).slice(0,10),po:httpsOk(it.po||''),y:it.date||''};if(Array.isArray(it.fmt))o.fm=it.fmt;if(syn&&it.syn&&it.syn.t){const y=it.syn;o.sy={t:y.t,s:y.s=='ia'?'ia':'me',d:y.d||''};if(y.s=='ia'){if(y.full)o.sy.full=1;if(y.by)o.sy.by=y.by}}return o}
+ if(it.kind=='b'){const o={k:'b',g:it.gid,src:it.src||'gb',bd:it.bd?1:0,n:nm(it),au:(it.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).slice(0,10),po:httpsOk(it.po||''),y:it.date||''};if(Array.isArray(it.fmt))o.fm=it.fmt;{const v=String(it.ov||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(v){let c=v.slice(0,600);if(v.length>600){const k=Math.max(c.lastIndexOf('. '),c.lastIndexOf('! '),c.lastIndexOf('? '));c=k>250?c.slice(0,k+1):c.replace(/\s+\S*$/,'')+'…'}o.ov=c}const ib=String(it.isbn||'').replace(/[^0-9Xx]/g,'');if(ib.length==10||ib.length==13)o.is=ib}if(syn&&it.syn&&it.syn.t){const y=it.syn;o.sy={t:y.t,s:y.s=='ia'?'ia':'me',d:y.d||''};if(y.s=='ia'){if(y.full)o.sy.full=1;if(y.by)o.sy.by=y.by}}return o}
  return it.src=='tmdb'?{k:'s',tv:it.tmdbtv,n:nm(it),im}:{k:'s',id:it.id,tm:it.tm,n:nm(it),im}}
 const sendBase=()=>location.href.split('#')[0].split('?')[0].replace(/yf\.html$/,'');
 async function sendZ(L,syn){const j=JSON.stringify({v:1,i:L.map(it=>sendRec(it,syn))});let z='j'+lnk64.en(new TextEncoder().encode(j));try{if(typeof CompressionStream!='undefined')z='z'+lnk64.en(await zip8(j))}catch(e){}return z}
@@ -1482,7 +1482,7 @@ const sendMsg=()=>{const L=SND.L,t=L.length==1?'📚 Je te conseille « '+nm(L[0
 function sendSheet(){let e=$('#sndS');if(!SND){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='sndS';document.body.appendChild(e)}
  const L=SND.L,bk=L.every(x=>x.kind=='b'),qn=sendUrl(),fit=qn.length<=QRMAX,B=(k,v,on,h)=>`<button class="sndo ${on?'on':''}" data-act="${k}" data-v="${v}">${h}</button>`;
  e.innerHTML=`<div class="sndbg" data-act="sndx"></div><div class="sndp" role="dialog" aria-label="Envoyer"><button class="sndc" data-act="sndx" aria-label="Fermer">✕</button><h3>📤 Envoyer ${L.length==1?'« '+esc(nm(L[0]))+' »':L.length+' titres'}</h3>
-<p class="mu sndi">${bk?'Titre, auteur et couverture':'Titre et image'}. Jamais ta synthèse, ta note, ton avis ni ta date de lecture.</p>
+<p class="mu sndi">${bk?'Titre, auteur, année, couverture et résumé':'Titre et image'}. Jamais ta synthèse, ta note, ton avis ni ta date de lecture.</p>
 <p class="sndq">Comment l’autre personne la reçoit ?</p><div class="sndr">${B('sndhow','a',SND.how=='a','<b>📱 Avec l’appli</b>Elle peut l’ajouter à sa bibliothèque')}${B('sndhow','f',SND.how=='f','<b>📄 Fiche seule</b>Une page à lire, sans l’appli')}</div>
 <div class="sndt">${B('sndby','q',SND.by=='q','🔳 QR code')}${B('sndby','m',SND.by=='m','💬 Message')}</div>
 ${SND.by=='q'?(fit?`<div id="sndQ" class="sndqr"><p class="mu">Préparation du QR code…</p></div><p class="mu sndi" style="text-align:center">À viser avec l’appareil photo de son téléphone</p>`:`<p class="mu sndi">Trop de titres pour un seul QR code : choisis-en moins, ou envoie par message.</p><button class="pri" data-act="sndby" data-v="m">💬 Envoyer par message</button>`)
