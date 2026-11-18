@@ -278,7 +278,8 @@ function fromBk(j){const o={};for(const x of(j[0]||{}).Shows||[])o[x.SeriesId]={
 /* Titre de la série dans la langue de l'appli (ex. « La Servante écarlate »), demandé à TMDB pour que la loupe le trouve */
 async function showLoc(sh,x){try{const ex=(x&&x.externals)||{},q=ex.imdb&&/^tt\d+$/.test(ex.imdb)?'/find/'+ex.imdb+'?external_source=imdb_id':ex.thetvdb?'/find/'+(+ex.thetvdb)+'?external_source=tvdb_id':'';const L0=LANG();sh.locL=L0;if(!q)return;
  const j=await tmdb(q),t=j&&(j.tv_results||[])[0],n=t&&typeof t.name=='string'?t.name.trim().slice(0,200):'';if(n&&norm(n)!=norm(x.name||sh.name||''))sh.loc=n;else delete sh.loc;save()}catch(e){}}
-let locRun=0;async function locPass(){if(locRun||!S||!S.shows)return;locRun=1;try{let n=0;for(const sh of Object.values(S.shows)){if(n>=300)break;if(sh.locL==LANG()||!sh.tm)continue;n++;const x=await api('/shows/'+sh.tm).catch(()=>null);if(x)await showLoc(sh,x);else sh.locL=LANG();await sleep(700)}}finally{locRun=0}}
+let locRun=0,locP=null;const locTodo=()=>Object.values(S.shows||{}).filter(sh=>sh.locL!=LANG()&&sh.tm);
+async function locPass(){if(locRun||!S||!S.shows)return;locRun=1;const T=locTodo().slice(0,300);locP={i:0,n:T.length};try{for(const sh of T){if(sh.locL==LANG()){locP.i++;continue}const x=await api('/shows/'+sh.tm).catch(()=>null);if(x)await showLoc(sh,x);else sh.locL=LANG();locP.i++;if(view.q&&MODE()=='s'&&locP.i%5==0){const y=scrollY;render();scrollTo(0,y)}await sleep(700)}}finally{locRun=0;locP=null;if(view.q){const y=scrollY;render();scrollTo(0,y)}}}
 setTimeout(()=>{if(navigator.onLine!==false)locPass()},20000);
 async function api(p){for(let i=0;i<4;i++){const r=await fetch(API+p);if(r.status==429){await sleep(4000);continue}if(r.status==404)return null;if(!r.ok)throw Error(r.status);return r.json()}throw Error('429')}
 async function syncShow(sh){
@@ -1320,9 +1321,10 @@ function list(){
   const nq=norm(q),qt=nq.split(' ').filter(Boolean),ok=it=>qt.length&&matchIt(it,nq,qt),okP=it=>qt.length&&matchP(it,qt),LB={s:'Séries',m:'Films',b:'Livres',c:'BDs'},order=[md,...['s','m','b','c'].filter(x=>x!=md)],R={};
   view.ids=[];let body='';const none=!ALL[md].some(ok);for(const k of order){if(S.qone&&k!=md){R[k]=[];continue}R[k]=ALL[k].filter(k==md||none?ok:okP).sort(cmp);view.ids.push(...R[k].map(x=>x.id));if(R[k].length)body+=`<h4 class="shd">${LB[k]}</h4><div class="list">${R[k].map(cardOf).join('')}</div>`}
   const AW=({s:'une série',m:'un film',b:'un livre',c:'une BD'})[md],LW=({s:'tes séries',m:'tes films',b:'tes livres',c:'tes BDs'})[md],AB=`<button class="pri" data-act="addq" data-q="${esc(q)}">➕ Ajouter ${AW} : chercher « ${esc(q)} »</button>`;
-  if(R[md].length||SE.length)return SH+body+FOOT;
-  if(body)return`<div class="nores"><p>🔍 Rien trouvé pour « ${esc(q)} » dans ${LW}.</p><p class="mu">Mais il y a des résultats dans tes autres catégories :</p></div>`+body+`<div class="nores"><p class="mu">Ce n’est pas ce que tu cherches ? L’appli peut le chercher sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT;
-  return`<div class="nores"><p>🔍 Aucun résultat pour « ${esc(q)} » dans ${S.qone?LW:'ta bibliothèque'}.</p><p class="mu">Tu veux l’ajouter ? L’appli le cherche sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT}
+  const LN=locP&&locP.n?`<p class="mu pad" style="font-size:13px;padding-bottom:0">⏳ Recherche des titres français des séries : ${locP.i} / ${locP.n}. Certaines séries peuvent encore manquer.</p>`:'';
+  if(R[md].length||SE.length)return LN+SH+body+FOOT;
+  if(body)return LN+`<div class="nores"><p>🔍 Rien trouvé pour « ${esc(q)} » dans ${LW}.</p><p class="mu">Mais il y a des résultats dans tes autres catégories :</p></div>`+body+`<div class="nores"><p class="mu">Ce n’est pas ce que tu cherches ? L’appli peut le chercher sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT;
+  return LN+`<div class="nores"><p>🔍 Aucun résultat pour « ${esc(q)} » dans ${S.qone?LW:'ta bibliothèque'}.</p><p class="mu">Tu veux l’ajouter ? L’appli le cherche sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT}
  if(md=='s'&&f=='eps'){const r=[];for(const sh of ALL.s)for(const e of sh.eps)if(e.f)r.push(ep(sh,e,1));return`<div class="det">${r.join('')||'<p class="mu">Aucun épisode favori. Touche ♥ sur un épisode.</p>'}</div>`}
  const T=allTags();if(view.tag&&!T.includes(view.tag))view.tag='';
  const sb=`<button class="serb" data-act="menu" data-m="serlist" aria-label="${md=='m'?'Sagas':md=='s'?'Univers':'Séries'}" title="${md=='m'?'Sagas':md=='s'?'Univers':'Séries'}">${md=='m'?'📚':md=='s'?'📚':'📚'}</button>`;
