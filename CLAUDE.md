@@ -22,5 +22,7 @@
 - **Fusionner soi-même** la demande de fusion (pull request) vers `main` dès que la modification
   est prête et testée, sans demander de validation. Ensuite, dire qu'il suffit de recharger
   https://laspales87000.github.io/Yf/ après une ou deux minutes.
+- Les prix des services payants (voix, Gemini) sont des estimations écrites dans `index.html`
+  (`PRICED`, `VPRICE`, `VPURL`, `vCost`) : quand on les vérifie, mettre à jour les chiffres et la date.
 - Les données de chaque utilisateur restent sur son appareil : ne jamais casser la façon dont
   elles sont enregistrées, ni la synchronisation GitHub, ni les sauvegardes.
