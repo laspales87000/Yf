@@ -1597,12 +1597,12 @@ async function dupScan(){if(dupRun)return;const L=Object.values(BK()).filter(b=>
 const lnk64={en:u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},de:t=>{const b=atob(t.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}};
 async function zip8(str,inv){const st=inv?new DecompressionStream('deflate-raw'):new CompressionStream('deflate-raw');const out=new Response(new Blob([str]).stream().pipeThrough(st));return inv?await out.text():new Uint8Array(await out.arrayBuffer())}
 const httpsOk=u=>typeof u=='string'&&/^https:\/\/[^\s"'<>\\]{1,600}$/.test(u)?u:'';
-function sendRec(it,syn){const im=httpsOk(it.img||it.po||'');
+function sendRec(it,syn,lite){const im=httpsOk(it.img||it.po||'');
  if(it.kind=='m')return{k:'m',tm:it.tmdb,n:nm(it),im};
- if(it.kind=='b'){const o={k:'b',g:it.gid,src:it.src||'gb',bd:it.bd?1:0,n:nm(it),au:(it.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).slice(0,10),po:httpsOk(it.po||''),y:it.date||''};if(Array.isArray(it.fmt))o.fm=it.fmt;{const v=String(it.ov||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(v){let c=v.slice(0,600);if(v.length>600){const k=Math.max(c.lastIndexOf('. '),c.lastIndexOf('! '),c.lastIndexOf('? '));c=k>250?c.slice(0,k+1):c.replace(/\s+\S*$/,'')+'…'}o.ov=c}const ib=String(it.isbn||'').replace(/[^0-9Xx]/g,'');if(ib.length==10||ib.length==13)o.is=ib}if(syn&&it.syn&&it.syn.t){const y=it.syn;o.sy={t:y.t,s:y.s=='ia'?'ia':'me',d:y.d||''};if(y.s=='ia'){if(y.full)o.sy.full=1;if(y.by)o.sy.by=y.by}}return o}
+ if(it.kind=='b'){const o={k:'b',g:it.gid,src:it.src||'gb',bd:it.bd?1:0,n:nm(it),au:(it.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).slice(0,10),po:httpsOk(it.po||''),y:it.date||''};if(Array.isArray(it.fmt))o.fm=it.fmt;{const v=lite?'':String(it.ov||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(v){let c=v.slice(0,600);if(v.length>600){const k=Math.max(c.lastIndexOf('. '),c.lastIndexOf('! '),c.lastIndexOf('? '));c=k>250?c.slice(0,k+1):c.replace(/\s+\S*$/,'')+'…'}o.ov=c}const ib=String(it.isbn||'').replace(/[^0-9Xx]/g,'');if(ib.length==10||ib.length==13)o.is=ib}if(syn&&it.syn&&it.syn.t){const y=it.syn;o.sy={t:y.t,s:y.s=='ia'?'ia':'me',d:y.d||''};if(y.s=='ia'){if(y.full)o.sy.full=1;if(y.by)o.sy.by=y.by}}return o}
  return it.src=='tmdb'?{k:'s',tv:it.tmdbtv,n:nm(it),im}:{k:'s',id:it.id,tm:it.tm,n:nm(it),im}}
 const sendBase=()=>location.href.split('#')[0].split('?')[0].replace(/yf\.html$/,'');
-async function sendZ(L,syn){const j=JSON.stringify({v:1,i:L.map(it=>sendRec(it,syn))});let z='j'+lnk64.en(new TextEncoder().encode(j));try{if(typeof CompressionStream!='undefined')z='z'+lnk64.en(await zip8(j))}catch(e){}return z}
+async function sendZ(L,syn,lite){const j=JSON.stringify({v:1,i:L.map(it=>sendRec(it,syn,lite))});let z='j'+lnk64.en(new TextEncoder().encode(j));try{if(typeof CompressionStream!='undefined')z='z'+lnk64.en(await zip8(j))}catch(e){}return z}
 async function sendLink(L,syn){return sendBase()+'#p='+await sendZ(L,syn)}
 /* Envoi : fenêtre avec choix « avec l'appli » ou « fiche seule », puis QR code ou message.
    Jamais la note, l'avis ni la date de lecture (sendRec ne les met pas). */
@@ -1610,15 +1610,17 @@ let SND=null;const QRMAX=1000;
 /* Au-delà de SNDPK titres, l'envoi est réparti en plusieurs messages (un lien trop long serait coupé par les messageries) */
 const SNDPK=500;
 async function sendItems(ids){const L=ids.map(IT).filter(Boolean);if(!L.length)return;if(L.length>SNDPK)toast('Préparation des messages…');
- const P=[];for(let i=0;i<L.length;i+=SNDPK){const l=L.slice(i,i+SNDPK),z=await sendZ(l,0);if(z.length>60000)return toast('Trop de fiches à la fois : choisis-en moins');P.push({L:l,z})}
- SND={L,P,i:0,ok:[],how:S.sndHow=='f'?'f':'a',by:P.length>1?'m':S.sndBy=='m'?'m':'q',z1:P[0].z};
+ /* Beaucoup de titres : sans les résumés (l'appli de l'ami les recharge en ajoutant les fiches), et paquets redécoupés si un lien reste trop long */
+ const lite=L.length>30,P=[],pack=async l=>{const z=await sendZ(l,0,lite);if(z.length<=50000)P.push({L:l,z});else if(l.length>1){const h=Math.ceil(l.length/2);await pack(l.slice(0,h));await pack(l.slice(h))}else throw 0};
+ try{for(let i=0;i<L.length;i+=SNDPK)await pack(L.slice(i,i+SNDPK))}catch(e){return toast('Trop de fiches à la fois : choisis-en moins')}
+ SND={L,P,lite,i:0,ok:[],how:S.sndHow=='f'?'f':'a',by:P.length>1?'m':S.sndBy=='m'?'m':'q',z1:P[0].z};
  sendSheet()}
 const sendUrl=(i)=>(SND.how=='f'?sendBase().replace(/[^/]*$/,'')+'fiche.html':sendBase())+'#p='+(SND.P&&SND.P[i||0]?SND.P[i||0].z:SND.z1);
 const sendMsg=(i)=>{const N=SND.P?SND.P.length:1,L=N>1?SND.P[i||0].L:SND.L,t=(N>1?'(message '+((i||0)+1)+' sur '+N+') ':'')+L.length==1?'📚 Je te conseille « '+nm(L[0])+' »':'📚 Je te conseille '+L.length+' titres : '+L.slice(0,5).map(nm).join(', ')+(L.length>5?'…':'');return t+(SND.how=='f'?'\nTouche le lien pour voir la fiche :':'\nTouche le lien pour l’ajouter à ton appli :')};
 function sendSheet(){let e=$('#sndS');if(!SND){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='sndS';document.body.appendChild(e)}
  const L=SND.L,NP=SND.P?SND.P.length:1,bk=L.every(x=>x.kind=='b'),qn=sendUrl(),fit=NP==1&&qn.length<=QRMAX,B=(k,v,on,h)=>`<button class="sndo ${on?'on':''}" data-act="${k}" data-v="${v}">${h}</button>`;
  e.innerHTML=`<div class="sndbg" data-act="sndx"></div><div class="sndp" role="dialog" aria-label="Envoyer"><button class="sndc" data-act="sndx" aria-label="Fermer">✕</button><h3>📤 Envoyer ${L.length==1?'« '+esc(nm(L[0]))+' »':L.length+' titres'}</h3>
-<p class="mu sndi">${bk?'Titre, auteur, année, couverture et résumé':'Titre et image'}. Jamais ta synthèse, ta note, ton avis ni ta date de lecture.</p>
+<p class="mu sndi">${bk?(SND.lite?'Titre, auteur, année et couverture (le résumé se recharge chez l’autre personne)':'Titre, auteur, année, couverture et résumé'):'Titre et image'}. Jamais ta synthèse, ta note, ton avis ni ta date de lecture.</p>
 <p class="sndq">Comment l’autre personne la reçoit ?</p><div class="sndr">${B('sndhow','a',SND.how=='a','<b>📱 Avec l’appli</b>Elle peut l’ajouter à sa bibliothèque')}${B('sndhow','f',SND.how=='f','<b>📄 Fiche seule</b>Une page à lire, sans l’appli')}</div>
 <div class="sndt">${B('sndby','q',SND.by=='q','🔳 QR code')}${B('sndby','m',SND.by=='m','💬 Message')}</div>
 ${SND.by=='q'?(fit?`<div id="sndQ" class="sndqr"><p class="mu">Préparation du QR code…</p></div><p class="mu sndi" style="text-align:center">À viser avec l’appareil photo de son téléphone</p>`:`<p class="mu sndi">Trop de titres pour un seul QR code : choisis-en moins, ou envoie par message.</p><button class="pri" data-act="sndby" data-v="m">💬 Envoyer par message</button>`)
