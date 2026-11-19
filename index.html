@@ -2283,12 +2283,18 @@ function render(top){applyUI();vaultAuto();if(tts.on)setTimeout(ttsCheck,0);rend
 
 /* Actions */
 let lpAt=0;
+/* Boutons « Ajouter » des résultats : grisés pendant l'ajout, puis « ✓ Ajouté » (la liste des résultats reste affichée) */
+const ADDA=['addmq','addtv','addbook','addbq','addpb','addmovie','addshow'];
+const addHas=(a,d)=>a=='addtv'?Object.values(S.shows).some(s=>s.tmdbtv==d.tm):a=='addshow'?!!(S.shows[d.tv||'tm'+d.tm]||Object.values(S.shows).some(s=>s.tm==d.tm)):a=='addmq'||a=='addmovie'?!!MV()['m'+d.tm]:!!BK()['b'+d.gid];
+async function addBusy(el,a,d){const k=a+'|'+(d.tm||d.gid),mark=t=>document.querySelectorAll('[data-act="'+a+'"]').forEach(b=>{if(b.dataset.act+'|'+(b.dataset.tm||b.dataset.gid)!=k)return;if(t==1){if(!b.dataset.lb)b.dataset.lb=b.textContent;b.disabled=true;b.textContent='⏳ Ajout…'}else if(t==2){b.disabled=true;b.textContent='✓ Ajouté';b.classList.remove('pri')}else{b.disabled=false;b.textContent=b.dataset.lb||'Ajouter'}}),keep=()=>{const r=$('#res');if(view.add&&r)view.resK=r.innerHTML};
+ mark(1);keep();try{await({addmq:()=>addMq(d.tm),addtv:()=>addTv(d.tm,d.tn,!!view.add),addbook:()=>addBook(d.gid,+d.bd),addbq:()=>addBook(d.gid,MODE()=='c'?1:0,1),addpb:()=>addBook(d.gid,+d.bd,1),addmovie:()=>addMovie(d.tm),addshow:()=>addShow(d.tm,d.tv)})[a]()}finally{mark(addHas(a,d)?2:0);keep()}}
 document.addEventListener('click',async ev=>{
  if(ev.target.matches&&ev.target.matches('input[type=file]'))return;
  if(lp){const old=lpAt&&Date.now()-lpAt>1500;lp=0;lpAt=0;if(!old){ev.preventDefault();return}}
  if(ev.target.closest('#menu a[href]'))return;
  if(!view.menu&&ttsJump(ev.target))return;
  const el=ev.target.closest('[data-act]');if(view.menu){const keep=el&&['menu','th','ac','lang','tg','df','lg','cath','lkafter','lkbio','undo','gbkset','gbkdel','gbktest','gmset','gmdel','gmtest'].includes(el.dataset.act);if(!keep){const inM=ev.target.closest('#menu');view.menu=0;renderMenu();if(!inM)return}}if(!el)return;const d=el.dataset,a=d.act,sh=IT(d.id);let top=0;
+ if(ADDA.includes(a)&&el.tagName=='BUTTON'){if(el.disabled)return;addBusy(el,a,d);return}
  const ek=()=>sh.eps.find(e=>e.s+'-'+e.n===d.k);
  if(view.ssel&&view.ser&&['sertap','unitap','sagtap','serinfo'].includes(a)){const t0=el.closest('.stile')||el,q=t0.dataset,key=q.id?'i:'+q.id:q.gid?'g:'+q.gid:'t:'+q.tm;view.ssel.has(key)?view.ssel.delete(key):view.ssel.add(key);render();return}
  if(view.sel&&(a=='open'||a=='seen'||a=='fav'||a=='pin')){skipLog=1;view.sel[d.id]?delete view.sel[d.id]:view.sel[d.id]=1;if(!Object.keys(view.sel).length)view.sel=null}
