@@ -2349,7 +2349,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='addq'){const q=String(d.q||'').slice(0,200);clearQ();view.ly=scrollY;view.add=1;view.resK=null;view.resP=null;view.open=null;render(1);const i=$('#aq');if(i&&q){i.value=q;find()}return}
  else if(a=='add'){clearQ();view.ly=scrollY;view.add=1;view.resK=null;view.resP=null;view.open=null;top=1}
  else if(a=='menu'){let m=d.m;if(m=='set'&&SGC[view.menu])m=SGC[view.menu];view.menu=view.menu==m?0:m;renderMenu();i18n();return}
- else if(a=='sq'){const o=$('#hd').classList.toggle('sq');if(o)$('#q').focus();else{view.q='';$('#q').value=''}top=1}
+ else if(a=='sq'){if($('#hd').classList.contains('sq')&&$('#q').value.trim()){view.q=$('#q').value;qShow();$('#q').blur();top=1}else{const o=$('#hd').classList.toggle('sq');if(o)$('#q').focus();else{view.q='';$('#q').value=''}top=1}}
  else if(a=='grid'){view.grid=!view.grid;top=1}
  else if(a=='seen'){if(sh.kind=='m'||sh.kind=='b'){sh.seen=!sh.seen;rdSet(sh);if(sh.seen)sh.arch=1;logEv(sh,sh.kind=='b'?(sh.seen?'Marqué lu':'Marqué non lu'):(sh.seen?'Film marqué vu':'Film marqué non vu'))}else{const n=nxt(sh);lgSeen=n;if(n)n.w=1}}
  else if(a=='sum'){const k=d.id+'|'+d.k;view.sx=view.sx==k?0:k}
@@ -2624,7 +2624,12 @@ document.addEventListener('change',ev=>{const t=ev.target;
  if(view.shr&&['shm','sha','shb'].includes(t.id)){view.shr[t.id.slice(2)]=t.value;shrApply();render()}
  if(view.shr&&t.classList&&t.classList.contains('shrC')){const id=t.dataset.id;t.checked?shrOff.delete(id):shrOff.add(id);view.shr.mod=1;view.shr.img=null;const y=scrollY;render();scrollTo(0,y)}});
 let nT;document.addEventListener('input',ev=>{const t=ev.target;if(t.id!='nt')return;const it=IT(t.dataset.id);if(!it)return;it.note=t.value;it.mod=Date.now();clearTimeout(nT);nT=setTimeout(()=>{save();schedSync()},800)});
-$('#q').oninput=e=>{view.q=e.target.value;if(view.q)view.tag='';if(view.open||view.add){view.open=null;view.add=0}render(1)};
+/* Recherche du haut : ferme les pages qui cachent la liste (fiche, ajout, partage, import vide…) pour montrer les résultats */
+function qShow(){if(!view.q)return 1;if(view.rcv){toast('Ajoute ou ferme d’abord les fiches reçues');return 0}
+ if(view.imp){const I=view.imp;if(I.st=='paste'&&!String(I.txt||'').trim()&&!I.shelf)view.imp=null;else{toast('Termine ou ferme d’abord l’import pour voir les résultats');return 0}}
+ view.open=null;view.add=0;view.shr=null;view.pp=null;view.ser=null;view.dupm=null;view.lsset=null;view.lsed=null;view.vault=0;view.vset=0;if(view.sel)view.sel=null;return 1}
+$('#q').oninput=e=>{view.q=e.target.value;if(view.q)view.tag='';qShow();render(1)};
+$('#q').addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();view.q=e.target.value;qShow();render(1);e.target.blur()}});
 $('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  try{const j=JSON.parse(await f.text());if(j&&j.v===1&&!Array.isArray(j)){if(!confirm('Restaurer cette sauvegarde ?'))return;for(const r of [...Object.values(j.shows),...Object.values(j.movies||{}),...Object.values(j.books||{})])r.m=Date.now()+1;gmerge(j);save();render(1);toast('Sauvegarde restaurée');return}const n=cleanData(Array.isArray(j)?fromBk(j):j);if(!n.shows||typeof n.shows!='object')throw 0;
   if(hasAny()&&!confirm('Remplacer les données actuelles ?'))return;
