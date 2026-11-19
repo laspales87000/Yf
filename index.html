@@ -1383,16 +1383,17 @@ const aboutHtml=()=>`<div class="cp"><b>À propos</b><p>Application créée par 
 function syncNow(){try{if(S&&S.gh&&S.gh.t&&S.gh.dirty&&!gbusy){clearTimeout(gT);gsync(1)}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)syncNow()});addEventListener('pagehide',syncNow);
 /* Couverture manquante : on essaie Open Library avec l'ISBN, sinon l'utilisateur peut mettre sa photo */
-function covAuto(b){if(!b||b.po||b.pv||b.cvT||!b.isbn)return;const ib=String(b.isbn).replace(/[^0-9Xx]/g,'');if(!(ib.length==10||ib.length==13))return;b.cvT=1;const u='https://covers.openlibrary.org/b/isbn/'+ib+'-M.jpg?default=false',i=new Image();
+function covAuto(b){if(!b||b.po||b.pv||b.cvA)return;b.cvA=1;if(!b.cvT&&!covRun)setTimeout(()=>covOne(b).then(u=>{if(u&&!b.po){b.po=u;b.mod=Date.now();save();schedSync();if(view.open==b.id)render()}}).catch(()=>{}),300);const ib=String(b.isbn||'').replace(/[^0-9Xx]/g,'');if(!(ib.length==10||ib.length==13))return;const u='https://covers.openlibrary.org/b/isbn/'+ib+'-M.jpg?default=false',i=new Image();
  i.onload=()=>{if(i.naturalWidth>20&&i.naturalHeight>20&&!b.po){b.po=u;b.mod=Date.now();save();schedSync();if(view.open==b.id)render()}};setTimeout(()=>{i.src=u},0)}
 /* Fiches déjà présentes sans couverture : recherche en arrière-plan (ISBN puis titre + auteur sur Open Library), une fois par fiche */
 const imgOK=u=>new Promise(r=>{const i=new Image();const t=setTimeout(()=>r(false),15000);i.onload=()=>{clearTimeout(t);r(i.naturalWidth>20&&i.naturalHeight>20)};i.onerror=()=>{clearTimeout(t);r(false)};i.src=u});
-let covRun=0;async function covPass(){if(covRun||!S||!S.books)return;const T=Object.values(BK()).filter(b=>!b.po&&!b.pv&&!b.cvT).slice(0,400);if(!T.length)return;covRun=1;let n=0,fl=0;
- try{for(const b of T){if(b.po){continue}let u='';try{const ib=String(b.isbn||'').replace(/[^0-9Xx]/g,'');
-   if(ib.length==10||ib.length==13){const v='https://covers.openlibrary.org/b/isbn/'+ib+'-M.jpg?default=false';if(await imgOK(v))u=v}
-   if(!u){const au=((b.ppl||[]).find(p=>p.r=='author')||{}).n||'',r=await fetch(OLU+'/search.json?title='+encodeURIComponent(String(b.name||'').split(/\s[:–—-]\s|\s*:\s/)[0])+(au?'&author='+encodeURIComponent(au.split(' ').pop()):'')+'&fields=cover_i,title&limit=3');
-    if(!r.ok)throw 0;const j=await r.json(),d=(j.docs||[]).find(x=>x.cover_i>0&&norm(x.title||'').startsWith(norm(String(b.name||'').split(/\s[:–—-]\s|\s*:\s/)[0]).slice(0,12)));if(d)u='https://covers.openlibrary.org/b/id/'+d.cover_i+'-M.jpg'}
-   b.cvT=1;fl=0;if(u&&!b.po){b.po=u;b.mod=Date.now();n++;if(n%5==0){save();schedSync()}}}catch(e){if(++fl>=3)break}await sleep(900)}}
+async function covOne(b){const ib=String(b.isbn||'').replace(/[^0-9Xx]/g,''),t0=String(b.name||'').split(/\s[:–—-]\s|\s*:\s/)[0],au=((b.ppl||[]).find(p=>p.r=='author')||{}).n||'',sur=au.split(' ').pop();let u='';
+ if(ib.length==10||ib.length==13){const v='https://covers.openlibrary.org/b/isbn/'+ib+'-M.jpg?default=false';if(await imgOK(v))u=v}
+ if(!u){const r=await fetch(OLU+'/search.json?title='+encodeURIComponent(t0)+(sur?'&author='+encodeURIComponent(sur):'')+'&fields=cover_i,title&limit=5');if(r.ok){const j=await r.json(),d=(j.docs||[]).find(x=>x.cover_i>0&&norm(x.title||'').startsWith(norm(t0).slice(0,12)));if(d)u='https://covers.openlibrary.org/b/id/'+d.cover_i+'-M.jpg'}}
+ if(!u&&Date.now()>=gbOff){try{const L=await gbQ('intitle:'+t0+(sur?' inauthor:'+sur:''));const d=L.find(x=>x.po&&norm(x.t||'').startsWith(norm(t0).slice(0,12)));if(d)u=d.po}catch(e){}}
+ b.cvT=1;return u}
+let covRun=0;async function covPass(){if(covRun||!S||!S.books)return;if(S.cvV!==2){for(const b of Object.values(BK()))if(!b.po)delete b.cvT;S.cvV=2}const T=Object.values(BK()).filter(b=>!b.po&&!b.pv&&!b.cvT).slice(0,400);if(!T.length)return;covRun=1;let n=0,fl=0;
+ try{for(const b of T){if(b.po){continue}let u='';try{u=await covOne(b);fl=0;if(u&&!b.po){b.po=u;b.mod=Date.now();n++;if(n%5==0){save();schedSync()}}}catch(e){if(++fl>=3)break}await sleep(900)}}
  finally{covRun=0;if(n){save();schedSync();if(!view.menu&&!view.open){const y=scrollY;render();scrollTo(0,y)}toast('🖼️ '+n+' couverture'+(n>1?'s':'')+' trouvée'+(n>1?'s':''))}}}
 setTimeout(()=>{if(navigator.onLine!==false)covPass()},70000);
 async function covPhoto(b,f){try{const bm=await createImageBitmap(f),k=Math.min(1,360/bm.height),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bm.width*k));c.height=Math.max(1,Math.round(bm.height*k));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(bm,0,0,c.width,c.height);bm.close&&bm.close();
