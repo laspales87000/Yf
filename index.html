@@ -230,7 +230,12 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 .shbar{position:sticky;top:56px;z-index:5;background:var(--sf);margin:0 -14px;padding:2px 14px 8px;border-bottom:1px solid var(--s2)}.shbar p{margin:8px 0 6px}.shbar .act{margin:0}.shbar .shapn{font-size:12.5px;margin:6px 0 0}.sndp .snderr{background:#c6282822;border:1px solid #e57373;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px;line-height:1.45}.sndp .sndpk{width:100%;margin-top:8px}.sndp .sndpk small{font-weight:400;opacity:.85}
 .vnow{font-size:12px;background:var(--ac);color:#fff;border-radius:99px;padding:2px 8px;vertical-align:middle}
 .vgh{margin:14px 0 2px;font-weight:bold;font-size:14px;color:var(--ac)}
-.shsel{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0 4px;font-size:14px}.shr1.off{opacity:.45}.shr1 input.shrC{width:22px;height:22px;flex:none;accent-color:var(--ac);margin:0 4px 0 0}label.shr1{cursor:pointer}
+.shsel{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0 4px;font-size:14px}.shr1.off>:not(input){opacity:.45}.shr1 input.shrC{flex:none;margin:0 4px 0 0}
+/* Cases à cocher bien visibles : cadre clair épais quand vide, orange avec ✓ blanc quand cochée */
+input[type=checkbox]:not([data-act=w]){-webkit-appearance:none;appearance:none;width:26px;height:26px;min-width:26px;box-sizing:border-box;border:2.5px solid var(--tx);border-radius:6px;background:transparent;cursor:pointer;vertical-align:middle;margin:0 6px 0 0;padding:0}
+input[type=checkbox]:not([data-act=w]):checked{background:var(--ac) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px no-repeat;border-color:var(--ac)}
+input[type=checkbox]:not([data-act=w]):disabled{opacity:.35;cursor:default}
+input[type=checkbox]:not([data-act=w]):focus-visible{outline:2px solid var(--ac);outline-offset:2px}label.shr1{cursor:pointer}
 .poster .cvadd small{font-size:11px;opacity:.85}.poster .cvbusy{display:flex;align-items:center;justify-content:center;text-align:center}.poster .cvadd{width:100%;height:100%;border:2px dashed var(--mu);background:transparent;color:var(--mu);border-radius:6px;font-size:13px;line-height:1.4}
 .shq{margin:12px 0 4px}
 .otl{margin:0 0 2px;font-size:13px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.otf{margin:2px 0 6px;font-size:14px}
