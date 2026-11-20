@@ -2388,7 +2388,7 @@ document.addEventListener('click',async ev=>{
  const ek=()=>sh.eps.find(e=>e.s+'-'+e.n===d.k);
  if(view.ssel&&view.ser&&['sertap','unitap','sagtap','serinfo'].includes(a)){const t0=el.closest('.stile')||el,q=t0.dataset,key=q.id?'i:'+q.id:q.gid?'g:'+q.gid:'t:'+q.tm;view.ssel.has(key)?view.ssel.delete(key):view.ssel.add(key);render();return}
  if(view.sel&&(a=='open'||a=='seen'||a=='fav'||a=='pin')){skipLog=1;view.sel[d.id]?delete view.sel[d.id]:view.sel[d.id]=1;if(!Object.keys(view.sel).length)view.sel=null}
- else if(a=='open'){view.ly=scrollY;if(view.pp)view.ppBack={id:view.pp,y:scrollY};view.pp=null;view.open=d.id;view.s=null;view.tab=null;top=1}
+ else if(a=='open'){view.ly=scrollY;{const sv=el.closest('.shv');if(sv)view.ids=[...sv.querySelectorAll('.shvc[data-id]')].map(x=>x.dataset.id)}if(view.pp)view.ppBack={id:view.pp,y:scrollY};view.pp=null;view.open=d.id;view.s=null;view.tab=null;top=1}
  else if(a=='back'){goBack();return;if(view.pp){view.pp=null;top=view.open?3:2}else{view.open=null;view.add=0;top=2}}
  else if(a=='qx'){clearQ();top=1}
  else if(a=='mode'){const sq=$('#hd').classList.contains('sq'),q=view.q;if(d.v!=MODE())setMode(d.v);if(sq){$('#hd').classList.add('sq');view.q=q;$('#q').value=q}top=1}
@@ -2444,8 +2444,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='shren'){shelfRen(d.s);return}
  else if(a=='shelf'){view.shelf=1;view.shEd=null;view.open=null;view.ser=null;view.add=0;view.sel=null;top=1}
  else if(a=='ser'){view.ssel=null;view.fy=scrollY;view.ser=d.kind=='tv'?{s:d.s,kind:'tv'}:d.cid?{s:d.s,cid:+d.cid,kind:'m'}:{s:d.s,bd:+d.bd||0};top=1}
- else if(a=='serinfo'){view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;if(d.id){view.open=d.id;view.s=null;view.tab=null;top=1}else if(d.gid)return openBook(d.gid);else if(d.tm)return openMovie(d.tm);else{view.serBack=null}}
- else if(a=='unitap'){if(d.id){view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;view.open=d.id;view.s=null;view.tab=null;top=1}else if(d.tm){const n0=Object.keys(S.shows).length;await addTv(d.tm,d.tn,1);const o=Object.values(S.shows).find(x=>x.tmdbtv==d.tm);if(o&&Object.keys(S.shows).length==n0){view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;view.open=o.id;view.s=null;view.tab=null;render(1);return}render();return}}
+ else if(a=='serinfo'){{const g=el.closest('.sgrid');if(g)view.ids=[...g.querySelectorAll('.stile[data-id]')].map(x=>x.dataset.id)}view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;if(d.id){view.open=d.id;view.s=null;view.tab=null;top=1}else if(d.gid)return openBook(d.gid);else if(d.tm)return openMovie(d.tm);else{view.serBack=null}}
+ else if(a=='unitap'){if(d.id){{const g=el.closest('.sgrid');if(g)view.ids=[...g.querySelectorAll('.stile[data-id]')].map(x=>x.dataset.id)}view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;view.open=d.id;view.s=null;view.tab=null;top=1}else if(d.tm){const n0=Object.keys(S.shows).length;await addTv(d.tm,d.tn,1);const o=Object.values(S.shows).find(x=>x.tmdbtv==d.tm);if(o&&Object.keys(S.shows).length==n0){view.serBack={ser:view.ser,open:view.open,y:scrollY};view.ser=null;view.open=o.id;view.s=null;view.tab=null;render(1);return}render();return}}
  else if(a=='uniset'){view.spid=d.id;view.menu='unipick';renderMenu();return}
  else if(a=='unitog'){const sh=S.shows[d.id||view.spid];if(!sh)return;let n=d.s||view.uniK;if(d.new){n=prompt('Nom de l’étagère (ex. Star Trek) :',uniOf(sh)||uBase(nm(sh)));if(!n||!n.trim())return;n=uniCanon(n.trim().slice(0,80))}
   if(d.new){S.uniUser=S.uniUser||[];if(!S.uniUser.some(x=>norm(x)==norm(n)))S.uniUser.push(n);if((S.serPin||{})['s:'+norm(n)])S.serPin['s:'+norm(n)]={...S.serPin['s:'+norm(n)],del:0,t:Date.now()}}uniToggle(sh,n,d.new?1:null);view.menu=d.id?'uniadd':'unipick';renderMenu();requestAnimationFrame(()=>setTimeout(()=>render(),0));return}
