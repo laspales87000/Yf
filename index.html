@@ -360,6 +360,20 @@ async function otPass(){if(otRun||!S||!S.books)return;const T=Object.values(BK()
   otP.i++;if(ok)fl=0;else if(++fl>=3)break;if(otP.i%10==0){save();if(view.q){const y=scrollY;render();scrollTo(0,y)}}await sleep(900)}}
  finally{otRun=0;otP=null;save();if(!view.menu){const y=scrollY;render();scrollTo(0,y)}}}
 setTimeout(()=>{if(navigator.onLine!==false)otPass()},45000);
+/* Livres et BD déjà dans la liste avec un titre étranger : on cherche leur édition dans la langue de l'appli (une fois par fiche).
+   Le titre étranger est gardé comme « titre original ». Rien ne change si aucune traduction n'est trouvée. */
+const enT=t=>{const w=' '+String(t||'').toLowerCase().replace(/[^a-zà-ÿ' ]/g,' ')+' ',c=re=>(w.match(re)||[]).length;return c(/ (the|and|of|is|with|was|that|her|his|to|from|this|in|on|for|my|your|our|an) /g)>c(/ (le|la|les|et|des|est|une|dans|qui|du|un|pour|sur|au|aux|en) /g)};
+const bkForeign=b=>{const t=String(b.name||'');if(!t||b.pv)return false;if(enT(t))return true;
+ return /[ñßłśżźąęőűøåãõ]/i.test(t)||/(^|\s)(der|die|das|und|ein|eine|nicht|el|los|las|del|una|por|il|gli|della|degli|nella|het|een|van|się|jest)(\s|$)/i.test(t)};
+let trRun=0,trP=null;
+async function trPass(){if(trRun||!S||!S.books||LAP()!='fr')return;const T=Object.values(BK()).filter(b=>b.trL!=LAP()&&bkForeign(b)).slice(0,300);if(!T.length)return;trRun=1;trP={i:0,n:T.length};let fl=0,n=0;if(view.q&&!view.menu){const y=scrollY;render();scrollTo(0,y)}
+ try{for(const b of T){let ok=1;try{const au=((b.ppl||[]).find(p=>p.r=='author')||{}).n||'',t0=String(b.name).split(/\s[:–—-]\s|\s*:\s/)[0];
+   const f=await frEd({t:t0,au:au?[au]:[],src:'gb'},{a:au?[au]:[]});
+   if(f&&f.t&&norm(f.t)!=norm(b.name)&&!enT(f.t)){if(!b.ot)b.ot=b.name;b.name=String(f.t).slice(0,300);if(!b.isbn&&f.isbn)b.isbn=f.isbn;b.mod=Date.now();n++}
+   b.trL=LAP()}catch(e){ok=0}
+  trP.i++;if(ok)fl=0;else if(++fl>=3)break;if(trP.i%10==0){save();if(view.q){const y=scrollY;render();scrollTo(0,y)}}await sleep(900)}}
+ finally{trRun=0;trP=null;save();if(n){schedSync();toast('🌍 '+n+' titre'+(n>1?'s':'')+' traduit'+(n>1?'s':'')+' en français')}if(!view.menu&&!view.open){const y=scrollY;render();scrollTo(0,y)}}}
+setTimeout(()=>{if(navigator.onLine!==false)trPass()},55000);
 let locRun=0,locP=null;const locTodo=()=>Object.values(S.shows||{}).filter(sh=>sh.locL!=LANG()&&sh.tm);
 async function locPass(){if(locRun||!S||!S.shows)return;if(S.locV!==2){for(const sh of Object.values(S.shows))if(!sh.loc)delete sh.locL;S.locV=2;save()}locRun=1;const T=locTodo().slice(0,300);locP={i:0,n:T.length};try{let fl=0;for(const sh of T){if(sh.locL==LANG()){locP.i++;continue}const x=await api('/shows/'+sh.tm).catch(()=>null);if(x)await showLoc(sh,x);if(sh.locL!=LANG()){if(++fl>=3)break}else fl=0;locP.i++;if(view.q&&MODE()=='s'&&locP.i%5==0){const y=scrollY;render();scrollTo(0,y)}await sleep(700)}}finally{locRun=0;locP=null;if(view.q){const y=scrollY;render();scrollTo(0,y)}}}
 setTimeout(()=>{if(navigator.onLine!==false)locPass()},20000);
@@ -1483,7 +1497,7 @@ function list(){
   const nq=norm(q),qt=nq.split(' ').filter(Boolean),ok=it=>qt.length&&matchIt(it,nq,qt),okP=it=>qt.length&&matchP(it,qt),LB={s:'Séries',m:'Films',b:'Livres',c:'BDs'},order=[md,...['s','m','b','c'].filter(x=>x!=md)],R={};
   view.ids=[];let body='';const none=!ALL[md].some(ok);for(const k of order){if(S.qone&&k!=md){R[k]=[];continue}R[k]=ALL[k].filter(ok).sort(cmp);view.ids.push(...R[k].map(x=>x.id));if(R[k].length)body+=`<h4 class="shd">${LB[k]}</h4><div class="list">${R[k].map(cardOf).join('')}</div>`}
   const AW=({s:'une série',m:'un film',b:'un livre',c:'une BD'})[md],LW=({s:'tes séries',m:'tes films',b:'tes livres',c:'tes BDs'})[md],AB=`<button class="pri" data-act="addq" data-q="${esc(q)}">➕ Ajouter ${AW} : chercher « ${esc(q)} »</button>`;
-  const LN=(locP&&locP.n?`<p class="mu pad" style="font-size:13px;padding-bottom:0">⏳ Recherche des titres français des séries : ${locP.i} / ${locP.n}. Certaines séries peuvent encore manquer.</p>`:'')+(otP&&otP.n?`<p class="mu pad" style="font-size:13px;padding-bottom:0">⏳ Recherche des titres originaux des livres et BD : ${otP.i} / ${otP.n}. Certains peuvent encore manquer.</p>`:'');
+  const LN=(locP&&locP.n?`<p class="mu pad" style="font-size:13px;padding-bottom:0">⏳ Recherche des titres français des séries : ${locP.i} / ${locP.n}. Certaines séries peuvent encore manquer.</p>`:'')+(otP&&otP.n?`<p class="mu pad" style="font-size:13px;padding-bottom:0">⏳ Recherche des titres originaux des livres et BD : ${otP.i} / ${otP.n}. Certains peuvent encore manquer.</p>`:'')+(trP&&trP.n?`<p class="mu pad" style="font-size:13px;padding-bottom:0">⏳ Recherche des titres français des livres et BD étrangers : ${trP.i} / ${trP.n}.</p>`:'');
   if(R[md].length||SE.length)return LN+SH+body+FOOT;
   if(body)return LN+`<div class="nores"><p>🔍 Rien trouvé pour « ${esc(q)} » dans ${LW}.</p><p class="mu">Mais il y a des résultats dans tes autres catégories :</p></div>`+body+`<div class="nores"><p class="mu">Ce n’est pas ce que tu cherches ? L’appli peut le chercher sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT;
   return LN+`<div class="nores"><p>🔍 Aucun résultat pour « ${esc(q)} » dans ${S.qone?LW:'ta bibliothèque'}.</p><p class="mu">Tu veux l’ajouter ? L’appli le cherche sur Internet, comme avec le bouton ＋.</p>${AB}</div>`+FOOT}
