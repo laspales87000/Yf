@@ -1512,17 +1512,19 @@ const itDone=it=>it.kind=='s'||!it.kind?!!it.arch:!!it.seen,shrW=()=>(view.shr&&
  subOf=it=>it.kind=='b'?auOf(it):it.kind=='m'?yr(it.date||''):[it.net||'',yr((it.eps&&it.eps[0]&&it.eps[0].d)||'')].filter(Boolean).join(' · ');
 /* Tout est coché ; la présélection coche ce qui correspond, et on peut décocher fiche par fiche */
 const shrOff=new Set();
-function shrPre(x){const[a,b]=shrRange(),w=shrW(),per=shrBk()&&w=='seen';if(w=='fav')return!!x.fav;return(w=='all'||(w=='seen'?itDone(x):!itDone(x)))&&(!per||a===null||(x.rd&&x.rd>=a&&x.rd<=b))}
-function shrApply(){for(const x of COLL(MODE()))shrPre(x)?shrOff.delete(x.id):shrOff.add(x.id);if(view.shr){view.shr.mod=0;view.shr.img=null}}
+/* Partage : fiches des étagères choisies */
+function shrShelfIds(){const N=new Set(((view.shr&&view.shr.sh)||[]).map(norm)),I=new Set();for(const x of shelfData())if(N.has(norm(x.s)))for(const y of x.L)I.add(y.it.id);return I}
+function shrPre(x){const[a,b]=shrRange(),w=shrW(),per=shrBk()&&w=='seen';if(w=='fav')return!!x.fav;if(w=='sh')return(shrPre.I||(shrPre.I=shrShelfIds())).has(x.id);return(w=='all'||(w=='seen'?itDone(x):!itDone(x)))&&(!per||a===null||(x.rd&&x.rd>=a&&x.rd<=b))}
+function shrApply(){shrPre.I=null;for(const x of COLL(MODE()))shrPre(x)?shrOff.delete(x.id):shrOff.add(x.id);if(view.shr){view.shr.mod=0;view.shr.img=null}}
 function shrAllL(){const per=shrBk()&&shrW()=='seen';return COLL(MODE()).filter(x=>x&&typeof x=='object').sort((x,y)=>(per?String(y.rd||'').localeCompare(String(x.rd||'')):0)||String(sk(x)).localeCompare(String(sk(y)),'fr'))}
 function shrList(){return shrAllL().filter(x=>!shrOff.has(x.id))}
 const auOf=b=>(b.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).join(', ');
 const SHW={s:{seen:'Mes séries terminées',todo:'Mes séries en cours',all:'Mes séries',fav:'Mes séries favorites'},m:{seen:'Mes films vus',todo:'Mes films à voir',all:'Mes films',fav:'Mes films favoris'},b:{seen:'Mes livres lus',todo:'Mes livres à lire',all:'Ma bibliothèque',fav:'Mes livres favoris'},c:{seen:'Mes BDs lues',todo:'Mes BDs à lire',all:'Mes BDs',fav:'Mes BDs favorites'}};
-function shrTitle(n){const w=shrW(),l=shrBk()&&w=='seen'?shrRange()[2]:'';return(view.shr&&view.shr.mod?({s:'Ma sélection de séries',m:'Ma sélection de films',b:'Ma sélection de livres',c:'Ma sélection de BDs'})[MODE()]:SHW[MODE()][w]+(l?' '+l:''))+' ('+n+')'}
+function shrTitle(n){if(shrW()=='sh'&&!(view.shr&&view.shr.mod))return'📚 '+((view.shr.sh||[]).join(', '))+' ('+n+')';const w=shrW(),l=shrBk()&&w=='seen'?shrRange()[2]:'';return(view.shr&&view.shr.mod?({s:'Ma sélection de séries',m:'Ma sélection de films',b:'Ma sélection de livres',c:'Ma sélection de BDs'})[MODE()]:SHW[MODE()][w]+(l?' '+l:''))+' ('+n+')'}
 function shrHtml(){const P=view.shr,L=shrList(),md=MODE(),c=md=='c',y=new Date().getFullYear(),w=shrW(),per=shrBk()&&w=='seen',B=(k,t)=>`<button class="${P.p==k?'on':''}" data-act="shp" data-v="${k}">${t}</button>`,Wb=(k,t)=>`<button class="${w==k?'on':''}" data-act="shw" data-v="${k}">${t}</button>`,
  WL={s:['✓ Terminées','En cours','Toutes mes séries','♥ Favorites'],m:['✓ Vus','À voir','Tous mes films','♥ Favoris'],b:['✓ Lus','À lire','Toute ma bibliothèque','♥ Favoris'],c:['✓ Lues','À lire','Toutes mes BDs','♥ Favorites']}[md],NM={s:'séries',m:'films',b:'livres',c:'BDs'}[md];
  return`<div class="det shr"><button data-act="back">← Retour</button><h2>📤 Partager ${({s:'mes séries',m:'mes films',b:'ma bibliothèque',c:'mes BDs'})[md]}</h2><p class="mu">Rien de personnel : ni note, ni avis${shrBk()?', ni date de lecture':''}.</p>
-<p class="shq"><b>Présélection</b> <small class="mu">(tu peux ensuite décocher les ${NM} à ne pas envoyer)</small></p><div class="srt wr">${Wb('seen',WL[0])}${Wb('todo',WL[1])}${Wb('fav',WL[3])}${Wb('all',WL[2])}</div>
+<p class="shq"><b>Présélection</b> <small class="mu">(tu peux ensuite décocher les ${NM} à ne pas envoyer)</small></p><div class="srt wr">${Wb('seen',WL[0])}${Wb('todo',WL[1])}${Wb('fav',WL[3])}${Wb('all',WL[2])}</div>${(()=>{const D=shelfData().filter(x=>x.L.length),on=new Set((P.sh||[]).map(norm));return D.length?`<p class="shq"><b>Ou une ou plusieurs étagères</b> <small class="mu">(touche pour cocher ou décocher)</small></p><div class="srt wr">${D.map(x=>`<button class="${w=='sh'&&on.has(norm(x.s))?'on':''}" data-act="shsh" data-s="${esc(x.s)}">📚 ${esc(x.s)} (${x.L.length})</button>`).join('')}</div>`:''})()}
 ${per?`<p class="shq"><b>Quand ?</b></p><div class="srt wr">${B('y','Cette année ('+y+')')}${B('y1','L’année dernière ('+(y-1)+')')}${B('m','Un mois')}${B('r','Du … au …')}${B('all','Tout')}</div>`:''}
 ${per&&P.p=='m'?`<p class="shin">Mois : <input type="month" id="shm" value="${esc(P.m||dLoc().slice(0,7))}" max="${dLoc().slice(0,7)}"></p>`:''}${per&&P.p=='r'?`<p class="shin">Du <input type="date" id="sha" value="${esc(P.a||'')}"> au <input type="date" id="shb" value="${esc(P.b||'')}"></p>`:''}
 <div class="shbar"><p><b>${esc(shrTitle(L.length))}</b></p>${L.length?`<button class="pri shgo" data-act="shmenu">📤 Envoyer ${L.length>1?'les '+L.length+' fiches cochées':'la fiche cochée'}</button></div>`:`</div>`+`<p class="mu">Rien à partager ici.${per&&P.p!='all'?' Les '+(c?'BDs':'livres')+' marqués lus avant cette version n’ont pas de date : choisis « Tout », ou ajoute la date sur leur fiche.':''}</p>`}
@@ -2539,7 +2541,8 @@ document.addEventListener('click',async ev=>{
  else if(a=='rds'){S.rdS=d.v=='az'?'az':''}
  else if(a=='shr'){view.shr={p:'y',w:['seen','todo','all'].includes(d.w)?d.w:'seen'};view.open=null;view.add=0;shrApply();top=1}
  else if(a=='shp'){view.shr.p=d.v;try{shrApply();render()}catch(e){toast('⚠️ Erreur : '+e.message,8000)}return}
- else if(a=='shw'){view.shr.w=['seen','todo','all','fav'].includes(d.v)?d.v:'seen';try{shrApply();render()}catch(e){toast('⚠️ Erreur : '+e.message,8000)}return}
+ else if(a=='shsh'){const V=view.shr,cur=V.w=='sh'?(V.sh||[]):[],has=cur.some(n=>norm(n)==norm(d.s)),L=has?cur.filter(n=>norm(n)!=norm(d.s)):[...cur,d.s];V.sh=L;V.w=L.length?'sh':'all';const y=scrollY;try{shrApply();render();scrollTo(0,y)}catch(e){toast('⚠️ Erreur : '+e.message,8000)}return}
+ else if(a=='shw'){view.shr.sh=[];view.shr.w=['seen','todo','all','fav'].includes(d.v)?d.v:'seen';try{shrApply();render()}catch(e){toast('⚠️ Erreur : '+e.message,8000)}return}
  else if(a=='shall'){for(const x of COLL(MODE()))d.v=='1'?shrOff.delete(x.id):shrOff.add(x.id);view.shr.mod=1;view.shr.img=null;const y=scrollY;render();scrollTo(0,y);return}
  else if(a=='catalog'){catalogSend();return}
  else if(a=='bcov'){const b=IT(d.id);if(!b)return;pickFiles({acc:'image/*'},F=>{if(F&&F[0])covPhoto(b,F[0])});return}
