@@ -37,6 +37,10 @@ header svg{width:24px;height:24px;fill:var(--on)}
  #clw{flex:1;display:flex;justify-content:center;align-items:center;position:relative;min-width:0}
 #clw #prog{position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:9px;opacity:.85}
 .sw{position:relative;overflow:hidden;margin-bottom:10px;border-radius:2px;touch-action:pan-y}
+/* Listes longues : le navigateur ne calcule pas les cartes hors de l’écran (beaucoup plus rapide avec des centaines de fiches) */
+/* iPhone : sous 16 px, le téléphone zoome toute la page en touchant un champ */
+@media (pointer:coarse){input:not([type=checkbox]):not([type=range]):not([type=radio]),textarea,select{font-size:16px!important}}
+.list>.sw{content-visibility:auto;contain-intrinsic-size:auto 230px}.grid>.card{content-visibility:auto;contain-intrinsic-size:auto 230px}
 .sw .tc{margin-bottom:0;transition:transform .2s}
 .swbg{position:absolute;top:0;bottom:0;width:0}
 .ai{position:absolute;top:10px;left:12px;width:26px;height:26px;z-index:2}.ai svg{width:26px;height:26px;fill:#ff5252;filter:drop-shadow(0 1px 2px #0008)}
