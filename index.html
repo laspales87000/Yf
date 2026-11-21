@@ -511,9 +511,13 @@ function askKeep(p){const g=S.gh;if(!(g&&g.t)||CP()==p)return 0;const k=S.bk2&&S
 function keepOld(){const g=S.gh;if(!(g&&g.t))return;S.bk2={...g,p:CP(),bkw:S.bkw,lastbk:g.lastbk,err:0,reco:0,dirty:0}}
 async function cConnect(p,role){if(p!='dbx')return;const key=DBX_KEY;
  if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
- const keep=!role&&askKeep(p);const st=rnd(16);await saveNow();try{sessionStorage.setItem('oa',JSON.stringify({p,st,role,keep}))}catch(e){}
- if(p=='dbx'){const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role,keep}))}catch(e){}
-  location.href='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st})}
+ toast('Ouverture de '+CLN[p]+'…',4000);
+ try{const keep=!role&&askKeep(p);const st=rnd(16);
+  /* L'enregistrement peut rester bloqué sur certains iPhone : on n'attend pas plus de 2 secondes */
+  await Promise.race([saveNow().catch(()=>{}),sleep(2000)]);try{sessionStorage.setItem('oa',JSON.stringify({p,st,role,keep}))}catch(e){}
+  if(p=='dbx'){if(!(window.crypto&&crypto.subtle))throw Error('chiffrement indisponible');const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role,keep}))}catch(e){}
+   location.href='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st})}}
+ catch(e){toast('Connexion à '+CLN[p]+' impossible ('+((e&&e.message)||'erreur inconnue')+'). Ferme l’appli et réessaie.',8000)}
 }
 /* Retour de la page de connexion Dropbox : on vérifie le « state » (protection contre les connexions forcées) */
 async function cReturn(){const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1)),st=q.get('state')||h.get('state');if(!st)return;
