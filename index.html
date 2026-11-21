@@ -65,7 +65,7 @@ button.ai{background:none;padding:0;width:34px;height:34px;left:6px;top:6px;disp
 .fvb{min-width:40px;height:36px}
 .lg{font-size:9px;line-height:1.05;margin-top:-1px;color:var(--mu);text-align:center;max-width:46px;word-break:break-word}.fvi .lg{word-break:keep-all;overflow-wrap:normal;letter-spacing:-.25px;white-space:normal}@media(max-width:400px){.fvi{width:40px}.fvi .fvb{min-width:38px}}@media(max-width:360px){.fvi{width:35px}.fvi .fvb{min-width:33px;font-size:24px}.fvi .fvb svg{width:24px;height:24px}.det>button[data-act=back]{font-size:13px;padding:6px 8px}.fvi .lg{font-size:8px;letter-spacing:-.45px}}
 body[data-leg=none] .lg,body[data-leg=none] #flb small,body[data-leg=list] .lg{display:none}
-.serb .shic{width:24px;height:24px;color:var(--ac)}.shh2{display:flex;align-items:center;gap:8px}.shh2 .shic{width:28px;height:28px;color:var(--ac);flex:none}#menu .shm{display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--ac) 14%,transparent);border-bottom:1px solid var(--s2)}#menu .shm .shic{width:24px;height:24px;color:var(--ac);flex:none}#menu .stgx{display:block;font-size:12px;opacity:.75;margin-top:3px;white-space:normal;font-weight:400}.tgw.stk{transition:transform .22s ease}.tgw.tghide{transform:translateY(calc(-100% - 70px));pointer-events:none}#dbxgo{position:fixed;inset:0;z-index:99990;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px}#dbxgo>div{background:var(--sf,#fff);color:var(--tx,#222);border-radius:16px;padding:18px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:10px;text-align:center}#dbxgo a{display:block;padding:12px;border-radius:10px;background:var(--ac);color:#fff;font-weight:700;text-decoration:none}#dbxgo button{padding:10px;border:0;border-radius:10px;background:var(--s2,#ddd);color:inherit}.tabs.stk,.tgw.stk{position:sticky;top:56px;z-index:4;background:var(--bg);padding-bottom:6px!important}.tgw{display:flex;align-items:center;gap:6px;padding:8px 8px 0}.tgw .tabs{flex:1;min-width:0;padding:0}.serb{flex:none;width:44px;height:38px;border-radius:99px;background:var(--s2);font-size:20px;padding:0;display:grid;place-items:center}
+.serb .shic{width:24px;height:24px;color:var(--ac)}.shh2{display:flex;align-items:center;gap:8px}.shh2 .shic{width:28px;height:28px;color:var(--ac);flex:none}#menu .shm{display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--ac) 14%,transparent);border-bottom:1px solid var(--s2)}#menu .shm .shic{width:24px;height:24px;color:var(--ac);flex:none}#menu .stgx{display:block;font-size:12px;opacity:.75;margin-top:3px;white-space:normal;font-weight:400}.tgw.stk{transition:transform .22s ease}.tgw.tghide{transform:translateY(calc(-100% - 70px));pointer-events:none}#dbxgo{position:fixed;inset:0;z-index:99990;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px}#dbxgo>div{background:var(--sf,#fff);color:var(--tx,#222);border-radius:16px;padding:18px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:10px;text-align:center}#dbxgo a{display:block;padding:12px;border-radius:10px;background:var(--ac);color:#fff;font-weight:700;text-decoration:none}#dbxgo .dgs{margin:0;font-size:15px}#dbxgo small{opacity:.6;font-size:11px}#dbxgo a[hidden]{display:none}#dbxgo button{padding:10px;border:0;border-radius:10px;background:var(--s2,#ddd);color:inherit}.tabs.stk,.tgw.stk{position:sticky;top:56px;z-index:4;background:var(--bg);padding-bottom:6px!important}.tgw{display:flex;align-items:center;gap:6px;padding:8px 8px 0}.tgw .tabs{flex:1;min-width:0;padding:0}.serb{flex:none;width:44px;height:38px;border-radius:99px;background:var(--s2);font-size:20px;padding:0;display:grid;place-items:center}
 .ep.ex{cursor:pointer}.ep.ex .t>span:after{content:""}
 #menu,#menu *,.tc,.card,.sw,.tabs button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #flb{width:46px;min-width:46px;max-width:46px;flex:0 0 46px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -515,18 +515,21 @@ function oaPut(o){const j=JSON.stringify({...o,at:Date.now()});try{sessionStorag
 function oaGet(){let o=null;for(const st of [()=>sessionStorage,()=>localStorage]){try{const x=JSON.parse(st().getItem('oa')||'null');st().removeItem('oa');if(!o&&x&&Date.now()-(x.at||0)<12e5)o=x}catch(e){}}return o}
 async function cConnect(p,role){if(p!='dbx')return;const key=DBX_KEY;
  if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
- toast('Ouverture de '+CLN[p]+'…',4000);
- try{const keep=!role&&askKeep(p);const st=rnd(16);
+ /* Une fenêtre s'ouvre tout de suite et montre chaque étape (utile pour comprendre un blocage) */
+ const iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1);
+ const old=$('#dbxgo');if(old)old.remove();const w=document.createElement('div');w.id='dbxgo';
+ w.innerHTML='<div><p><b>Connexion à '+CLN[p]+'</b></p><p class="dgs">⏳ Préparation…</p><a class="pri" hidden>Ouvrir '+CLN[p]+'</a><button>Annuler</button><small>Version '+VER+' · connexion n°3</small></div>';
+ w.querySelector('button').onclick=()=>w.remove();document.body.appendChild(w);const stp=t=>{const e=w.querySelector('.dgs');if(e)e.textContent=t};
+ try{const keep=!role&&askKeep(p);const st=rnd(16);stp('⏳ Enregistrement…');
   /* L'enregistrement peut rester bloqué sur certains iPhone : on n'attend pas plus de 2 secondes */
-  await Promise.race([saveNow().catch(()=>{}),sleep(2000)]);oaPut({p,st,role,keep});
+  await Promise.race([saveNow().catch(()=>{}),sleep(2000)]);oaPut({p,st,role,keep});stp('⏳ Sécurisation…');
   if(p=='dbx'){if(!(window.crypto&&crypto.subtle))throw Error('chiffrement indisponible');const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));oaPut({p,st,v,role,keep});
    const u='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st});
-   let left=0;addEventListener('pagehide',()=>left=1,{once:true});location.href=u;
-   /* Sur certains iPhone, l'ouverture automatique est ignorée : on propose alors un vrai bouton à toucher */
-   setTimeout(()=>{if(left||document.visibilityState!='visible'||$('#dbxgo'))return;const w=document.createElement('div');w.id='dbxgo';
-    w.innerHTML='<div><p><b>Dropbox ne s’est pas ouvert tout seul.</b><br>Touche le bouton ci-dessous pour continuer.</p><a class="pri" href="'+esc(u)+'">Ouvrir Dropbox</a><button>Annuler</button></div>';
-    w.querySelector('button').onclick=()=>w.remove();w.querySelector('a').onclick=()=>setTimeout(()=>w.remove(),1500);document.body.appendChild(w)},2500)}}
- catch(e){toast('Connexion à '+CLN[p]+' impossible ('+((e&&e.message)||'erreur inconnue')+'). Ferme l’appli et réessaie.',8000)}
+   const a=w.querySelector('a');a.href=u;a.hidden=false;
+   /* Sur iPhone, l'ouverture automatique est souvent ignorée : on fait toucher un vrai bouton */
+   if(iOS){stp('✅ Prêt. Touche le bouton pour aller chez '+CLN[p]+', puis autorise l’accès : tu reviendras ici.');return}
+   stp('⏳ Ouverture de '+CLN[p]+'… Si rien ne se passe, touche le bouton.');location.href=u}}
+ catch(e){stp('❌ Impossible ('+((e&&e.message)||'erreur inconnue')+'). Ferme l’appli et réessaie.')}
 }
 /* Retour de la page de connexion Dropbox : on vérifie le « state » (protection contre les connexions forcées) */
 async function cReturn(){const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1)),st=q.get('state')||h.get('state');if(!st)return;
