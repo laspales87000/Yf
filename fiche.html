@@ -32,6 +32,7 @@ h3{margin:18px 0 6px;font-size:16px}
    Tout ce qui vient du lien est vérifié et affiché comme du texte. */
 (async()=>{
 const m=document.getElementById('m');
+const GNF={Action:'Action',Adult:'Adulte',Adventure:'Aventure',Anime:'Animé',Children:'Enfants',Comedy:'Comédie',Crime:'Policier',DIY:'Bricolage',Drama:'Drame',Espionage:'Espionnage',Family:'Famille',Fantasy:'Fantastique',Food:'Cuisine',History:'Histoire',Horror:'Horreur',Legal:'Judiciaire',Medical:'Médical',Music:'Musique',Mystery:'Mystère',Nature:'Nature',Romance:'Romance','Science-Fiction':'Science-fiction',Sports:'Sport',Supernatural:'Surnaturel',Thriller:'Thriller',Travel:'Voyage',War:'Guerre',Western:'Western'};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const str=(x,n)=>typeof x=='string'?x.slice(0,n):'';
 const https=u=>typeof u=='string'&&/^https:\/\/[^\s"'<>\\]{1,600}$/.test(u)?u:'';
@@ -70,14 +71,14 @@ const get=async u=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),120
 async function info(x){const I={};
  if(x.k=='b'&&x.g&&x.src=='gb'){const j=await get('https://www.googleapis.com/books/v1/volumes/'+encodeURIComponent(x.g));const v=j&&j.volumeInfo;if(v){I.ds=txt(v.description||'');I.pub=str(v.publisher,120);I.pg=Number.isInteger(v.pageCount)&&v.pageCount>0?v.pageCount:0;I.gn=Array.isArray(v.categories)?v.categories.filter(c=>typeof c=='string').slice(0,4).join(', '):'';I.dt=str(v.publishedDate,10);const id=(v.industryIdentifiers||[]).find(i=>i&&i.type=='ISBN_13')||(v.industryIdentifiers||[])[0];I.isbn=id&&typeof id.identifier=='string'?id.identifier.replace(/[^0-9X]/gi,'').slice(0,13):'';I.lg=str(v.language,5);const il=v.imageLinks||{};I.im=https(String(il.thumbnail||il.smallThumbnail||'').replace(/^http:/,'https:'))}}
  else if(x.k=='b'&&x.g&&x.src=='ol'){const w=/^OL\d+W$/.test(x.g)?await get('https://openlibrary.org/works/'+x.g+'.json'):null;if(w){const d=w.description;I.ds=txt(typeof d=='string'?d:d&&typeof d.value=='string'?d.value:'');I.gn=Array.isArray(w.subjects)?w.subjects.filter(c=>typeof c=='string').slice(0,4).join(', '):''}}
- else if(x.k=='s'&&x.tm){const j=await get('https://api.tvmaze.com/shows/'+x.tm);if(j){I.ds=txt(j.summary||'');I.gn=Array.isArray(j.genres)?j.genres.filter(c=>typeof c=='string').slice(0,4).join(', '):'';I.pub=j.network&&typeof j.network.name=='string'?j.network.name.slice(0,80):'';I.dt=str(j.premiered,10)}}
+ else if(x.k=='s'&&x.tm){const j=await get('https://api.tvmaze.com/shows/'+x.tm);if(j){I.ds=txt(j.summary||'');I.gn=Array.isArray(j.genres)?j.genres.filter(c=>typeof c=='string').slice(0,4).map(c=>GNF[c]||c).join(', '):'';I.pub=j.network&&typeof j.network.name=='string'?j.network.name.slice(0,80):'';I.dt=str(j.premiered,10)}}
  return I}
 const LG={fr:'français',en:'anglais',es:'espagnol',it:'italien',de:'allemand',pt:'portugais',nl:'néerlandais',pl:'polonais'};
 for(const el of m.querySelectorAll('.more')){const x=L[+el.dataset.i];info(x).then(I=>{
  const row=(k,v)=>v?'<div><b>'+k+'</b>'+esc(v)+'</div>':'',ed=x.k=='s'?'Chaîne':'Éditeur';
  const d=I.dt&&/^\d{4}-\d{2}-\d{2}$/.test(I.dt)?I.dt.split('-').reverse().join('/'):I.dt||'';
  const rows=row(ed,I.pub)+row('Parution',d)+row('Pages',I.pg?String(I.pg):'')+row('Genres',I.gn)+row('Langue',LG[I.lg]||'')+row('ISBN',I.isbn);
- const ds=I.ds&&I.ds.length>=x.ov.length?I.ds:x.ov;el.innerHTML=(rows?'<div class="dt">'+rows+'</div>':'')+(ds?'<h3>📖 Résumé</h3><div class="ds">'+esc(ds)+'</div>':'')+(rows||ds?'':'<p class="mu ld">Pas d’autres informations disponibles pour le moment.</p>');if(I.im)cover(x,I.im)})}
+ const ds=x.k!='b'&&x.ov?x.ov:I.ds&&I.ds.length>=x.ov.length?I.ds:x.ov;el.innerHTML=(rows?'<div class="dt">'+rows+'</div>':'')+(ds?'<h3>📖 Résumé</h3><div class="ds">'+esc(ds)+'</div>':'')+(rows||ds?'':'<p class="mu ld">Pas d’autres informations disponibles pour le moment.</p>');if(I.im)cover(x,I.im)})}
 function cover(x,u){if(x.ok||!u||x.tried&&x.tried.includes(u))return;(x.tried=x.tried||[]).push(u);const i=new Image();i.className='cv';i.alt='';i.referrerPolicy='no-referrer';
  i.onload=()=>{if(x.ok||i.naturalWidth<20||i.naturalHeight<20)return;x.ok=1;const w=m.querySelector('.cw[data-i="'+L.indexOf(x)+'"]');if(w)w.replaceChildren(i)};i.src=u}
 for(const x of L){cover(x,x.im);if(x.is)cover(x,'https://covers.openlibrary.org/b/isbn/'+x.is+'-L.jpg?default=false')}
