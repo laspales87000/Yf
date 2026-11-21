@@ -1,0 +1,6 @@
+// Mise en ligne chez Cloudflare : le site est fait seulement de fichiers (pas de programme côté serveur).
+{
+  "name": "yf",
+  "compatibility_date": "2025-11-01",
+  "assets": { "directory": "./" }
+}
