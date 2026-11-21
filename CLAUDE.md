@@ -4,6 +4,8 @@
 - L'application est un seul fichier : `index.html` (suivi de séries, films, livres et BDs).
 - Elle est publiée avec GitHub Pages : https://laspales87000.github.io/Yf/
 - `yf.html` sert seulement à rediriger l'ancien lien vers `index.html`. Ne pas y mettre l'application.
+- Le geste retour (glisser vers la droite) et le bouton retour du téléphone doivent toujours faire
+  exactement comme le bouton « ← Retour » de l'écran : revenir à l'écran ou au menu d'avant.
 - `fiche.html` est la page « fiche seule » (lecture seule, sans lien vers l'appli) ouverte par les fiches envoyées.
 - `vendor/` contient des outils tiers rangés dans le dépôt pour la sécurité (lecture de texte Tesseract,
   lecture des PDF avec PDF.js 4.10.38 « legacy », toujours ouvert avec `isEvalSupported:false`,
@@ -13,13 +15,15 @@
 
 ## Façon de travailler
 - Répondre en français, simplement, sans jargon technique.
-- **Tout écrire en français**, sans exception : les petits messages pendant le travail, les messages
-  d'enregistrement (commits) et les demandes de fusion (titre et description).
+- **Tout écrire en français, en permanence et sans exception** : chaque phrase affichée à l'écran
+  (y compris les petits messages pendant le travail), les messages d'enregistrement (commits)
+  et les demandes de fusion (titre et description).
 - Modifier directement `index.html` du dépôt. Ne pas demander de renvoyer le fichier.
 - Tester chaque modification dans un navigateur, en taille téléphone, avant de l'envoyer.
 - **Toujours illustrer les propositions avec des images** (maquettes ou captures en taille téléphone,
   une image par proposition), et pas seulement avec des descriptions, avant de demander un choix.
-- Poser des questions avant de travailler quand quelque chose n'est pas clair.
+- **Si une demande n'est pas logique, imprécise ou peut se comprendre de plusieurs façons : toujours poser
+  des questions avant de commencer**, sans rien modifier.
 - Commencer chaque réponse par l'heure de Paris : « 🕐 **JJ/MM/AAAA – HH h MM** ».
 - **Fusionner soi-même** la demande de fusion (pull request) vers `main` dès que la modification
   est prête et testée, sans demander de validation. Ensuite, dire qu'il suffit de recharger
