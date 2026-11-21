@@ -7,6 +7,8 @@
 - Le geste retour (glisser vers la droite) et le bouton retour du téléphone doivent toujours faire
   exactement comme le bouton « ← Retour » de l'écran : revenir à l'écran ou au menu d'avant.
 - `fiche.html` est la page « fiche seule » (lecture seule, sans lien vers l'appli) ouverte par les fiches envoyées.
+- `acces.html` est la page publique « Accès réservé » (montrée aux personnes non autorisées par Cloudflare) :
+  elle ne doit jamais contenir de lien vers l'application.
 - `vendor/` contient des outils tiers rangés dans le dépôt pour la sécurité (lecture de texte Tesseract,
   lecture des PDF avec PDF.js 4.10.38 « legacy », toujours ouvert avec `isEvalSupported:false`,
   fabrication des QR codes avec qrcode-generator 2.0.4).
