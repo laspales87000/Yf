@@ -509,13 +509,17 @@ const b64u=a=>btoa(String.fromCharCode(...new Uint8Array(a))).replace(/\+/g,'-')
 function askKeep(p){const g=S.gh;if(!(g&&g.t)||CP()==p)return 0;const k=S.bk2&&S.bk2.t?S.bk2:null;
  return confirm('Garder '+CLN[CP()]+' comme copie de secours de la sauvegarde ?\nTes sauvegardes de la semaine continueront d’y être envoyées, sans rien ressaisir.'+(k&&k.p!=CP()?'\n(Cela remplace la copie actuelle sur '+CLN[k.p]+'.)':''))?1:0}
 function keepOld(){const g=S.gh;if(!(g&&g.t))return;S.bk2={...g,p:CP(),bkw:S.bkw,lastbk:g.lastbk,err:0,reco:0,dirty:0}}
+/* Connexion en cours : gardée dans l'onglet ET dans l'appareil (20 min), car sur iPhone
+   le retour de Dropbox peut arriver dans un autre onglet que celui du départ */
+function oaPut(o){const j=JSON.stringify({...o,at:Date.now()});try{sessionStorage.setItem('oa',j)}catch(e){}try{localStorage.setItem('oa',j)}catch(e){}}
+function oaGet(){let o=null;for(const st of [()=>sessionStorage,()=>localStorage]){try{const x=JSON.parse(st().getItem('oa')||'null');st().removeItem('oa');if(!o&&x&&Date.now()-(x.at||0)<12e5)o=x}catch(e){}}return o}
 async function cConnect(p,role){if(p!='dbx')return;const key=DBX_KEY;
  if(!role&&S.gh&&S.gh.t&&!confirm('Remplacer la synchronisation '+CLN[CP()]+' par '+CLN[p]+' ? Tes données restent sur cet appareil.'))return;
  toast('Ouverture de '+CLN[p]+'…',4000);
  try{const keep=!role&&askKeep(p);const st=rnd(16);
   /* L'enregistrement peut rester bloqué sur certains iPhone : on n'attend pas plus de 2 secondes */
-  await Promise.race([saveNow().catch(()=>{}),sleep(2000)]);try{sessionStorage.setItem('oa',JSON.stringify({p,st,role,keep}))}catch(e){}
-  if(p=='dbx'){if(!(window.crypto&&crypto.subtle))throw Error('chiffrement indisponible');const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));try{sessionStorage.setItem('oa',JSON.stringify({p,st,v,role,keep}))}catch(e){}
+  await Promise.race([saveNow().catch(()=>{}),sleep(2000)]);oaPut({p,st,role,keep});
+  if(p=='dbx'){if(!(window.crypto&&crypto.subtle))throw Error('chiffrement indisponible');const v=rnd(48),ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));oaPut({p,st,v,role,keep});
    const u='https://www.dropbox.com/oauth2/authorize?'+new URLSearchParams({client_id:key,response_type:'code',code_challenge:ch,code_challenge_method:'S256',token_access_type:'offline',redirect_uri:RDR(),state:st});
    let left=0;addEventListener('pagehide',()=>left=1,{once:true});location.href=u;
    /* Sur certains iPhone, l'ouverture automatique est ignorée : on propose alors un vrai bouton à toucher */
@@ -526,7 +530,7 @@ async function cConnect(p,role){if(p!='dbx')return;const key=DBX_KEY;
 }
 /* Retour de la page de connexion Dropbox : on vérifie le « state » (protection contre les connexions forcées) */
 async function cReturn(){const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1)),st=q.get('state')||h.get('state');if(!st)return;
- let o=null;try{o=JSON.parse(sessionStorage.getItem('oa')||'null');sessionStorage.removeItem('oa')}catch(e){}
+ let o=oaGet();
  try{history.replaceState(null,'',RDR())}catch(e){}
  if(!o||o.st!==st)return toast('Connexion refusée (lien non valable)',4000);
  if(q.get('error')||h.get('error'))return toast('Connexion annulée',3000);
