@@ -2,6 +2,7 @@
 // Chez Cloudflare : Worker « suivi-fiche », Root directory « / » (vide) et
 // Deploy command : npx wrangler deploy -c wrangler.fiche.jsonc
 // La page est copiée depuis fiche.html à chaque mise en ligne : il n'y a qu'un seul original.
+// Pour relancer une mise en ligne avec de nouveaux réglages, il faut un nouvel envoi : « Retry build » reprend les anciens.
 {
   "name": "suivi-fiche",
   "compatibility_date": "2025-11-01",
