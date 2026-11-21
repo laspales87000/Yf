@@ -1704,7 +1704,9 @@ async function sendItems(ids,by){const L=ids.map(IT).filter(Boolean);if(!L.lengt
  if(P.length>8&&by!='q')toast(P.length+' messages à envoyer');const zq=P.length==1?await sendZ(L,0):'';
  SND={L,P,zq,i:0,ok:[],how:S.sndHow=='f'?'f':'a',by:by=='q'||by=='m'?by:P.length>1?'m':S.sndBy=='m'?'m':'q',z1:P[0].z};
  sendSheet()}
-const sendUrl=(i,q)=>(SND.how=='f'?sendBase().replace(/[^/]*$/,'')+'fiche.html':sendBase())+'#p='+(q&&SND.zq?SND.zq:SND.P&&SND.P[i||0]?SND.P[i||0].z:SND.z1);
+// Chez Cloudflare, l'appli est protégée : les fiches seules sont lues sur le petit site public « suivi-fiche » (même compte).
+const ficheBase=()=>/^suivi-biblio\./.test(location.host)&&/\.workers\.dev$/.test(location.host)?'https://'+location.host.replace(/^suivi-biblio\./,'suivi-fiche.')+'/fiche.html':sendBase().replace(/[^/]*$/,'')+'fiche.html';
+const sendUrl=(i,q)=>(SND.how=='f'?ficheBase():sendBase())+'#p='+(q&&SND.zq?SND.zq:SND.P&&SND.P[i||0]?SND.P[i||0].z:SND.z1);
 const sendMsg=(i)=>{const N=SND.P?SND.P.length:1,L=N>1?SND.P[i||0].L:SND.L,t=(N>1?'(message '+((i||0)+1)+' sur '+N+') ':'')+L.length==1?'📚 Je te conseille « '+nm(L[0])+' »':'📚 Je te conseille '+L.length+' titres : '+L.slice(0,5).map(nm).join(', ')+(L.length>5?'…':'');return t+(SND.how=='f'?'\nTouche le lien pour voir la fiche :':'\nTouche le lien pour l’ajouter à ton appli :')};
 function sendSheet(){let e=$('#sndS');if(!SND){if(e)e.remove();return}if(!e){e=document.createElement('div');e.id='sndS';document.body.appendChild(e)}
  const L=SND.L,NP=SND.P?SND.P.length:1,bk=L.every(x=>x.kind=='b'),qn=sendUrl(0,1),fit=NP==1&&qn.length<=QRMAX,B=(k,v,on,h)=>`<button class="sndo ${on?'on':''}" data-act="${k}" data-v="${v}">${h}</button>`;
