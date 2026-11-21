@@ -2716,7 +2716,7 @@ document.addEventListener('pointermove',ev=>{const d=catD;if(!d||ev.pointerId!=d
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,ev=>{const d=catD;if(!d||ev.pointerId!=d.id)return;catD=null;d.b.classList.remove('drg');d.b.style.transform='';
  S.catOrder=[...d.h.children].map(x=>x.dataset.v);S.catOrderM=Date.now();if(S.gh)S.gh.dirty=1;save();setTimeout(()=>lp=0,400)}));
 document.addEventListener('pointerdown',ev=>{const mi=ev.target.closest('#menu [data-act="tab"]');
- if(mi){lp=0;clearTimeout(lpT);lpT=setTimeout(()=>{lp=1;lpAt=Date.now();S.deff=S.deff||{};S.deff[MODE()]=mi.dataset.f;save();if(navigator.vibrate)navigator.vibrate(40);view.menu=0;renderMenu();toast('Cette liste sera désormais la liste qui s’affichera en premier',2000)},2000);return}
+ if(mi){lp=0;px=ev.clientX;py=ev.clientY;clearTimeout(lpT);lpT=setTimeout(()=>{lp=1;lpAt=Date.now();S.deff=S.deff||{};S.deff[MODE()]=mi.dataset.f;save();if(navigator.vibrate)navigator.vibrate(40);view.menu=0;renderMenu();toast('Cette liste sera désormais la liste qui s’affichera en premier',2000)},2000);return}
  const c=ev.target.closest('.tc,.card');if(!c||view.sel||view.menu)return;lp=0;px=ev.clientX;py=ev.clientY;clearTimeout(lpT);
  lpT=setTimeout(()=>{lp=1;lpAt=Date.now();view.sel={};view.sel[c.dataset.id]=1;if(navigator.vibrate)navigator.vibrate(30);render()},500)});
 document.addEventListener('pointermove',ev=>{if(Math.abs(ev.clientX-px)+Math.abs(ev.clientY-py)>12)clearTimeout(lpT)});
