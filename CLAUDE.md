@@ -11,7 +11,7 @@
   elle ne doit jamais contenir de lien vers l'application.
 - `wrangler.jsonc` et `.assetsignore` servent à la mise en ligne chez Cloudflare (site fait seulement de fichiers) :
   `.assetsignore` liste les fichiers du dépôt à ne jamais publier (CLAUDE.md, LICENSE…).
-- `wrangler.fiche.jsonc` règle le 2ᵉ petit site PUBLIC « suivi-fiche » (seulement `fiche.html`), vers lequel
+- `wrangler.fiche.jsonc` règle le 2ᵉ petit site PUBLIC « suivi-fiches » (seulement `fiche.html`), vers lequel
   l'appli envoie les liens « fiche seule » quand elle tourne chez Cloudflare (`ficheBase` dans `index.html`).
 - `vendor/` contient des outils tiers rangés dans le dépôt pour la sécurité (lecture de texte Tesseract,
   lecture des PDF avec PDF.js 4.10.38 « legacy », toujours ouvert avec `isEvalSupported:false`,
