@@ -28,6 +28,8 @@
 - Tester chaque modification dans un navigateur, en taille téléphone, avant de l'envoyer.
 - **Toujours illustrer les propositions avec des images** (maquettes ou captures en taille téléphone,
   une image par proposition), et pas seulement avec des descriptions, avant de demander un choix.
+- **Quand un message contient un point d'interrogation (une question) : toujours répondre d'abord à la question,
+  sans rien faire d'autre, puis demander confirmation avant de modifier quoi que ce soit** (code, fichiers, réglages).
 - **Si une demande n'est pas logique, imprécise ou peut se comprendre de plusieurs façons : toujours poser
   des questions avant de commencer**, sans rien modifier.
 - Commencer chaque réponse par l'heure de Paris : « 🕐 **JJ/MM/AAAA – HH h MM** ».
