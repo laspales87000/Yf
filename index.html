@@ -217,7 +217,7 @@ header.sq h1.cas{flex:0 1 auto;max-width:150px;gap:2px;padding:2px}header.sq #hd
 .imt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.imt small{display:block}.imt .ims{font-weight:600}.imt select{max-width:100%;font:inherit;font-size:13px;margin-top:4px;padding:4px;border-radius:6px;background:var(--sf);color:var(--tx);border:1px solid var(--s2)}.imt .lnk2{align-self:flex-start;font-size:13px}
 .syn{margin:10px 0}.synt{line-height:1.5;padding-left:12px}.synt p{margin:6px 0}.synt ul{margin:6px 0;padding-left:20px}.synt li{margin:3px 0}
 .synt.rd>p,.synt.rd li{position:relative;transition:color .3s}.synt>p,.synt li{cursor:pointer;-webkit-tap-highlight-color:#ff880033}.synt .ton{background:linear-gradient(90deg,#ff880040,transparent 90%);border-radius:0 6px 6px 0}.synt .ton::before{content:'';position:absolute;left:-12px;top:1px;bottom:1px;width:4px;border-radius:2px;background:var(--ac)}.synt li.ton::before{left:-32px}.synt .tdn{color:var(--mu)}
-#synT{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx)}
+	.syntb{overflow-x:auto;margin:8px 0 12px;-webkit-overflow-scrolling:touch}.syntb table{border-collapse:collapse;min-width:100%;font-size:14px;line-height:1.35}.syntb th,.syntb td{border:1px solid var(--s2);padding:6px 8px;vertical-align:top;text-align:left}.syntb th{background:color-mix(in srgb,var(--ac) 14%,transparent);font-weight:700}#synT{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--s2);background:var(--sf);color:var(--tx)}
 #synbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;background:#263238;color:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 2px 10px #0006;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}#synbar button{background:#ffffff22;color:#fff;border-radius:8px;padding:6px 10px}
 .imp .chk{display:flex;gap:8px;align-items:flex-start;text-align:left;background:none;padding:6px 0;font-size:14px}
 #menu a.lnk::after{content:" ↗";opacity:.7}
@@ -1903,7 +1903,7 @@ function vaultHtml(){const on=vaultOn(),V=S.vault||{},have=KEYV.filter(([n])=>S[
  return intro+`<div class="dupg"><div class="dupw">Clés à mettre dans le coffre</div><p class="mu" style="font-size:12.5px;margin:0 0 6px">Sans aucune clé, l’appli marche quand même : suivi, listes, synchronisation, sauvegardes, et lecture des synthèses avec la voix du téléphone. Les clés servent seulement aux extras ci-dessous.</p>${have.length?have.map(([n,l])=>`<label class="vaR"><input type="checkbox" class="vaK" value="${n}" ${(VS.ex||[]).includes(n)?'':'checked'}><span><b>${esc(l)}</b><small>${esc((KEYU[n]||['',''])[0])}</small><small class="vaS">${esc((KEYU[n]||['',''])[1])}</small></span></label>`).join(''):'<p class="mu">Aucune clé sur cet appareil pour l’instant. Ajoute d’abord une clé (Gemini, voix…), puis reviens ici.</p>'}
 ${have.length?`<div class="dupw" style="margin-top:12px">Code du coffre</div><p class="mu" style="font-size:12.5px;margin:0 0 6px">${VCODE}</p><input id="vaC" type="password" autocomplete="new-password" placeholder="Code" style="width:100%"><input id="vaC2" type="password" autocomplete="new-password" placeholder="Retape le code" style="width:100%;margin-top:6px">
 <p class="lsall">⚠️ Note ce code quelque part (carnet, gestionnaire de mots de passe). Sans lui, le coffre ne peut plus être ouvert, ni par toi, ni par personne d’autre.</p><div class="act"><button class="pri" data-act="vaultmake">🔐 Fermer le coffre</button></div>`:''}</div></div>`}
-function synPlain(y){return String(y.t||'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#{1,4}\s*/gm,'').replace(/^\s*[-•*]\s+/gm,'• ').replace(/\n{3,}/g,'\n\n').trim()}
+function synPlain(y){return String(y.t||'').split('\n').filter(l=>!synIsSep(l)).map(l=>synIsRow(l)?synCells(l).map(c=>c.trim()).filter(Boolean).join(', ')+'.':l).join('\n').replace(/\*\*(.+?)\*\*/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/^#{1,4}\s*/gm,'').replace(/^\s*[-•*]\s+/gm,'• ').replace(/\n{3,}/g,'\n\n').trim()}
 function ttsBlocks(b){const out=[{t:nm(b)+'.',k:-1}];let k=0;for(const l of String(b.syn.t||'').split(/\n/)){if(!l.trim())continue;const pl=l.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#{1,4}\s*/,'').replace(/^\s*[-•*]\s+/,'').trim();for(const c of ttsChunks(pl))out.push({t:c,k});k++}return out}
 function ttsChunks(t){const P=t.replace(/•\s*/g,'').replace(/([.!?…;:])\s+/g,'$1\n').split(/\n+/).map(x=>x.trim()).filter(Boolean),out=[];let cur='';for(const p of P){if(cur&&(cur+' '+p).length>220){out.push(cur);cur=p}else cur=cur?cur+' '+p:p}if(cur)out.push(cur);return out}
 function ttsVoice(){try{const V=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang)),w=vSel().dev&&V.find(v=>v.name==vSel().dev);if(w)return w;return V.find(v=>/^fr[-_]FR/i.test(v.lang)&&v.localService)||V.find(v=>/^fr[-_]FR/i.test(v.lang))||V[0]||null}catch(e){return null}}
@@ -2193,7 +2193,29 @@ async function impAdd(){const V=view.imp;if(!V||V.run)return;const RR=V.rows.fil
 function bkTags(b){const t=new Set(b.tags||[]),s=(b.gn||[]).join(' ').toLowerCase();for(const[re,k]of BGEN)if(re.test(s))t.add('g:'+k);b.tags=[...t]}
 /* Synthèse d'un livre : collée à la main, ou faite par Gemini à partir du PDF / EPUB (clé personnelle, facultative) */
 const okGmKey=k=>/^[A-Za-z0-9._-]{20,200}$/.test(String(k||'')),GM_MODELS=['gemini-flash-latest','gemini-2.5-flash','gemini-flash-lite-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];let gmModel=0;
-function synFmt(t){return esc(String(t||'')).split(/\n/).map(l=>{l=l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#{1,4}\s*(.+)$/,'<b>$1</b>');return /^\s*[-•*]\s+/.test(l)?'<li>'+l.replace(/^\s*[-•*]\s+/,'')+'</li>':l.trim()?'<p>'+l+'</p>':''}).join('').replace(/(<li>.*?<\/li>)+/g,m=>'<ul>'+m+'</ul>')}
+/* Synthèse : texte simple + gras, titres, listes et tableaux (lignes « | a | b | » ou séparées par des tabulations) */
+const synCells=l=>/\t/.test(l)?l.split('\t'):l.trim().replace(/^\||\|$/g,'').split('|'),synIsRow=l=>/^\s*\|.*\|\s*$/.test(l)||/\S\t+\S/.test(l),synIsSep=l=>/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
+const synIn=l=>l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'$1');
+function synFmt(t){const L=esc(String(t||'')).split(/\n/),o=[];
+ for(let i=0;i<L.length;i++){let l=L[i];
+  if(synIsRow(l)&&!synIsSep(l)){const R=[];while(i<L.length&&(synIsRow(L[i])||synIsSep(L[i]))){if(!synIsSep(L[i]))R.push(synCells(L[i]).map(c=>synIn(c.trim())));i++}i--;
+   if(R.length>1||/\|/.test(l)){const n=Math.max(...R.map(r=>r.length));o.push('<div class="syntb"><table>'+R.map((r,j)=>'<tr>'+Array.from({length:n},(_,k)=>j?'<td>'+(r[k]||'')+'</td>':'<th>'+(r[k]||'')+'</th>').join('')+'</tr>').join('')+'</table></div>');continue}}
+  l=synIn(l).replace(/^#{1,4}\s*(.+)$/,'<b>$1</b>');o.push(/^\s*[-•*]\s+/.test(l)?'<li>'+l.replace(/^\s*[-•*]\s+/,'')+'</li>':l.trim()?'<p>'+l+'</p>':'')}
+ return o.join('').replace(/(<li>.*?<\/li>)+/g,m=>'<ul>'+m+'</ul>')}
+/* Coller depuis une page (NotebookLM, Docs…) : on garde titres, gras, listes et tableaux */
+function synFromHtml(h){const d=new DOMParser().parseFromString(h,'text/html'),out=[];const tx=n=>String(n.textContent||'').replace(/\s+/g,' ').trim();
+ const inl=n=>{let r='';for(const c of n.childNodes){if(c.nodeType==3)r+=c.textContent.replace(/\s+/g,' ');else if(c.nodeType==1){const t=c.tagName;if(t=='BR')r+=' ';else if(t=='B'||t=='STRONG'||(c.style&&+c.style.fontWeight>=600)){const x=inl(c).trim();r+=x?'**'+x+'** ':''}else r+=inl(c)}}return r};
+ const walk=n=>{for(const c of n.childNodes){if(c.nodeType==3){const x=c.textContent.replace(/\s+/g,' ').trim();if(x)out.push(x);continue}if(c.nodeType!=1)continue;const t=c.tagName;
+  if(t=='TABLE'){const R=[...c.querySelectorAll('tr')].map(r=>[...r.children].filter(x=>/^T[DH]$/.test(x.tagName)).map(x=>inl(x).replace(/\|/g,'/').trim()));if(R.length){out.push('');R.forEach((r,i)=>{out.push('| '+r.join(' | ')+' |');if(!i)out.push('|'+r.map(()=>' --- ').join('|')+'|')});out.push('')}}
+  else if(/^H[1-6]$/.test(t)){out.push('');out.push('## '+tx(c));}
+  else if(t=='LI')out.push('- '+inl(c).trim());
+  else if(t=='P'||t=='BLOCKQUOTE'){const x=inl(c).trim();if(x){out.push(x)}}
+  else if(t=='BR')out.push('');
+  else if(t=='SCRIPT'||t=='STYLE')continue;
+  else walk(c)}};
+ walk(d.body);return out.join('\n').replace(/\*\*\s*\*\*/g,'').replace(/\n{3,}/g,'\n\n').trim()}
+document.addEventListener('paste',ev=>{const a=ev.target;if(!a||a.id!='synT')return;const cd=ev.clipboardData;if(!cd)return;const h=cd.getData('text/html');if(!h||!/<(table|h[1-6]|li|strong|b)\b/i.test(h))return;
+ let t='';try{t=synFromHtml(h)}catch(e){return}if(!t)return;ev.preventDefault();const s0=a.selectionStart,s1=a.selectionEnd;a.value=a.value.slice(0,s0)+t+a.value.slice(s1);a.selectionStart=a.selectionEnd=s0+t.length;toast('Mise en forme gardée (titres, listes, tableaux)',2500)});
 /* Synthèse sans clé : l'appli prépare la demande, l'utilisateur la donne à l'IA gratuite de son choix, puis colle la réponse */
 const FREEAI=[['🤖 Gemini','https://gemini.google.com/app'],['💬 ChatGPT','https://chatgpt.com/'],['📓 NotebookLM','https://notebooklm.google.com/'],['✖️ Grok','https://grok.com/'],['🪁 Copilot','https://copilot.microsoft.com/']];
 const synAsk=b=>{const au=(b.ppl||[]).filter(p=>p.r=='author').map(p=>p.n).join(', ');return SYN_PROMPT(nm(b),au).replace("Voici le contenu d'un livre","Je te joins le fichier (PDF ou EPUB) d'un livre").replace("N'invente rien qui ne soit pas dans le texte.","Appuie-toi sur le fichier joint et n'invente rien qui n'y soit pas.")};
