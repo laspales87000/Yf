@@ -20,7 +20,7 @@ main{max-width:640px;margin:0 auto;padding:18px 16px 40px}
 .cv.no{display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;color:#fff;font-weight:bold;font-size:13px;background:linear-gradient(160deg,#2c5aa0,#0d2a55)}
 h2{margin:0 0 4px;font-size:21px;line-height:1.25;overflow-wrap:anywhere}
 h3{margin:18px 0 6px;font-size:16px}
-.sy .tb{overflow-x:auto;margin:6px 0 10px}.sy table{border-collapse:collapse;min-width:100%;font-size:14px}.sy th,.sy td{border:1px solid var(--ln);padding:6px 8px;text-align:left;vertical-align:top}.sy th{background:#ff880022}.sy p{margin:0 0 8px}.sy ul{margin:0 0 8px;padding-left:20px}
+.sy .tb{overflow-x:auto;margin:6px 0 10px}.sy table{border-collapse:collapse;min-width:100%;font-size:14px}.sy th,.sy td{border:1px solid var(--ln);padding:6px 8px;text-align:left;vertical-align:top}.sy th{background:#ff880022}.sy a{color:#ff8800;word-break:break-all}.sy p{margin:0 0 8px}.sy ul{margin:0 0 8px;padding-left:20px}
 .dt{margin:12px 0 0;font-size:14px}.dt div{padding:3px 0;border-bottom:1px solid var(--ln)}.dt b{display:inline-block;min-width:92px;color:var(--mu);font-weight:normal}.ds{margin:14px 0 0;white-space:pre-line}.ld{font-size:13px;margin-top:10px}
 .err{background:var(--sf);border-radius:14px;padding:16px}
 </style>
@@ -55,7 +55,7 @@ for(const r of o.i.slice(0,1000)){if(!r||typeof r!='object')continue;const n=str
  if(k=='b'&&r.sy&&typeof r.sy=='object'&&typeof r.sy.t=='string'&&r.sy.t.trim())x.sy=r.sy.t.slice(0,20000);
  L.push(x)}
 if(!L.length)return fail('Ce lien ne contient aucune fiche.');
-const inl=t=>esc(t).replace(/\*\*([^*]{1,300})\*\*/g,'<b>$1</b>').replace(/(^|[\s(«])\*([^*\s][^*]{0,300}?)\*(?=[\s.,;:!?)»]|$)/g,'$1<i>$2</i>');
+const inl=t=>esc(t).replace(/\bhttps?:\/\/[^\s<>"']+/g,u=>{let x='';const m=u.match(/(?:[.,;:!?)»]|&#39;|&quot;)+$/);if(m){x=m[0];u=u.slice(0,-x.length)}return'<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>'+x}).replace(/\*\*([^*]{1,300})\*\*/g,'<b>$1</b>').replace(/(^|[\s(«])\*([^*\s][^*]{0,300}?)\*(?=[\s.,;:!?)»]|$)/g,'$1<i>$2</i>');
 const isRow=l=>/^\|.*\|$/.test(l)||/\S\t+\S/.test(l),isSep=l=>/^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(l),cells=l=>/\t/.test(l)?l.split('\t'):l.replace(/^\||\|$/g,'').split('|');
 const syn=t=>{let out='',ul=0;const A=t.split(/\r?\n/);for(let i=0;i<A.length;i++){const l=A[i].trim();if(!l){if(ul){out+='</ul>';ul=0}continue}
  if(isRow(l)&&!isSep(l)){const R=[];while(i<A.length&&(isRow(A[i].trim())||isSep(A[i].trim()))){const x=A[i].trim();if(!isSep(x))R.push(cells(x).map(c=>inl(c.trim())));i++}i--;if(R.length>1||/\|/.test(l)){if(ul){out+='</ul>';ul=0}const n=Math.max(...R.map(r=>r.length));out+='<div class="tb"><table>'+R.map((r,j)=>'<tr>'+Array.from({length:n},(_,k)=>j?'<td>'+(r[k]||'')+'</td>':'<th>'+(r[k]||'')+'</th>').join('')+'</tr>').join('')+'</table></div>';continue}}
