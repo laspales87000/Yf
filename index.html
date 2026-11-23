@@ -424,7 +424,7 @@ const fmtH=m=>Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');
 const PGS=b=>b.pgm>0?b.pgm:b.pages||0,bkPc=b=>byH(b)?(b.dur&&b.ph?Math.min(100,Math.round(100*b.ph/b.dur)):0):(PGS(b)&&b.pg?Math.min(100,Math.round(100*b.pg/PGS(b))):0);
 const okFmt=v=>Array.isArray(v)?[...new Set(v.filter(x=>typeof x=='string'&&x.length==1&&FMK.includes(x)))]:null;
 function rdSet(b){if(!b||b.kind!='b')return;if(b.seen)b.rd=dLoc();else delete b.rd}
-const FILTB=[['toread','À lire'],['new','Derniers ajouts 🆕'],['fav','Livres favoris ♥'],['loan','Livres prêtés 🤝'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['nosyn','Livres sans synthèse 📝'],['notag','Livres sans tag 🏷'],['find','Livres à chercher 🔍'],['dup','Livres en double 👯'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['new','Derniers ajouts 🆕'],['fav','BDs favorites ♥'],['loan','BDs prêtées 🤝'],['num','BDs numériques 📱'],['find','BDs à chercher 🔍'],['all','Toutes les BDs'],['arch','Archive']];
+const FILTB=[['toread','À lire'],['new','Derniers ajouts 🆕'],['fav','Livres favoris ♥'],['audio','Livres audio 🎧'],['num','Livres numériques 📱'],['ia','Résumés IA 🤖'],['nosyn','Livres sans synthèse 📝'],['notag','Livres sans tag 🏷'],['find','Livres à chercher 🔍'],['dup','Livres en double 👯'],['all','Tous les livres'],['arch','Archive']],FILTC=[['toread','À lire'],['new','Derniers ajouts 🆕'],['fav','BDs favorites ♥'],['num','BDs numériques 📱'],['find','BDs à chercher 🔍'],['all','Toutes les BDs'],['arch','Archive']];
 const FLT0=md=>({s:FILT,m:FILTM,b:FILTB,c:FILTC})[md||MODE()];
 /* Listes : on peut en cacher, et en créer selon ses critères (synchronisé) */
 const LSD=()=>S.lists&&typeof S.lists=='object'?S.lists:(S.lists={hide:{},my:[],t:0});
@@ -1038,7 +1038,7 @@ function migratePin(){if(S.mp)return;const R={};for(const p of(S.raw||[]))for(co
 /* Films (TMDB) */
 const TK='3bfdd96fb40a2e4fed785bb5bffa3b72',TLG={fr:'fr-FR',en:'en-US',es:'es-ES',it:'it-IT',de:'de-DE',pt:'pt-PT',nl:'nl-NL',pl:'pl-PL'};
 const MODE=()=>S.mode||'s',GRP=()=>MODE()=='b'||MODE()=='c'?'b':'a',MV=()=>S.movies||(S.movies={}),BK=()=>S.books||(S.books={}),PV={},PP={};
-const IT=id=>S.shows[id]||MV()[id]||BK()[id]||PV[id],BDF={s:'cours',m:'tosee',b:'toread',c:'toread'},defF=()=>(S.deff&&S.deff[MODE()])||BDF[MODE()];
+const IT=id=>S.shows[id]||MV()[id]||BK()[id]||PV[id],BDF={s:'cours',m:'tosee',b:'toread',c:'toread'},defF=()=>{const f=S.deff&&S.deff[MODE()];return f&&f!='loan'?f:BDF[MODE()]};
 const COLL=k=>k=='s'?Object.values(S.shows):k=='m'?Object.values(MV()):Object.values(BK()).filter(b=>k=='c'?b.bd:!b.bd);
 const kindOf=sh=>sh.kind=='b'?(sh.bd?'c':'b'):sh.kind=='m'?'m':'s';
 const hasAny=()=>Object.keys(S.shows).length||Object.keys(MV()).length||Object.keys(BK()).length;
