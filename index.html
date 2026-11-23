@@ -370,7 +370,7 @@ async function trPass(){if(trRun||!S||!S.books||LAP()!='fr')return;const T=Objec
    if(f&&f.t&&norm(f.t)!=norm(b.name)&&!enT(f.t)){if(!b.ot)b.ot=b.name;b.name=String(f.t).slice(0,300);if(!b.isbn&&f.isbn)b.isbn=f.isbn;b.mod=Date.now();n++}
    b.trL=LAP()}catch(e){ok=0}
   trP.i++;if(ok)fl=0;else if(++fl>=3)break;if(trP.i%10==0){save();if(view.q){const y=scrollY;render();scrollTo(0,y)}}await sleep(900)}}
- finally{trRun=0;trP=null;save();if(n){schedSync();toast('🌍 '+n+' titre'+(n>1?'s':'')+' traduit'+(n>1?'s':'')+' en français')}if(!view.menu&&!view.open){const y=scrollY;render();scrollTo(0,y)}}}
+ finally{trRun=0;trP=null;save();if(n){schedSync();toast('🌍 '+n+' titre'+(n>1?'s':'')+' traduit'+(n>1?'s':'')+' en français')}if(!view.menu&&!view.open&&bgOK()){const y=scrollY;render();scrollTo(0,y)}}}
 setTimeout(()=>{if(navigator.onLine!==false)trPass()},55000);
 let locRun=0,locP=null;const locTodo=()=>Object.values(S.shows||{}).filter(sh=>sh.locL!=LANG()&&sh.tm);
 async function locPass(){if(locRun||!S||!S.shows)return;if(S.locV!==2){for(const sh of Object.values(S.shows))if(!sh.loc)delete sh.locL;S.locV=2;save()}locRun=1;const T=locTodo().slice(0,300);locP={i:0,n:T.length};try{let fl=0;for(const sh of T){if(sh.locL==LANG()){locP.i++;continue}const x=await api('/shows/'+sh.tm).catch(()=>null);if(x)await showLoc(sh,x);if(sh.locL!=LANG()){if(++fl>=3)break}else fl=0;locP.i++;if(view.q&&MODE()=='s'&&locP.i%5==0){const y=scrollY;render();scrollTo(0,y)}await sleep(700)}}finally{locRun=0;locP=null;if(view.q){const y=scrollY;render();scrollTo(0,y)}}}
@@ -1500,7 +1500,7 @@ let covAg=0,covTm;function covSoon(ms){clearTimeout(covTm);covTm=setTimeout(()=>
 function covShow(b){try{const a=document.querySelector('article.tc[data-id="'+CSS.escape(b.id)+'"] .bn');if(!a||a.querySelector('img'))return;const i=document.createElement('img');i.className='bcv';i.dataset.cv=b.id;i.alt='';i.src=b.po;a.prepend(i)}catch(e){}}
 let covRun=0;async function covPass(){if(covRun){covAg=1;return}if(!S||!S.books)return;if(S.cvV!==2){for(const b of Object.values(BK()))if(!b.po)delete b.cvT;S.cvV=2}const T=Object.values(BK()).filter(b=>!b.po&&!b.pv&&b.src!='man'&&!b.cvT&&!covSt[b.id]).slice(0,400);if(!T.length)return;covRun=1;let n=0,fl=0;
  try{for(const b of T){if(b.po||covSt[b.id]){continue}let u='';try{u=await covOne(b);fl=0;if(u&&u!==b.poBad&&!b.po){b.po=u;b.mod=Date.now();n++;covShow(b);if(n%5==0){save();schedSync()}}}catch(e){if(++fl>=3)break}await sleep(900)}}
- finally{covRun=0;if(covAg){covAg=0;covSoon(1000)}if(n){save();schedSync();if(!view.menu&&!view.open){const y=scrollY;render();scrollTo(0,y)}toast('🖼️ '+n+' couverture'+(n>1?'s':'')+' trouvée'+(n>1?'s':''))}}}
+ finally{covRun=0;if(covAg){covAg=0;covSoon(1000)}if(n){save();schedSync();if(!view.menu&&!view.open&&bgOK()){const y=scrollY;render();scrollTo(0,y)}toast('🖼️ '+n+' couverture'+(n>1?'s':'')+' trouvée'+(n>1?'s':''))}}}
 setTimeout(()=>{if(navigator.onLine!==false)covPass()},70000);
 async function covPhoto(b,f){try{const bm=await createImageBitmap(f),k=Math.min(1,360/bm.height),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bm.width*k));c.height=Math.max(1,Math.round(bm.height*k));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(bm,0,0,c.width,c.height);bm.close&&bm.close();
  let u=c.toDataURL('image/jpeg',.75);if(u.length>78000)u=c.toDataURL('image/jpeg',.5);if(u.length>78000)return toast('Photo trop lourde : recadre-la et réessaie');b.po=u;b.mod=Date.now();await saveNow();schedSync();render();toast('🖼️ Couverture enregistrée')}catch(e){toast('Photo illisible')}}
@@ -2711,6 +2711,8 @@ document.addEventListener('touchmove',ev=>{if(!fs)return;const t=ev.touches[0],d
 ['touchend','touchcancel'].forEach(n=>document.addEventListener(n,ev=>{const f=fs;fs=null;if(!f||!f.on)return;const W=innerWidth;fs=f;
  const go=n=='touchend'&&f.nb&&(Math.abs(f.dx)>W*.25||Math.abs(f.dx)>40&&Math.abs(f.v)>.5);
  fsSet(go?(f.side>0?-W:W):0,1);setTimeout(()=>{fs=null;if(go)Promise.resolve().then(()=>f.nb.go()).catch(()=>{}).finally(fsEnd);else fsEnd()},270)},{passive:true}));
+/* Les travaux en arrière-plan (couvertures, traductions…) ne redessinent pas l'écran pendant qu'on écrit */
+const typing=()=>{const a=document.activeElement;return!!a&&(a.tagName=='TEXTAREA'||a.tagName=='INPUT'&&!/^(checkbox|radio|range|button|submit|file)$/.test(a.type))},bgOK=()=>!view.add&&!view.man&&!typing();
 let lp=0,lpT,px=0,py=0;
 /* Barre des tags : se cache quand on descend dans la liste, revient dès qu'on remonte */
 let tgHid=0,tgY=0;addEventListener('scroll',()=>{const y=scrollY,dy=y-tgY;if(Math.abs(dy)<8&&y>80)return;tgY=y;const h=y>80&&dy>0&&!view.tag?1:0;if(h!=tgHid){tgHid=h;const w=document.querySelector('.tgw');if(w)w.classList.toggle('tghide',!!h)}},{passive:true});
