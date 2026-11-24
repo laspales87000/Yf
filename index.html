@@ -365,9 +365,20 @@ const bkForeign=b=>{const t=String(b.name||'');if(!t||b.pv||b.src=='man')return 
  return /[ñßłśżźąęőűøåãõ]/i.test(t)||/(^|\s)(der|die|das|und|ein|eine|nicht|el|los|las|del|una|por|il|gli|della|degli|nella|het|een|van|się|jest)(\s|$)/i.test(t)};
 let trRun=0,trP=null;
 /* Cherche l'édition dans la langue de l'appli pour un livre (1 = titre traduit). Utilise l'« œuvre » Open Library quand on la connaît. */
-async function trOne(b){const au=((b.ppl||[]).find(p=>p.r=='author')||{}).n||'',t0=String(b.name).split(/\s[:–—-]\s|\s*:\s/)[0],wk=dupWork(b);
- const f=await frEd({t:t0,au:au?[au]:[],src:wk?'ol':'gb',gid:wk},{a:au?[au]:[]});b.trL=LAP();
- if(f&&f.t&&norm(f.t)!=norm(b.name)&&!enT(f.t)){if(!b.ot)b.ot=b.name;b.name=String(f.t).slice(0,300);if(!b.isbn&&f.isbn)b.isbn=f.isbn;b.lng=LAP();b.mod=Date.now();return 1}return 0}
+async function trOne(b,ai,step){const au=((b.ppl||[]).find(p=>p.r=='author')||{}).n||'',t0=String(b.name).split(/\s[:–—-]\s|\s*:\s/)[0],wk=dupWork(b),st=t=>{if(step)step(t)},good=f=>f&&f.t&&norm(f.t)!=norm(b.name)&&!enT(f.t);
+ st('Open Library');let f=await frEd({t:t0,au:au?[au]:[],src:wk?'ol':'gb',gid:wk},{a:au?[au]:[]}),by='ol';
+ if(!good(f)){st('Google Livres');f=await gbFr(t0,au);by='gb'}
+ if(!good(f)&&ai&&aiOn()){st('Gemini');f=await gmFr(t0,au);by='gm'}
+ b.trL=LAP();if(good(f)){if(!b.ot)b.ot=b.name;b.name=String(f.t).slice(0,300);if(!b.isbn&&f.isbn)b.isbn=f.isbn;b.lng=LAP();b.mod=Date.now();return by}return''}
+/* Édition française dans Google Livres : livres en français du même auteur dont la fiche cite le titre étranger */
+async function gbFr(t0,au){try{const last=String(au||'').trim().split(' ').pop();if(!last||!t0)return null;const E=encodeURIComponent;
+ const r=await fetch('https://www.googleapis.com/books/v1/volumes?q='+E('"'+t0+'" inauthor:'+last)+'&langRestrict=fr&maxResults=20&printType=books&fields=items(volumeInfo(title,subtitle,language,authors,description,industryIdentifiers))'+GBK('&'));if(!r.ok)return null;
+ const nt=norm(t0),L=((await r.json()).items||[]).map(x=>x.volumeInfo||{}).filter(v=>v.language=='fr'&&typeof v.title=='string'&&v.title.trim()&&(v.authors||[]).some(a=>norm(a).includes(norm(last)))&&norm(v.title)!=nt&&!enT(v.title));
+ const hit=L.find(v=>norm((v.subtitle||'')+' '+(v.description||'')).includes(nt)),v=hit||(new Set(L.map(v=>norm(v.title))).size==1?L[0]:null);if(!v)return null;
+ return{t:v.title.trim(),isbn:((v.industryIdentifiers||[]).find(i=>i.type=='ISBN_13')||{}).identifier||''}}catch(e){return null}}
+/* Dernier recours (seulement avec le bouton) : on demande le titre français à Gemini */
+async function gmFr(t0,au){const out=await gmCall([{text:'Livre : « '+t0+' »'+(au?' de '+au:'')+'.\nQuel est le titre exact de sa traduction française publiée en France ?\nRéponds seulement en JSON : {"titre":"..."}. Si tu n’es pas sûr, ou s’il n’existe pas de traduction française publiée, réponds {"titre":""}.'}]);
+ let t='';try{t=String(JSON.parse((out.match(/\{[\s\S]*\}/)||['{}'])[0]).titre||'')}catch(e){}t=t.trim().replace(/^[«"“]\s*|\s*[»"”]$/g,'').trim();return t&&t.length<200?{t}:null}
 /* Langue de chaque livre, demandée une fois à Google Livres (ou Open Library par l'ISBN), pour savoir s'il faut chercher le titre français */
 let lgRun=0;
 async function lgPass(){if(lgRun||!S||!S.books||LAP()!='fr')return;const T=Object.values(BK()).filter(b=>!b.lng&&!b.lgL&&!b.pv&&b.src!='man').slice(0,150);lgRun=1;let fl=0;
@@ -378,7 +389,7 @@ async function lgPass(){if(lgRun||!S||!S.books||LAP()!='fr')return;const T=Objec
   if(ok)fl=0;else if(++fl>=3)break;await sleep(700)}}
  finally{lgRun=0;save()}trPass()}
 async function trPass(){if(trRun||!S||!S.books||LAP()!='fr')return;const T=Object.values(BK()).filter(b=>b.trL!=LAP()&&bkForeign(b)).slice(0,300);if(!T.length)return;trRun=1;trP={i:0,n:T.length};let fl=0,n=0;if(view.q&&!view.menu){const y=scrollY;render();scrollTo(0,y)}
- try{for(const b of T){let ok=1;try{n+=await trOne(b)}catch(e){ok=0}
+ try{for(const b of T){let ok=1;try{n+=(await trOne(b))?1:0}catch(e){ok=0}
   trP.i++;if(ok)fl=0;else if(++fl>=3)break;if(trP.i%10==0){save();if(view.q){const y=scrollY;render();scrollTo(0,y)}}await sleep(900)}}
  finally{trRun=0;trP=null;save();if(n){schedSync();toast('🌍 '+n+' titre'+(n>1?'s':'')+' traduit'+(n>1?'s':'')+' en français')}if(!view.menu&&!view.open&&bgOK()){const y=scrollY;render();scrollTo(0,y)}}}
 setTimeout(()=>{if(navigator.onLine!==false)lgPass()},55000);
@@ -2593,7 +2604,7 @@ document.addEventListener('click',async ev=>{
   b.mod=Date.now();save();schedSync();toast(b.ser.s?'Série : '+b.ser.s:'Aucune série')}
  else if(a=='loan'){const b=IT(d.id);if(!b)return;const K=lnNames().slice(0,8);let n=prompt('Prêté à qui ?'+(K.length?'\n(Déjà : '+K.join(', ')+')':''));if(!n||!n.trim())return;n=K.find(x=>lnK(x)==lnK(n))||n.trim();b.loan={to:n.slice(0,60),d:today()};b.mod=Date.now();logEv(b,'Prêté à '+b.loan.to);save();schedSync();toast('Prêt noté')}
  else if(a=='loanback'){const b=IT(d.id);if(!b||!b.loan)return;lnBack(b);save();schedSync();toast('Rendu ✓')}
- else if(a=='trone'){const b=IT(d.id);if(!b||el.disabled)return;el.disabled=true;el.textContent='⏳ Recherche de l’édition française…';(async()=>{let n=0;try{n=await trOne(b)}catch(e){}if(n){save();schedSync();toast('🌍 Titre français trouvé : « '+nm(b)+' »',4000)}else toast('Aucune édition française trouvée pour l’instant (Open Library). Tu pourras réessayer plus tard.',4500);if(IT(b.id)&&view.open==b.id){const y=scrollY;render();scrollTo(0,y)}})();return}
+ else if(a=='trone'){const b=IT(d.id);if(!b||el.disabled)return;el.disabled=true;const step=w=>{const x=document.querySelector('[data-act="trone"]');if(x)x.textContent='⏳ Recherche dans '+w+'…'};step('Open Library');(async()=>{let by='',err=null;try{by=await trOne(b,1,step)}catch(e){err=e}if(by){save();schedSync();toast('🌍 Titre français trouvé par '+({ol:'Open Library',gb:'Google Livres',gm:'Gemini'})[by]+' : « '+nm(b)+' »',4500)}else if(err&&/^gm-/.test(String(err.message)))toast('Rien trouvé dans Open Library ni Google Livres. Gemini : '+gmErr(err),6000);else toast(aiOn()?'Aucune édition française trouvée (Open Library, Google Livres et Gemini).':'Aucune édition française trouvée dans Open Library ni Google Livres. Avec une clé Gemini, l’appli pourrait aussi lui demander.',5000);if(IT(b.id)&&view.open==b.id){const y=scrollY;render();scrollTo(0,y)}})();return}
  else if(a=='loans'){view.lnFrom=view.mPrev;view.loans={so:['d','t','p'].includes(S.lnSo)?S.lnSo:'d'};view.open=null;view.shelf=0;view.shEd=null;view.ser=null;view.add=0;view.sel=null;top=1}
  else if(a=='lnso'){if(!view.loans)return;view.loans.so=d.v;S.lnSo=d.v;save();render();return}
  else if(a=='lnmore'){if(!view.loans)return;view.loans.all=1;render();return}
