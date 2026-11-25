@@ -1591,8 +1591,10 @@ function shelfRen(n){const md=MODE();if(!n)return;let m=prompt('Nouveau nom de l
  else{const bd=md=='c';for(const b of Object.values(BK())){if(!!b.bd!=bd)continue;const o=serOf(b);if(o&&norm(o.s)==k){b.ser={s:m,n:o.n||0};b.mod=now}}}
  {const O=shO(),ko=md+':'+k,kn=md+':'+norm(m);if(O.i&&O.i[ko]){O.i[kn]=O.i[ko];delete O.i[ko]}if(O.m&&O.m[md])O.m[md]=O.m[md].map(x=>x==k?norm(m):x);O.t=now}S.serPin[spk(n)]={...pin,del:1,on:0,t:now};S.serPin[spk(m)]={...spG(m),on:!!pin.on,fav:!!pin.fav,del:0,t:now};
  if(S.gh)S.gh.dirty=1;save();schedSync();if(view.ser&&norm(view.ser.s)==k)view.ser={...view.ser,s:m};render();toast('Étagère renommée « '+m+' »')}
-function undoFn(label,fn){const u=$('#undo');u.querySelector('span').textContent=label;u.querySelector('button').textContent=TT('Annuler');u.hidden=false;undoD={fn};clearTimeout(undoT);undoT=setTimeout(()=>{u.hidden=true;undoD=null},7000)}
-function undoDo(){const u=$('#undo');u.hidden=true;clearTimeout(undoT);if(undoD&&undoD.fn){const f=undoD.fn;undoD=null;f();toast('Rétabli');return}const D=undoD;undoD=null;if(!D)return;const it=D.it,C=D.K=='shows'?S.shows:D.K=='movies'?MV():BK();
+let undoI=0;function undoFn(label,fn,sec){const u=$('#undo'),sp=u.querySelector('span'),bt=u.querySelector('button');clearInterval(undoI);sp.textContent=label;bt.textContent=TT('Annuler');u.hidden=false;undoD={fn};clearTimeout(undoT);
+ if(sec){let n=sec;const tick=()=>{bt.textContent=TT('Annuler')+' ('+n+' s)'};tick();undoI=setInterval(()=>{n--;if(n<=0){clearInterval(undoI);return}tick()},1000)}
+ undoT=setTimeout(()=>{clearInterval(undoI);u.hidden=true;undoD=null},(sec||7)*1000)}
+function undoDo(){const u=$('#undo');u.hidden=true;clearTimeout(undoT);clearInterval(undoI);if(undoD&&undoD.fn){const f=undoD.fn;undoD=null;f();toast('Rétabli');return}const D=undoD;undoD=null;if(!D)return;const it=D.it,C=D.K=='shows'?S.shows:D.K=='movies'?MV():BK();
  C[it.id]=it;it.mod=Date.now();if(S.del)delete S.del[it.id];logEv(it,'Suppression annulée');schedSync();save();render();toast('Remis dans la liste')}
 const refreshItem=it=>it.kind=='m'?fetchMovie(it,0):it.kind=='b'?fetchBook(it,0):it.src=='tmdb'?syncTmdbTv(it):syncShow(it);
 const ratingHtml=sh=>`<div class="rate">${[1,2,3,4].map(n=>`<button class="st4 ${(sh.rate||0)>=n?'on':''}" data-act="rate" data-id="${sh.id}" data-n="${n}" aria-label="${n}/4">★</button>`).join('')}</div><textarea id="nt" data-id="${sh.id}" rows="7" placeholder="Écris ton avis ici…">${esc(sh.note||'')}</textarea>`;
@@ -1764,13 +1766,15 @@ ${SY.length>1?`<div class="dupw" style="margin-top:12px">Garder quelle synthèse
 ${kv('Formats',r.fmt.map(k=>{const f=FMT.find(x=>x[0]==k);return f?f[1]+' '+f[2]:''}).join(' + '))}${kv((heard({kind:'b',fmt:r.fmt})?'Écouté':'Lu')+' le',r.rd?fd(r.rd):r.seen?'lu (date inconnue)':'')}${kv('Synthèse',r.syn?(r.syn.s=='ia'?'🤖 celle de Gemini':'✍️ celle écrite à la main')+(SY.length>1?', de « '+nm(r.synFrom)+' »':''):'')}${kv('Tags',r.tags.join(', '))}${kv('Note',r.rate?'★'.repeat(r.rate):'')}${kv('Commentaire',r.note?'oui':'')}${kv('Prêt',r.loan?'en cours':'')}
 <div class="act"><button class="pri" data-act="dupgo">Fusionner</button><button data-act="back">Annuler</button></div></div></div>`}
 function dupGo(){const V=view.dupm;if(!V)return;const B=V.ids.map(i=>BK()[i]).filter(Boolean),K=BK()[V.keep]||B[0],O=B.filter(b=>b!==K);if(!O.length)return;const r=dupMerged(K,O,V.syn),now=Date.now();
+ const snap={books:B.map(b=>JSON.parse(JSON.stringify(b))),dupNo:[...(S.dupNo||[])],tts:S.ttsPos?Object.fromEntries(B.filter(b=>S.ttsPos[b.id]).map(b=>[b.id,S.ttsPos[b.id]])):null};
  if((V.off||[]).length){S.dupNo=S.dupNo||[];for(const x of V.off){const k=dupKey(K.id,x);if(!S.dupNo.includes(k))S.dupNo.push(k)}for(const x of V.off)view.dupOff&&view.dupOff.delete(x)}
  K.fmt=r.fmt;K.tags=r.tags;if(r.rd)K.rd=r.rd;K.seen=r.seen?1:0;K.fav=r.fav?1:0;K.pin=r.pin?1:0;K.arch=r.arch?1:0;K.rate=r.rate;K.note=r.note;if(r.syn){K.syn=r.syn;delete K.synErr}if(r.pg)K.pg=r.pg;if(r.loan)K.loan=r.loan;if(r.ser)K.ser=r.ser;if(r.dur)K.dur=r.dur;if(r.ph)K.ph=r.ph;
  for(const k of ['po','ov','pages','pub','isbn','date'])if(!K[k])for(const b of O)if(b[k]){K[k]=b[k];break}
  if(!(K.ppl||[]).length)K.ppl=(O.find(b=>(b.ppl||[]).length)||{}).ppl||[];K.mod=now;
  S.del=S.del||{};for(const b of O){delete BK()[b.id];S.del[b.id]=now;if(S.ttsPos)delete S.ttsPos[b.id];if(tts.id==b.id){ttsStop();tts.id=null}}
  if(S.ttsPos)delete S.ttsPos[K.id];
- view.dupm=null;if(S.gh)S.gh.dirty=1;save();schedSync();toast((O.length+1)+' fiches réunies dans « '+nm(K)+' »');render()}
+ view.dupm=null;if(S.gh)S.gh.dirty=1;save();schedSync();view.open=K.id;view.ids=[K.id];view.tab=null;view.s=null;render(1);
+ undoFn('✓ '+(O.length+1)+' fiches réunies',()=>{const t=Date.now();for(const x of snap.books){x.mod=t;BK()[x.id]=x;if(S.del)delete S.del[x.id]}S.dupNo=snap.dupNo;if(snap.tts){S.ttsPos=S.ttsPos||{};Object.assign(S.ttsPos,snap.tts)}if(view.open==K.id)view.open=null;if(S.gh)S.gh.dirty=1;save();schedSync();render(1)},30)}
 /* Traductions : une seule demande par livre à Open Library, retenue sur l'appareil */
 async function dupScan(){if(dupRun)return;const L=Object.values(BK()).filter(b=>!b.bd&&!dupWork(b)&&!b.olw);if(!L.length)return;const R=dupRun={i:0,n:L.length,stop:0};render();let fails=0;
  const upd=()=>{const e=document.getElementById('dupprog');if(e)e.textContent='🌍 Recherche des traductions : '+R.i+' / '+R.n};
