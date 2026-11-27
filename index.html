@@ -1126,9 +1126,9 @@ function applyMovie(m,x,first){const bc=x.belongs_to_collection;m.col=bc&&bc.id?
 async function fetchMovie(m,first){const x=await tmdb('/movie/'+m.tmdb,'&append_to_response=credits,recommendations,similar,keywords');if(!x)return 0;
  m.cp=[];if(x.belongs_to_collection){try{const c=await tmdb('/collection/'+x.belongs_to_collection.id);m.cp=((c&&c.parts)||[]).sort((a,b)=>(a.release_date||'').localeCompare(b.release_date||'')).map(p=>({id:p.id,title:p.title,poster_path:p.poster_path,release_date:p.release_date}))}catch(e){}}
  applyMovie(m,x,first);return 1}
-async function addMovie(tm){clearQ();const id='m'+tm;if(MV()[id])return toast('Déjà dans ta liste');
+async function addMovie(tm){const stay=!!view.add&&!view.open;clearQ();const id='m'+tm;if(MV()[id])return toast('Déjà dans ta liste');
  const m=MV()[id]={id,kind:'m',tmdb:+tm,name:'',fav:0,ad:Date.now(),mod:Date.now()};toast('Ajout…');
- try{if(!await fetchMovie(m,1))throw 0;logEv(m,'Film ajouté');S.mode='m';view.add=0;view.open=id;view.tab=null;view.f='all';toast('Film ajouté')}catch(e){delete MV()[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
+ try{if(!await fetchMovie(m,1))throw 0;logEv(m,'Film ajouté');if(!stay){S.mode='m';view.add=0;view.open=id;view.tab=null;view.f='all'}toast('Film ajouté')}catch(e){delete MV()[id];toast('Connexion impossible')}save();if(stay){const y=scrollY;render();scrollTo(0,y)}else{render();scrollTo(0,0)}}
 /* Ouvrir un aperçu ; depuis la page d'une personne, le retour y ramènera */
 function pvGo(id){if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq')?$('#aq').value:'';view.addBack=1;view.add=0}if(view.pp){view.ppBack={id:view.pp,y:scrollY};view.pp=null}view.open=id;view.s=null;view.tab=null;render(1)}
 /* Livre ou BD introuvable : créer la fiche soi-même */
@@ -1582,7 +1582,7 @@ async function addTv(tid,name,quiet){const fromAdd=!!view.add&&!quiet;
   let sh,id;
   if(x){id=String((x.externals&&x.externals.thetvdb)||'tm'+x.id);const old=S.shows[id]||Object.values(S.shows).find(s=>s.tm==x.id);if(old){if(!old.tmdbtv){old.tmdbtv=+tid;old.mod=Date.now();save();render()}return toast('Déjà dans ta liste')}sh=S.shows[id]={id,tm:+x.id,name:'',sum:'',fav:0,ad:Date.now(),mod:Date.now(),eps:[],tmdbtv:+tid};await syncShow(sh)}
   else{id='t'+tid;sh=S.shows[id]={id,src:'tmdb',tmdbtv:+tid,name:(d&&d.name)||name,sum:'',fav:0,ad:Date.now(),mod:Date.now(),eps:[]};await syncTmdbTv(sh)}
-  logEv(sh,'Série ajoutée');if(view.open=='ps'+tid){view.open=id;view.s=null;view.tab=null}if(fromAdd){S.mode='s';view.add=0;view.open=id;view.s=null;view.tab=null;view.f='all'}toast('Série ajoutée')}catch(e){toast('Connexion impossible')}save();render()}
+  logEv(sh,'Série ajoutée');if(view.open=='ps'+tid){view.open=id;view.s=null;view.tab=null}toast('Série ajoutée')}catch(e){toast('Connexion impossible')}save();{const y=scrollY;render();if(fromAdd)scrollTo(0,y)}}
 const VER='1.4';
 function fmtDate(d,k){if(!d)return'';k=k||S.dfmt||'dmy2';const y=d.slice(0,4),m=d.slice(5,7),da=d.slice(8,10);
  return k=='dmy4'?da+'/'+m+'/'+y:k=='mdy2'?m+'/'+da+'/'+y.slice(2):k=='ymd'?y+'-'+m+'-'+da:k=='loc'?new Date(d.slice(0,10)+'T12:00:00').toLocaleDateString(LOCL()):da+'/'+m+'/'+y.slice(2)}
@@ -2600,9 +2600,9 @@ async function find(){const q=$('#aq').value.trim();if(!q)return;const c=codeOf(
  view.resP=null;const tok=find.t=(find.t||0)+1,pp=findPerson(q).catch(()=>null),cx=crossRes(q);await findTitle(q);const X=await cx;if(X&&tok==find.t&&view.add&&$('#res')){const R=$('#res');R.querySelector('.mu')&&!R.querySelector('.ep')&&(R.innerHTML='');R.insertAdjacentHTML('beforeend',X);view.resK=R.innerHTML}const P=await pp;if(tok!=find.t||!view.add||!P)return;
  view.resP=P;const R=$('#res');if(!R)return;R.querySelector('.mu')&&!R.querySelector('.ep')&&(R.innerHTML='');R.insertAdjacentHTML('beforeend',personRes(P));i18n();view.resK=R.innerHTML}
 async function findTitle(q){if(MODE()=='m')return findM(q);if(MODE()=='b'||MODE()=='c')return findB(q);return findS(q)}
-async function addShow(tm,tv){clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
+async function addShow(tm,tv){const stay=!!view.add&&!view.open;clearQ();const id=tv||'tm'+tm;if(S.shows[id])return toast('Déjà dans ta liste');
  const sh=S.shows[id]={id,tm:+tm,name:'',sum:'',fav:0,ad:Date.now(),mod:Date.now(),eps:[]};toast('Ajout…');
- try{await syncShow(sh);logEv(sh,'Série ajoutée');view.add=0;view.open=id;view.s=null;view.f='all';toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();render();scrollTo(0,0)}
+ try{await syncShow(sh);logEv(sh,'Série ajoutée');if(!stay){view.add=0;view.open=id;view.s=null;view.f='all'}toast('Série ajoutée')}catch(e){delete S.shows[id];toast('Connexion impossible')}save();if(stay){const y=scrollY;render();scrollTo(0,y)}else{render();scrollTo(0,0)}}
 function render(top){applyUI();vaultAuto();if(tts.on)setTimeout(ttsCheck,0);renderNote();const y=scrollY;$('.fab').hidden=!!(view.shelf||view.loans||view.cof||view.open||view.add||view.sel||view.pp||view.ser||view.imp||view.shr||view.rcv||view.dupm||view.lsset||view.lsed||view.vset||view.vault);renderSel();renderMode();renderCloud();renderFl();renderMenu();renderDlg();
  const hs=['st','tgr','tb','tgb','shshr'].map(id=>{const e=$('#'+id);return[id,e,e?e.scrollLeft:0]});
  if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq').value}const kR=view.add&&!view.pp?view.resK:null,kQ=view.aqK||'';
@@ -2620,7 +2620,7 @@ const addId=(a,d)=>{if(a=='addtv'){const x=Object.values(S.shows).find(s=>s.tmdb
 /* Après un retour sur des résultats gardés en mémoire : les titres ajoutés entre-temps (par ex. depuis leur fiche) sont grisés */
 function resFix(){const r=$('#res');if(!r)return;r.querySelectorAll('button[data-act]').forEach(b=>{const a=b.dataset.act;if(!ADDA.includes(a))return;const id=addId(a,b.dataset);if(!id)return;b.disabled=true;b.textContent='✓ Ajouté';b.classList.remove('pri');const row=b.closest('.ep');if(row&&!row.classList.contains('ex')){row.classList.add('ex');row.dataset.act='openex';row.dataset.id=id;delete row.dataset.gid;delete row.dataset.mt;delete row.dataset.tm;delete row.dataset.mz;delete row.dataset.tn}})}
 async function addBusy(el,a,d){const k=a+'|'+(d.tm||d.gid),mark=t=>document.querySelectorAll('[data-act="'+a+'"]').forEach(b=>{if(b.dataset.act+'|'+(b.dataset.tm||b.dataset.gid)!=k)return;if(t==1){if(!b.dataset.lb)b.dataset.lb=b.textContent;b.disabled=true;b.textContent='⏳ Ajout…'}else if(t==2){b.disabled=true;b.textContent='✓ Ajouté';b.classList.remove('pri')}else{b.disabled=false;b.textContent=b.dataset.lb||'Ajouter'}}),keep=()=>{const r=$('#res');if(view.add&&r)view.resK=r.innerHTML};
- mark(1);keep();try{await({addmq:()=>addMq(d.tm),addtv:()=>addTv(d.tm,d.tn,!!view.add),addbook:()=>addBook(d.gid,+d.bd),addbq:()=>addBook(d.gid,MODE()=='c'?1:0,1),addpb:()=>addBook(d.gid,+d.bd,1),addmovie:()=>addMovie(d.tm),addshow:()=>addShow(d.tm,d.tv)})[a]()}finally{mark(addHas(a,d)?2:0);keep()}}
+ mark(1);keep();try{await({addmq:()=>addMq(d.tm),addtv:()=>addTv(d.tm,d.tn,!!view.add),addbook:()=>addBook(d.gid,+d.bd,view.add&&!view.open?1:0),addbq:()=>addBook(d.gid,MODE()=='c'?1:0,1),addpb:()=>addBook(d.gid,+d.bd,1),addmovie:()=>addMovie(d.tm),addshow:()=>addShow(d.tm,d.tv)})[a]()}finally{mark(addHas(a,d)?2:0);keep()}}
 document.addEventListener('click',async ev=>{
  if(ev.target.matches&&ev.target.matches('input[type=file]'))return;
  if(lp){const old=lpAt&&Date.now()-lpAt>1500;lp=0;lpAt=0;if(!old){ev.preventDefault();return}}
@@ -2644,7 +2644,7 @@ document.addEventListener('click',async ev=>{
  else if(a=='tg'){S[d.k]=!S[d.k]}
  else if(a=='df'){S.dfmt=d.k}
  else if(a=='lg'){S.leg=d.k}
- else if(a=='openex'){view.add=0;clearQ();view.open=d.id;view.s=null;view.tab=null;top=1}
+ else if(a=='openex'){if(view.add&&$('#res')){view.resK=$('#res').innerHTML;view.aqK=$('#aq')?$('#aq').value:'';view.addBack=1}view.add=0;clearQ();view.open=d.id;view.s=null;view.tab=null;top=1}
  else if(a=='hdel')return toast('Impossible d’afficher une fiche supprimée, mais tu peux la réimporter.',4500)
  else if(a=='upd8')return toast("Aucune vérification en ligne pour l'instant");
  else if(a=='rate'){sh.rate=sh.rate==+d.n?0:+d.n}
